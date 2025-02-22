@@ -28,19 +28,19 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
-#include <laser_geometry/laser_geometry.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <sensor_msgs/LaserScan.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <laser_geometry/laser_geometry.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
 #include <limits>
 #include <string>
 
 #include <costmap_cspace/pointcloud_accumulator.h>
-#include <neonavigation_common/compatibility.h>
+// #include <neonavigation_common/compatibility.h>
 
 class LaserscanToMapNode
 {
@@ -50,7 +50,7 @@ private:
   ros::Publisher pub_map_;
   ros::Subscriber sub_scan_;
 
-  nav_msgs::OccupancyGrid map;
+  nav_msgs::msg::OccupancyGrid map;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   laser_geometry::LaserProjection projector_;
@@ -66,7 +66,7 @@ private:
   float origin_x_;
   float origin_y_;
 
-  costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2> accum_;
+  costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
   LaserscanToMapNode()
@@ -82,9 +82,9 @@ public:
 
     double accum_duration;
     pnh_.param("accum_duration", accum_duration, 1.0);
-    accum_.reset(ros::Duration(accum_duration));
+    accum_.reset(std::chrono::duration<double>(accum_duration));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
+    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
         pnh_, "map", 1, true);
     sub_scan_ = nh_.subscribe("scan", 2, &LaserscanToMapNode::cbScan, this);
@@ -103,26 +103,26 @@ public:
 
     double hz;
     pnh_.param("hz", hz, 1.0);
-    publish_interval_ = ros::Duration(1.0 / hz);
+    publish_interval_ = std::chrono::duration<double>(1.0 / hz);
   }
 
 private:
-  void cbScan(const sensor_msgs::LaserScan::ConstPtr& scan)
+  void cbScan(const sensor_msgs::msg::LaserScan::ConstPtr& scan)
   {
-    sensor_msgs::PointCloud2 cloud;
-    sensor_msgs::PointCloud2 cloud_global;
+    sensor_msgs::msg::PointCloud2 cloud;
+    sensor_msgs::msg::PointCloud2 cloud_global;
     projector_.projectLaser(*scan, cloud);
     try
     {
-      geometry_msgs::TransformStamped trans = tfbuf_.lookupTransform(
-          global_frame_, cloud.header.frame_id, cloud.header.stamp, ros::Duration(0.5));
+      geometry_msgs::msg::TransformStamped trans = tfbuf_.lookupTransform(
+          global_frame_, cloud.header.frame_id, cloud.header.stamp, std::chrono::duration<double>(0.5));
       tf2::doTransform(cloud, cloud_global, trans);
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN("%s", e.what());
+      RCLCPP_WARN(this->get_logger(), "%s", e.what());
     }
-    accum_.push(costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2>::Points(
+    accum_.push(costmap_cspace::PointcloudAccumurator<sensor_msgs::msg::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
     ros::Time now = scan->header.stamp;
@@ -149,7 +149,7 @@ private:
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN("%s", e.what());
+      RCLCPP_WARN(this->get_logger(), "%s", e.what());
       return;
     }
     for (auto& cell : map.data)
@@ -174,13 +174,13 @@ private:
       }
     }
 
-    pub_map_.publish(map);
+    pub_map_->publish(map);
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "laserscan_to_map");
+  rclcpp::init(argc, argv, "laserscan_to_map");
 
   LaserscanToMapNode conv;
   ros::spin();
