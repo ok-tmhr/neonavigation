@@ -81,7 +81,7 @@ ament_target_dependencies(laserscan_to_map rclcpp ${COLCON_DEPENDS})
 install(TARGETS
     costmap_3d
     # largemap_to_map
-    # laserscan_to_map
+    laserscan_to_map
     # pointcloud2_to_map
     costmap_3d_layers
   DESTINATION lib/${PROJECT_NAME}
