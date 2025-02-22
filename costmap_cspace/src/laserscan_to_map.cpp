@@ -33,6 +33,7 @@
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
@@ -42,20 +43,18 @@
 #include <costmap_cspace/pointcloud_accumulator.h>
 // #include <neonavigation_common/compatibility.h>
 
-class LaserscanToMapNode
+class LaserscanToMapNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Publisher pub_map_;
-  ros::Subscriber sub_scan_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
   nav_msgs::msg::OccupancyGrid map;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   laser_geometry::LaserProjection projector_;
-  ros::Time published_;
-  ros::Duration publish_interval_;
+  rclcpp::Time published_;
+  rclcpp::Duration publish_interval_;
 
   double z_min_, z_max_;
   std::string global_frame_;
@@ -70,39 +69,39 @@ private:
 
 public:
   LaserscanToMapNode()
-    : nh_()
-    , pnh_("~")
+    : Node("laserscan_to_map")
+    , tfbuf_(this->get_clock())
     , tfl_(tfbuf_)
+    , publish_interval_(rclcpp::Duration::from_seconds(0.))
   {
-    neonavigation_common::compat::checkCompatMode();
-    pnh_.param("z_min", z_min_, std::numeric_limits<double>::lowest());
-    pnh_.param("z_max", z_max_, std::numeric_limits<double>::max());
-    pnh_.param("global_frame", global_frame_, std::string("map"));
-    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+    // neonavigation_common::compat::checkCompatMode();
+    z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
+    z_max_ = this->declare_parameter("z_max", std::numeric_limits<double>::max());
+    global_frame_ = this->declare_parameter("global_frame", std::string("map"));
+    robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     double accum_duration;
-    pnh_.param("accum_duration", accum_duration, 1.0);
+    accum_duration = this->declare_parameter("accum_duration", 1.0);
     accum_.reset(std::chrono::duration<double>(accum_duration));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
-        nh_, "map_local",
-        pnh_, "map", 1, true);
-    sub_scan_ = nh_.subscribe("scan", 2, &LaserscanToMapNode::cbScan, this);
+    pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+        "~/map", rclcpp::QoS(1).transient_local());
+    sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan", 2, std::bind(&LaserscanToMapNode::cbScan, this, std::placeholders::_1));
 
     int width_param;
-    pnh_.param("width", width_param, 30);
+    width_param = this->declare_parameter("width", 30);
     height_ = width_ = width_param;
     map.header.frame_id = global_frame_;
 
     double resolution;
-    pnh_.param("resolution", resolution, 0.1);
+    resolution = this->declare_parameter("resolution", 0.1);
     map.info.resolution = resolution;
     map.info.width = width_;
     map.info.height = height_;
     map.data.resize(map.info.width * map.info.height);
 
     double hz;
-    pnh_.param("hz", hz, 1.0);
+    hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = std::chrono::duration<double>(1.0 / hz);
   }
 
@@ -125,7 +124,7 @@ private:
     accum_.push(costmap_cspace::PointcloudAccumurator<sensor_msgs::msg::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
-    ros::Time now = scan->header.stamp;
+    rclcpp::Time now = scan->header.stamp;
     if (published_ + publish_interval_ > now)
       return;
     published_ = now;
@@ -134,7 +133,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, ros::Time(0)), trans);
+      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;
@@ -180,10 +179,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "laserscan_to_map");
+  rclcpp::init(argc, argv);
 
-  LaserscanToMapNode conv;
-  ros::spin();
+  auto conv = std::make_shared<LaserscanToMapNode>();
+  rclcpp::spin(conv);
 
   return 0;
 }

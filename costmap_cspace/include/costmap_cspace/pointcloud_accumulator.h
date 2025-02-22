@@ -43,25 +43,25 @@ public:
   class Points : public T
   {
   public:
-    ros::Time stamp_;
+    rclcpp::Time stamp_;
 
-    Points(const T& points, const ros::Time& stamp)
+    Points(const T& points, const rclcpp::Time& stamp)
       : T(points)
       , stamp_(stamp)
     {
     }
   };
 
-  PointcloudAccumulator()
+  PointcloudAccumulator() : time_to_hold_(rclcpp::Duration::from_seconds(0.))
   {
   }
 
-  explicit PointcloudAccumulator(const ros::Duration& duration)
+  explicit PointcloudAccumulator(const rclcpp::Duration& duration)
   {
     reset(duration);
   }
 
-  void reset(const ros::Duration& duration)
+  void reset(const rclcpp::Duration& duration)
   {
     time_to_hold_ = duration;
     clear();
@@ -105,7 +105,7 @@ public:
   }
 
 protected:
-  ros::Duration time_to_hold_;
+  rclcpp::Duration time_to_hold_;
   std::list<Points> points_;
 };
 
