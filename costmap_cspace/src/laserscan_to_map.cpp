@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <laser_geometry/laser_geometry.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
