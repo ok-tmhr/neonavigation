@@ -40,7 +40,7 @@
 #include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
 #include <costmap_cspace/costmap_3d.h>
-#include <neonavigation_common/compatibility.h>
+// #include <neonavigation_common/compatibility.h>
 
 class Costmap3DOFNode : public rclcpp::Node
 {
