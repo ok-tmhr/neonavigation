@@ -38,8 +38,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <xmlrpcpp/XmlRpcException.h>
-
 namespace costmap_cspace
 {
 class Vec

@@ -56,9 +56,9 @@ public:
   }
   void loadConfig(LayerConfig& config)
   {
-    if (config.hasMember("unknown_cost"))
+    if (config.unknown_cost != -1)
     {
-      unknown_cost_ = static_cast<int>(config["unknown_cost"]);
+      unknown_cost_ = static_cast<int>(config.unknown_cost);
     }
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)

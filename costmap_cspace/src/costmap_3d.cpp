@@ -42,7 +42,7 @@
 #include <costmap_cspace/costmap_3d.h>
 #include <neonavigation_common/compatibility.h>
 
-class Costmap3DOFNode
+class Costmap3DOFNode : public rclcpp::Node
 {
 protected:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_map_;
@@ -135,7 +135,7 @@ protected:
       return;
     sensor_msgs::msg::PointCloud pc;
     pc.header = map.header;
-    pc.header.stamp = ros::Time::now();
+    pc.header.stamp = this->get_clock()->now();
     for (size_t yaw = 0; yaw < map.info.angle; yaw++)
     {
       for (unsigned int i = 0; i < map.info.width * map.info.height; i++)
@@ -156,7 +156,7 @@ protected:
   void cbPublishFootprint(const geometry_msgs::msg::PolygonStamped msg)
   {
     auto footprint = msg;
-    footprint.header.stamp = ros::Time::now();
+    footprint.header.stamp = this->get_clock()->now();
     pub_footprint_->publish(footprint);
   }
 
