@@ -30,6 +30,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <nav_msgs/msg/occupancy_grid.hpp>
@@ -39,22 +40,20 @@
 #include <vector>
 
 #include <costmap_cspace/pointcloud_accumulator.h>
-#include <neonavigation_common/compatibility.h>
+// #include <neonavigation_common/compatibility.h>
 
-class Pointcloud2ToMapNode
+class Pointcloud2ToMapNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Publisher pub_map_;
-  ros::Subscriber sub_cloud_;
-  ros::Subscriber sub_cloud_single_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
 
   nav_msgs::msg::OccupancyGrid map_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  ros::Time published_;
-  ros::Duration publish_interval_;
+  rclcpp::Time published_;
+  rclcpp::Duration publish_interval_;
 
   double z_min_, z_max_;
   std::string global_frame_;
@@ -69,46 +68,46 @@ private:
 
 public:
   Pointcloud2ToMapNode()
-    : nh_()
-    , pnh_("~")
+    : Node("pointcloud2_to_map")
+    , tfbuf_(this->get_clock())
     , tfl_(tfbuf_)
+    , publish_interval_(rclcpp::Duration::from_nanoseconds(0.))
     , accums_(2)
   {
-    neonavigation_common::compat::checkCompatMode();
-    pnh_.param("z_min", z_min_, 0.1);
-    pnh_.param("z_max", z_max_, 1.0);
-    pnh_.param("global_frame", global_frame_, std::string("map"));
-    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+    // neonavigation_common::compat::checkCompatMode();
+    z_min_ = this->declare_parameter("z_min", 0.1);
+    z_max_ = this->declare_parameter("z_max", 1.0);
+    global_frame_ = this->declare_parameter("global_frame", std::string("map"));
+    robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     double accum_duration;
-    pnh_.param("accum_duration", accum_duration, 1.0);
+    accum_duration = this->declare_parameter("accum_duration", 1.0);
     accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
-        nh_, "map_local",
-        pnh_, "map", 1, true);
-    sub_cloud_ = nh_.subscribe<sensor_msgs::msg::PointCloud2>(
+    pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+        "~/map", rclcpp::QoS(1).transient_local());
+    sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud", 100,
-        std::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, false));
-    sub_cloud_single_ = nh_.subscribe<sensor_msgs::msg::PointCloud2>(
+        [&](const sensor_msgs::msg::PointCloud2::ConstPtr& cloud){return Pointcloud2ToMapNode::cbCloud(cloud, false);});
+    sub_cloud_single_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud_singleshot", 100,
-        std::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, true));
+        [&](const sensor_msgs::msg::PointCloud2::ConstPtr& cloud){return Pointcloud2ToMapNode::cbCloud(cloud, true);});
 
     int width_param;
-    pnh_.param("width", width_param, 30);
+    width_param = this->declare_parameter("width", 30);
     height_ = width_ = width_param;
     map_.header.frame_id = global_frame_;
 
     double resolution;
-    pnh_.param("resolution", resolution, 0.1);
+    resolution = this->declare_parameter("resolution", 0.1);
     map_.info.resolution = resolution;
     map_.info.width = width_;
     map_.info.height = height_;
     map_.data.resize(map_.info.width * map_.info.height);
 
     double hz;
-    pnh_.param("hz", hz, 1.0);
+    hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
   }
 
@@ -120,7 +119,7 @@ private:
     try
     {
       trans = tfbuf_.lookupTransform(global_frame_, cloud->header.frame_id,
-                                     cloud->header.stamp, ros::Duration(0.5));
+                                     cloud->header.stamp, rclcpp::Duration::from_seconds(0.5));
     }
     catch (tf2::TransformException& e)
     {
@@ -133,7 +132,7 @@ private:
     accums_[buffer].push(costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
-    ros::Time now = cloud->header.stamp;
+    rclcpp::Time now = cloud->header.stamp;
     if (published_ + publish_interval_ > now)
       return;
     published_ = now;
@@ -142,7 +141,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, ros::Time(0)), trans);
+      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;
@@ -191,10 +190,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "pointcloud2_to_map");
+  rclcpp::init(argc, argv);
 
-  Pointcloud2ToMapNode conv;
-  ros::spin();
+  auto conv = std::make_shared<Pointcloud2ToMapNode>();
+  rclcpp::spin(conv);
 
   return 0;
 }
