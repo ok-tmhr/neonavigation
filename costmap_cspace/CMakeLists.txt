@@ -57,16 +57,28 @@ $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 ament_target_dependencies(laserscan_to_map rclcpp ${COLCON_DEPENDS})
-# target_link_libraries(laserscan_to_map ${catkin_LIBRARIES})
-# add_dependencies(laserscan_to_map ${catkin_EXPORTED_TARGETS})
 
 # add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
-# target_link_libraries(pointcloud2_to_map ${catkin_LIBRARIES})
-# add_dependencies(pointcloud2_to_map ${catkin_EXPORTED_TARGETS})
+# target_link_libraries(pointcloud2_to_map rclcpp::rclcpp)
+# foreach(PKG ${COLCON_DEPENDS})
+#   target_link_libraries(pointcloud2_to_map ${${PKG}_TARGETS})
+# endforeach()
+# target_include_directories(pointcloud2_to_map PUBLIC
+# $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+# $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+# )
+# ament_target_dependencies(pointcloud2_to_map rclcpp ${COLCON_DEPENDS})
 
-# add_executable(largemap_to_map src/largemap_to_map.cpp)
-# target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
-# add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
+add_executable(largemap_to_map src/largemap_to_map.cpp)
+target_link_libraries(largemap_to_map rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(largemap_to_map ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(largemap_to_map PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(largemap_to_map rclcpp ${COLCON_DEPENDS})
 
 
 # if(BUILD_TESTING)
@@ -80,7 +92,7 @@ ament_target_dependencies(laserscan_to_map rclcpp ${COLCON_DEPENDS})
 
 install(TARGETS
     costmap_3d
-    # largemap_to_map
+    largemap_to_map
     laserscan_to_map
     # pointcloud2_to_map
     costmap_3d_layers

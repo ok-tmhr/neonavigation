@@ -37,18 +37,17 @@
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <neonavigation_common/compatibility.h>
+// #include <neonavigation_common/compatibility.h>
 
-class LargeMapToMapNode
+class LargeMapToMapNode : public rclcpp::Node
 {
 private:
-  rclcpp::NodeHandle pnh_;
-  rclcpp::NodeHandle nh_;
-  rclcpp::Publisher pub_map_;
-  rclcpp::Subscriber sub_largemap_;
-  rclcpp::Timer timer_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_largemap_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
   tf2_ros::Buffer tfbuf_;
@@ -63,21 +62,20 @@ private:
 
 public:
   LargeMapToMapNode()
-    : pnh_("~")
-    , nh_()
+    : Node("largemap_to_map")
+    , tfbuf_(this->get_clock())
     , tfl_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
-    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+    // neonavigation_common::compat::checkCompatMode();
+    robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
-        nh_, "map_local",
-        pnh_, "map", 1, true);
-    sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMapNode::cbLargeMap, this);
+    pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+        "~/map", rclcpp::QoS(1).transient_local());
+    sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 2, std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
 
-    pnh_.param("width", width_, 30);
-    pnh_.param("round_local_map", round_local_map_, false);
-    pnh_.param("simulate_occlusion", simulate_occlusion_, false);
+    width_ = this->declare_parameter("width", 30);
+    round_local_map_ = this->declare_parameter("round_local_map", false);
+    simulate_occlusion_ = this->declare_parameter("simulate_occlusion", false);
 
     for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
     {
@@ -106,12 +104,12 @@ public:
     }
 
     double hz;
-    pnh_.param("hz", hz, 1.0);
-    timer_ = nh_.createTimer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
+    hz = this->declare_parameter("hz", 1.0);
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
   }
 
 private:
-  void cbTimer(const rclcpp::TimerEvent& event)
+  void cbTimer()
   {
     publishMap();
   }
@@ -200,10 +198,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "largemap_to_map");
+  rclcpp::init(argc, argv);
 
-  LargeMapToMapNode conv;
-  rclcpp::spin();
+  auto conv = std::make_shared<LargeMapToMapNode>();
+  rclcpp::spin(conv);
 
   return 0;
 }
