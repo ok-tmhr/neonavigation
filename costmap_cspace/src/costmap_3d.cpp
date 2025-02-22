@@ -223,7 +223,7 @@ public:
     for (int i = 0; i < static_layers.size(); ++i)
       {
       costmap_cspace::Costmap3dLayerBase::LayerConfig layer_config;
-      layer_config.name = static_layers[i];
+      layer_config.name = this->declare_parameter(static_layers[i] + ".name", static_layers[i]);
       RCLCPP_INFO(this->get_logger(), "New static layer: %s", layer_config.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
@@ -269,7 +269,7 @@ public:
       
       for (int i = 0; i < layers.size(); ++i)
       {
-        layer_config.name = layers[i];
+        layer_config.name = this->declare_parameter(layers[i] + ".name", layers[i]);
         RCLCPP_INFO(this->get_logger(), "New layer: %s", layer_config.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
