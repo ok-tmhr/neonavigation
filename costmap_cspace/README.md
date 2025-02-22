@@ -30,6 +30,7 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "unknown_cost" (int, default: 0)
 * "overlay_mode" (string, default: std::string(""))
 * "footprint" (string, default: "")
+* "keep_unknown" (bool, false)
 
 ### multiple layer mode
 
@@ -58,6 +59,7 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 Each layer configuration contains:
 * "name" (string) layer name
 * "type" (string) layer type name
+* "keep_unknown" (bool)
 * "parameters" layer specific parameters
 
 Available layer types and parameters are:
@@ -65,7 +67,7 @@ Available layer types and parameters are:
   - "linear_expand" (double)
   - "linear_spread" (double)
   - "linear_spread_min_cost" (int, default: 0)
-  - "footprint" (?, default: root layer's footprint)
+  - "footprint" (string array, default: root layer's footprint)
 - **Costmap3dLayerPlain**: Costmap layer without considering footpring.
   - "linear_expand" (double)
   - "linear_spread" (double)
