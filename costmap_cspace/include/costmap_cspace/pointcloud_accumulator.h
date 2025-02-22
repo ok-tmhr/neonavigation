@@ -30,7 +30,7 @@
 #ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
 #define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <list>
 

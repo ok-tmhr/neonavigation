@@ -34,12 +34,12 @@
 #include <memory>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
 #include <costmap_cspace/cspace3_cache.h>
 #include <costmap_cspace/polygon.h>

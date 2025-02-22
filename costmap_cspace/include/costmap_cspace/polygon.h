@@ -32,10 +32,11 @@
 
 #include <cmath>
 #include <limits>
+#include <regex>
 #include <utility>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <xmlrpcpp/XmlRpcException.h>
 
@@ -47,12 +48,12 @@ public:
   float c[2];
   float& operator[](const int& i)
   {
-    ROS_ASSERT(i < 2);
+    assert(i < 2);
     return c[i];
   }
   const float& operator[](const int& i) const
   {
-    ROS_ASSERT(i < 2);
+    assert(i < 2);
     return c[i];
   }
   Vec operator-(const Vec& a) const
@@ -95,40 +96,42 @@ public:
   Polygon()
   {
   }
-  explicit Polygon(const XmlRpc::XmlRpcValue footprint_xml_const)
+  explicit Polygon(const std::string& footprint_str)
   {
-    XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;
-    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
-    {
-      throw std::runtime_error("Invalid footprint xml.");
-    }
+    std::regex pattern(R"(\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\])");
 
-    for (int i = 0; i < footprint_xml.size(); i++)
+    auto begin = std::sregex_iterator(footprint_str.begin(), footprint_str.end(), pattern);
+    auto end = std::sregex_iterator();
+
+    for (auto it = begin; it != end; it++)
     {
       Vec p;
-      try
+      
+      p[0] = std::stof((*it)[1].str());
+      p[1] = std::stof((*it)[2].str());
+      
+      if (it->length() == 0 || (*it)[1].str().empty() || (*it)[2].str().empty())
       {
-        p[0] = static_cast<double>(footprint_xml[i][0]);
-        p[1] = static_cast<double>(footprint_xml[i][1]);
-      }
-      catch (XmlRpc::XmlRpcException& e)
-      {
-        throw std::runtime_error(("Invalid footprint xml." + e.getMessage()).c_str());
+        throw std::runtime_error("Invalid footprint.");
       }
 
       v.push_back(p);
     }
+    if (v.size() < 3)
+    {
+      throw std::runtime_error("Invalid footprint.");
+    }
     v.push_back(v.front());
   }
-  geometry_msgs::PolygonStamped toMsg() const
+  geometry_msgs::msg::PolygonStamped toMsg() const
   {
-    geometry_msgs::PolygonStamped msg;
+    geometry_msgs::msg::PolygonStamped msg;
 
     msg.polygon.points.clear();
     msg.header.frame_id = "base_link";
     for (const auto& p : v)
     {
-      geometry_msgs::Point32 point;
+      geometry_msgs::msg::Point32 point;
       point.x = p[0];
       point.y = p[1];
       point.z = 0;

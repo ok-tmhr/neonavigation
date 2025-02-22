@@ -32,10 +32,10 @@
 
 #include <memory>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 
@@ -52,14 +52,14 @@ protected:
   UpdatedRegion region_prev_;
 
 public:
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config)
   {
   }
   void setHandler(CALLBACK cb)
   {
     cb_ = cb;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
   {
   }
 
@@ -69,14 +69,14 @@ protected:
     return 0;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
       const UpdatedRegion& region)
   {
   }
 };
 
 class Costmap3dStaticLayerOutput
-  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dStaticLayerOutput>;
@@ -91,8 +91,8 @@ protected:
 };
 
 class Costmap3dUpdateLayerOutput
-  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
-                                                     const typename costmap_cspace_msgs::CSpace3DUpdate::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
+                                                     const typename costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr&)>>
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
@@ -106,9 +106,9 @@ protected:
     return true;
   }
 
-  costmap_cspace_msgs::CSpace3DUpdate::Ptr generateUpdateMsg()
+  costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr generateUpdateMsg()
   {
-    costmap_cspace_msgs::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::CSpace3DUpdate);
+    costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::msg::CSpace3DUpdate);
     update_msg->header = map_->header;
     map_->header.stamp = region_.stamp_;
 
