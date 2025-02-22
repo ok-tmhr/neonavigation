@@ -246,6 +246,7 @@ public:
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
           costmap_cspace::Costmap3dLayerClassLoader::loadClass(layer_config.type);
         costmap_->addLayer(layer, overlay_mode);
+      layer_config.unknown_cost = this->declare_parameter(layer_config.name + ".unknown_cost", -1);
       layer->loadConfig(layer_config);
 
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
@@ -290,6 +291,7 @@ public:
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(layer_config.type);
         costmap_->addLayer(layer, overlay_mode);
+        layer_config.unknown_cost = this->declare_parameter(layer_config.name + ".unknown_cost", -1);
         layer->loadConfig(layer_config);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
@@ -320,6 +322,7 @@ public:
       layer_config.linear_spread = linear_spread;
 
       auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
+      layer_config.unknown_cost = this->declare_parameter(layer_config.name + ".unknown_cost", -1);
       layer->loadConfig(layer_config);
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
           "map_overlay", 1,
