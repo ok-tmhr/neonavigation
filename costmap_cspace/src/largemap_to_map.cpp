@@ -33,9 +33,9 @@
 #include <string>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -44,13 +44,13 @@
 class LargeMapToMapNode
 {
 private:
-  ros::NodeHandle pnh_;
-  ros::NodeHandle nh_;
-  ros::Publisher pub_map_;
-  ros::Subscriber sub_largemap_;
-  ros::Timer timer_;
+  rclcpp::NodeHandle pnh_;
+  rclcpp::NodeHandle nh_;
+  rclcpp::Publisher pub_map_;
+  rclcpp::Subscriber sub_largemap_;
+  rclcpp::Timer timer_;
 
-  nav_msgs::OccupancyGrid::ConstPtr large_map_;
+  nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
 
@@ -70,7 +70,7 @@ public:
     neonavigation_common::compat::checkCompatMode();
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
+    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
         pnh_, "map", 1, true);
     sub_largemap_ = nh_.subscribe("map", 2, &LargeMapToMapNode::cbLargeMap, this);
@@ -107,15 +107,15 @@ public:
 
     double hz;
     pnh_.param("hz", hz, 1.0);
-    timer_ = nh_.createTimer(ros::Duration(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
+    timer_ = nh_.createTimer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
   }
 
 private:
-  void cbTimer(const ros::TimerEvent& event)
+  void cbTimer(const rclcpp::TimerEvent& event)
   {
     publishMap();
   }
-  void cbLargeMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  void cbLargeMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     large_map_ = msg;
   }
@@ -126,16 +126,16 @@ private:
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, ros::Time(0)), trans);
+      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0)), trans);
     }
     catch (tf2::TransformException& e)
     {
       return;
     }
 
-    nav_msgs::OccupancyGrid map;
+    nav_msgs::msg::OccupancyGrid map;
     map.header.frame_id = large_map_->header.frame_id;
-    map.header.stamp = ros::Time::now();
+    map.header.stamp = this->get_clock()->now();
     map.info = large_map_->info;
     map.info.width = width_;
     map.info.height = width_;
@@ -194,16 +194,16 @@ private:
       }
     }
 
-    pub_map_.publish(map);
+    pub_map_->publish(map);
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "largemap_to_map");
+  rclcpp::init(argc, argv, "largemap_to_map");
 
   LargeMapToMapNode conv;
-  ros::spin();
+  rclcpp::spin();
 
   return 0;
 }
