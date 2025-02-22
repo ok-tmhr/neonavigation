@@ -47,7 +47,16 @@ $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 ament_target_dependencies(costmap_3d rclcpp ${COLCON_DEPENDS})
 
-# add_executable(laserscan_to_map src/laserscan_to_map.cpp)
+add_executable(laserscan_to_map src/laserscan_to_map.cpp)
+target_link_libraries(laserscan_to_map rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(laserscan_to_map ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(laserscan_to_map PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(laserscan_to_map rclcpp ${COLCON_DEPENDS})
 # target_link_libraries(laserscan_to_map ${catkin_LIBRARIES})
 # add_dependencies(laserscan_to_map ${catkin_EXPORTED_TARGETS})
 
