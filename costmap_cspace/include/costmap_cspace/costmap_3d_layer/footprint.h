@@ -31,18 +31,17 @@
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <memory>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
-
-#include <xmlrpcpp/XmlRpcValue.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/cspace3_cache.h>
@@ -57,7 +56,7 @@ public:
 
 protected:
   float footprint_radius_;
-  geometry_msgs::PolygonStamped footprint_;
+  geometry_msgs::msg::PolygonStamped footprint_;
   float linear_expand_;
   float linear_spread_;
   int linear_spread_min_cost_;
@@ -81,17 +80,16 @@ public:
     , range_max_(0)
   {
   }
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config)
   {
     const int linear_spread_min_cost =
-        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
+        config.linear_spread_min_cost;
     setExpansion(
-        static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]),
+        config.linear_expand,
+        config.linear_spread,
         linear_spread_min_cost);
-    setFootprint(costmap_cspace::Polygon(config["footprint"]));
-    if (config.hasMember("keep_unknown"))
-      setKeepUnknown(config["keep_unknown"]);
+    setFootprint(costmap_cspace::Polygon(config.footprint));
+    setKeepUnknown(config.keep_unknown);
   }
   void setKeepUnknown(const bool keep_unknown)
   {
@@ -106,12 +104,12 @@ public:
     linear_spread_ = linear_spread;
     linear_spread_min_cost_ = linear_spread_min_cost;
 
-    ROS_ASSERT(linear_expand >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_expand));
-    ROS_ASSERT(linear_spread >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_spread));
-    ROS_ASSERT(linear_spread_min_cost_ >= 0);
-    ROS_ASSERT(linear_spread_min_cost_ < 100);
+    assert(linear_expand >= 0.0);
+    assert(std::isfinite(linear_expand));
+    assert(linear_spread >= 0.0);
+    assert(std::isfinite(linear_spread));
+    assert(linear_spread_min_cost_ >= 0);
+    assert(linear_spread_min_cost_ < 100);
   }
   void setFootprint(const Polygon footprint)
   {
@@ -123,7 +121,7 @@ public:
   {
     return footprint_p_;
   }
-  const geometry_msgs::PolygonStamped& getFootprintMsg() const
+  const geometry_msgs::msg::PolygonStamped& getFootprintMsg() const
   {
     return footprint_;
   }
@@ -139,9 +137,9 @@ public:
   {
     return cs_template_;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
   {
-    ROS_ASSERT(footprint_p_.v.size() > 2);
+    assert(footprint_p_.v.size() > 2);
 
     range_max_ =
         std::ceil((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
@@ -199,7 +197,7 @@ protected:
     return false;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
       const UpdatedRegion& region)
   {
     if (root_)
@@ -209,10 +207,10 @@ protected:
   }
   virtual void generateCSpace(
       CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
       const UpdatedRegion& region)
   {
-    ROS_ASSERT(ang_grid_ > 0);
+    assert(ang_grid_ > 0);
     clearTravelableArea(map, msg);
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
@@ -223,7 +221,7 @@ protected:
   // Clear travelable area in OVERWRITE mode
   void clearTravelableArea(
       CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg)
+      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     if (overlay_mode_ != OVERWRITE || root_)
     {
@@ -273,7 +271,7 @@ protected:
 
   void generateSpecifiedCSpace(
       CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
       const size_t yaw)
   {
     const auto getMaskedRange = [this, msg](const int pos, Rect& result)

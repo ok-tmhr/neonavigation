@@ -33,7 +33,7 @@
 #include <memory>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/footprint.h>
 #include <costmap_cspace/costmap_3d_layer/plain.h>
@@ -58,7 +58,7 @@ public:
   {
     ang_resolution_ = ang_resolution;
 
-    ROS_ASSERT(ang_resolution_ > 0);
+    assert(ang_resolution_ > 0);
   }
   template <typename T>
   typename T::Ptr addRootLayer()

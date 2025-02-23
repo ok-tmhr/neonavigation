@@ -32,7 +32,7 @@
 
 #include <memory>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace costmap_cspace
 {
@@ -73,14 +73,14 @@ public:
   char& e(const int& x, const int& y, const int& yaw)
   {
     const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
+    assert(addr < array_size_);
 
     return c_[addr];
   }
   const char& e(const int& x, const int& y, const int& yaw) const
   {
     const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
+    assert(addr < array_size_);
 
     return c_[addr];
   }
