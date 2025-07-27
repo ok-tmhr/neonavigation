@@ -37,54 +37,52 @@
 #include <string>
 #include <vector>
 
-#include <boost/thread.hpp>
+#include <thread>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <dynamic_reconfigure/client.h>
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <rosgraph_msgs/Clock.h>
+// #include <dynamic_reconfigure/client.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/utils.h>
 
-#include <trajectory_tracker/TrajectoryTrackerConfig.h>
-#include <trajectory_tracker_msgs/PathWithVelocity.h>
-#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
+// #include <trajectory_tracker/TrajectoryTrackerConfig.h>
+#include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
+#include <trajectory_tracker_msgs/msg/trajectory_tracker_status.hpp>
 
 #include <gtest/gtest.h>
 
 class TrajectoryTrackerTest : public ::testing::Test
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Subscriber sub_cmd_vel_;
-  ros::Subscriber sub_status_;
-  ros::Publisher pub_path_;
-  ros::Publisher pub_path_vel_;
-  ros::Publisher pub_odom_;
-  tf2_ros::TransformBroadcaster tfb_;
-  ros::Time cmd_vel_time_;
-  ros::Time trans_stamp_last_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
+  rclcpp::Subscription<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr sub_status_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
+  rclcpp::Publisher<trajectory_tracker_msgs::msg::PathWithVelocity>::SharedPtr pub_path_vel_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
+  std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;
+  rclcpp::Time cmd_vel_time_;
+  rclcpp::Time trans_stamp_last_;
 
-  ros::Time initial_cmd_vel_time_;
+  rclcpp::Time initial_cmd_vel_time_;
   int cmd_vel_count_;
 
-  std::list<nav_msgs::Odometry> odom_buffer_;
+  std::list<nav_msgs::msg::Odometry> odom_buffer_;
 
 protected:
-  std_msgs::Header last_path_header_;
+  std_msgs::msg::Header last_path_header_;
   double error_lin_;
   double error_large_lin_;
   double error_ang_;
-  using ParamType = trajectory_tracker::TrajectoryTrackerConfig;
-  std::unique_ptr<dynamic_reconfigure::Client<ParamType>> dynamic_reconfigure_client_;
+  // using ParamType = trajectory_tracker::TrajectoryTrackerConfig;
+  // std::unique_ptr<dynamic_reconfigure::Client<ParamType>> dynamic_reconfigure_client_;
 
   double getYaw() const
   {
@@ -96,16 +94,16 @@ protected:
   }
 
 private:
-  void cbStatus(const trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr& msg)
+  void cbStatus(const trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr& msg)
   {
     status_ = msg;
   }
-  void cbCmdVel(const geometry_msgs::Twist::ConstPtr& msg)
+  void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
   {
-    const ros::Time now = ros::Time::now();
-    if (cmd_vel_time_ == ros::Time(0))
+    const rclcpp::Time now = node_->now();
+    if (cmd_vel_time_ == rclcpp::Time(0))
       cmd_vel_time_ = now;
-    const float dt = std::min((now - cmd_vel_time_).toSec(), 0.1);
+    const float dt = std::min((now - cmd_vel_time_).seconds(), 0.1);
     const tf2::Transform pose_diff(tf2::Quaternion(tf2::Vector3(0, 0, 1), msg->angular.z * dt),
                                    tf2::Vector3(msg->linear.x * dt, 0, 0));
     pose_ *= pose_diff;
@@ -115,66 +113,72 @@ private:
   }
 
 public:
+  rclcpp::Node::SharedPtr node_;
   tf2::Transform pose_;
-  trajectory_tracker_msgs::TrajectoryTrackerStatus::ConstPtr status_;
-  geometry_msgs::Twist::ConstPtr cmd_vel_;
-  ros::Duration delay_;
+  trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr status_;
+  geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
+  rclcpp::Duration delay_;
 
   TrajectoryTrackerTest()
-    : nh_("")
-    , pnh_("~")
+  : delay_(rclcpp::Duration(0, 0))
   {
-    sub_cmd_vel_ = nh_.subscribe(
-        "cmd_vel", 1, &TrajectoryTrackerTest::cbCmdVel, this);
-    sub_status_ = nh_.subscribe(
-        "trajectory_tracker/status", 1, &TrajectoryTrackerTest::cbStatus, this);
-    pub_path_ = nh_.advertise<nav_msgs::Path>("path", 1, true);
-    pub_path_vel_ = nh_.advertise<trajectory_tracker_msgs::PathWithVelocity>("path_velocity", 1, true);
-    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 10, true);
+    node_ = rclcpp::Node::make_shared("test_trajectory_tracker");
+    using std::placeholders::_1;
+    sub_cmd_vel_ = node_->create_subscription<geometry_msgs::msg::Twist>(
+      "cmd_vel", 1, std::bind(&TrajectoryTrackerTest::cbCmdVel, this, _1));
+    sub_status_ = node_->create_subscription<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>(
+      "trajectory_tracker/status", 1, std::bind(&TrajectoryTrackerTest::cbStatus, this, _1));
+    pub_path_ = node_->create_publisher<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local());
+    pub_path_vel_ = node_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
+        "path_velocity", rclcpp::QoS(1).transient_local());
+    pub_odom_ = node_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10).transient_local());
 
+    node_->set_parameter(rclcpp::Parameter("use_sim_time", true));
     double delay;
-    pnh_.param("odom_delay", delay, 0.0);
-    delay_ = ros::Duration(delay);
-    pnh_.param("error_lin", error_lin_, 0.01);
-    pnh_.param("error_large_lin", error_large_lin_, 0.1);
-    pnh_.param("error_ang", error_ang_, 0.01);
+    delay = node_->declare_parameter<double>("odom_delay", 0.0);
+    delay_ = rclcpp::Duration::from_seconds(delay);
+    error_lin_ = node_->declare_parameter<double>("error_lin", 0.01);
+    error_large_lin_ = node_->declare_parameter<double>("error_large_lin", 0.1);
+    error_ang_ = node_->declare_parameter<double>("error_ang", 0.01);
 
-    dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
+    // dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
+    tfb_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);
 
-    ros::Rate wait(10);
+    rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
     {
       wait.sleep();
-      ros::spinOnce();
-      if (pub_path_.getNumSubscribers() > 0)
+      rclcpp::spin_some(node_);
+      if (pub_path_->get_subscription_count() > 0)
         break;
     }
   }
   void initState(const tf2::Transform& pose)
   {
     // Wait trajectory_tracker node
-    ros::Rate rate(10);
-    const auto start = ros::WallTime::now();
-    while (ros::ok())
+    rclcpp::Rate rate(10);
+    rclcpp::Clock clock(RCL_STEADY_TIME);
+    const auto start = clock.now();
+    while (rclcpp::ok())
     {
-      nav_msgs::Path path;
+      nav_msgs::msg::Path path;
       path.header.frame_id = "odom";
-      path.header.stamp = ros::Time::now();
-      pub_path_.publish(path);
+      path.header.stamp = clock.now();
+      pub_path_->publish(path);
 
       pose_ = pose;
       publishTransform();
 
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
       if (status_ &&
-          status_->status != trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
+          status_->status != trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(ros::WallTime::now(), start + ros::WallDuration(10.0))
+      ASSERT_LT(clock.now(), start + rclcpp::Duration::from_seconds(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
-    ros::Duration(0.5).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
@@ -183,37 +187,38 @@ public:
   }
   void waitUntilStart(const std::function<void()> func = nullptr)
   {
-    ros::Rate rate(50);
-    const auto start = ros::WallTime::now();
-    while (ros::ok())
+    rclcpp::Rate rate(50);
+    rclcpp::Clock clock(RCL_STEADY_TIME);
+    const auto start = clock.now();
+    while (rclcpp::ok())
     {
       if (func)
         func();
 
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
       if (status_ &&
-          status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING)
+          status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(ros::WallTime::now(), start + ros::WallDuration(10.0))
+      ASSERT_LT(clock.now(), start + rclcpp::Duration::from_seconds(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
-    initial_cmd_vel_time_ = ros::Time::now();
+    initial_cmd_vel_time_ = clock.now();
     cmd_vel_count_ = 0;
   }
   void publishPath(const std::vector<Eigen::Vector3d>& poses)
   {
-    nav_msgs::Path path;
+    nav_msgs::msg::Path path;
     path.header.frame_id = "odom";
-    path.header.stamp = ros::Time::now();
+    path.header.stamp = node_->now();
 
     for (const Eigen::Vector3d& p : poses)
     {
       const Eigen::Quaterniond q(Eigen::AngleAxisd(p[2], Eigen::Vector3d(0, 0, 1)));
 
-      geometry_msgs::PoseStamped pose;
+      geometry_msgs::msg::PoseStamped pose;
       pose.header.frame_id = path.header.frame_id;
       pose.pose.position.x = p[0];
       pose.pose.position.y = p[1];
@@ -224,20 +229,20 @@ public:
 
       path.poses.push_back(pose);
     }
-    pub_path_.publish(path);
+    pub_path_->publish(path);
     last_path_header_ = path.header;
   }
   void publishPathVelocity(const std::vector<Eigen::Vector4d>& poses)
   {
-    trajectory_tracker_msgs::PathWithVelocity path;
+    trajectory_tracker_msgs::msg::PathWithVelocity path;
     path.header.frame_id = "odom";
-    path.header.stamp = ros::Time::now();
+    path.header.stamp = node_->now();
 
     for (const Eigen::Vector4d& p : poses)
     {
       const Eigen::Quaterniond q(Eigen::AngleAxisd(p[2], Eigen::Vector3d(0, 0, 1)));
 
-      trajectory_tracker_msgs::PoseStampedWithVelocity pose;
+      trajectory_tracker_msgs::msg::PoseStampedWithVelocity pose;
       pose.header.frame_id = path.header.frame_id;
       pose.pose.position.x = p[0];
       pose.pose.position.y = p[1];
@@ -250,15 +255,15 @@ public:
       path.poses.push_back(pose);
     }
     // needs sleep to prevent that the empty path from initState arrives later.
-    ros::Duration(0.5).sleep();
-    pub_path_vel_.publish(path);
+    rclcpp::sleep_for(std::chrono::microseconds(500));
+    pub_path_vel_->publish(path);
     last_path_header_ = path.header;
   }
   void publishTransform()
   {
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = node_->now();
 
-    nav_msgs::Odometry odom;
+    nav_msgs::msg::Odometry odom;
     odom.header.frame_id = "odom";
     odom.header.stamp = now;
     odom.child_frame_id = "base_link";
@@ -271,25 +276,25 @@ public:
     publishTransform(odom);
   }
 
-  void publishTransform(const nav_msgs::Odometry& odom)
+  void publishTransform(const nav_msgs::msg::Odometry& odom)
   {
     odom_buffer_.push_back(odom);
 
-    const ros::Time pub_time = odom.header.stamp - delay_;
+    const rclcpp::Time pub_time = rclcpp::Time(odom.header.stamp) - delay_;
 
     while (odom_buffer_.size() > 0)
     {
-      nav_msgs::Odometry odom = odom_buffer_.front();
-      if (odom.header.stamp > pub_time)
+      nav_msgs::msg::Odometry odom = odom_buffer_.front();
+      if (rclcpp::Time(odom.header.stamp) > pub_time)
         break;
 
       odom_buffer_.pop_front();
 
       if (odom.header.stamp != trans_stamp_last_)
       {
-        geometry_msgs::TransformStamped trans;
+        geometry_msgs::msg::TransformStamped trans;
         trans.header = odom.header;
-        trans.header.stamp += ros::Duration(0.1);
+        trans.header.stamp = rclcpp::Time(trans.header.stamp) + rclcpp::Duration::from_seconds(0.1);
         trans.child_frame_id = odom.child_frame_id;
         trans.transform.translation.x = odom.pose.pose.position.x;
         trans.transform.translation.y = odom.pose.pose.position.y;
@@ -298,8 +303,8 @@ public:
         trans.transform.rotation.z = odom.pose.pose.orientation.z;
         trans.transform.rotation.w = odom.pose.pose.orientation.w;
 
-        tfb_.sendTransform(trans);
-        pub_odom_.publish(odom);
+        tfb_->sendTransform(trans);
+        pub_odom_->publish(odom);
       }
       trans_stamp_last_ = odom.header.stamp;
     }
@@ -307,36 +312,11 @@ public:
 
   double getCmdVelFrameRate() const
   {
-    return cmd_vel_count_ / (cmd_vel_time_ - initial_cmd_vel_time_).toSec();
-  }
-
-  bool getConfig(ParamType& config) const
-  {
-    const ros::WallTime time_limit = ros::WallTime::now() + ros::WallDuration(10.0);
-    while (time_limit > ros::WallTime::now())
-    {
-      if (dynamic_reconfigure_client_->getCurrentConfiguration(config, ros::Duration(0.1)))
-      {
-        return true;
-      }
-      ros::spinOnce();
-    }
-    return false;
-  }
-
-  bool setConfig(const ParamType& config)
-  {
-    // Wait until parameter server becomes ready
-    ParamType dummy;
-    if (!getConfig(dummy))
-    {
-      return false;
-    }
-    return dynamic_reconfigure_client_->setConfiguration(config);
+    return cmd_vel_count_ / (cmd_vel_time_ - initial_cmd_vel_time_).seconds();
   }
 };
 
-namespace trajectory_tracker_msgs
+namespace trajectory_tracker_msgs::msg
 {
 std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstPtr& msg)
 {
@@ -346,11 +326,11 @@ std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstP
   }
   else
   {
-    os << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+    os << "  header: " << rclcpp::Time(msg->header.stamp).seconds() << " " << msg->header.frame_id << std::endl
        << "  distance_remains: " << msg->distance_remains << std::endl
        << "  angle_remains: " << msg->angle_remains << std::endl
        << "  status: " << msg->status << std::endl
-       << "  path_header: " << msg->path_header.stamp << " " << msg->header.frame_id;
+       << "  path_header: " << rclcpp::Time(msg->path_header.stamp).seconds() << " " << msg->header.frame_id;
   }
   return os;
 }

@@ -49,14 +49,14 @@ ament_target_dependencies(trajectory_saver ${AMENT_CMAKE_DEPENDS})
 # add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
 
 
-# if(CATKIN_ENABLE_TESTING)
-#   find_package(rostest REQUIRED)
-#   add_subdirectory(test)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
+  add_subdirectory(test)
 
-#   find_package(roslint REQUIRED)
-#   roslint_cpp()
-#   roslint_add_test()
-# endif()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 
 install(TARGETS
