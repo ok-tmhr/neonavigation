@@ -119,10 +119,10 @@ public:
   geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
   rclcpp::Duration delay_;
 
-  TrajectoryTrackerTest()
+  TrajectoryTrackerTest(const std::string& node_name = "test_trajectory_tracker")
   : delay_(rclcpp::Duration(0, 0))
   {
-    node_ = rclcpp::Node::make_shared("test_trajectory_tracker");
+    node_ = rclcpp::Node::make_shared(node_name);
     using std::placeholders::_1;
     sub_cmd_vel_ = node_->create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel", 1, std::bind(&TrajectoryTrackerTest::cbCmdVel, this, _1));
