@@ -163,8 +163,8 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
 
-  RecorderNode rec;
-  rec.spin();
+  auto rec = std::make_shared<RecorderNode>();
+  rec->spin();
 
   return 0;
 }

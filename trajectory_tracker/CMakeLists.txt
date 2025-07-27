@@ -43,9 +43,11 @@ ament_target_dependencies(trajectory_recorder ${AMENT_CMAKE_DEPENDS})
 add_executable(trajectory_saver src/trajectory_saver.cpp)
 ament_target_dependencies(trajectory_saver ${AMENT_CMAKE_DEPENDS})
 
-# add_executable(trajectory_server src/trajectory_server.cpp)
-# target_link_libraries(trajectory_server ${catkin_LIBRARIES})
-# add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
+add_executable(trajectory_server src/trajectory_server.cpp)
+target_include_directories(trajectory_server PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(trajectory_server ${AMENT_CMAKE_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -61,7 +63,7 @@ endif()
 install(TARGETS
     trajectory_recorder
     trajectory_saver
-    # trajectory_server
+    trajectory_server
     trajectory_tracker
   ARCHIVE DESTINATION lib/${PROJECT_NAME}
   LIBRARY DESTINATION lib/${PROJECT_NAME}
