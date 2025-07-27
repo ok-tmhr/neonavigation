@@ -1,10 +1,15 @@
 include_directories(include)
 
-# catkin_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
-# target_link_libraries(test_${PROJECT_NAME}_filter ${catkin_LIBRARIES})
+ament_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
+target_include_directories(test_${PROJECT_NAME}_filter PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+  $<INSTALL_INTERFACE:include>)
 
-# catkin_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
-# target_link_libraries(test_${PROJECT_NAME}_path2d ${catkin_LIBRARIES})
+ament_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
+target_include_directories(test_${PROJECT_NAME}_path2d PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(test_${PROJECT_NAME}_path2d ${AMENT_CMAKE_DEPENDS})
 
 # add_rostest_gtest(test_trajectory_recorder test/trajectory_recorder_rostest.test
 #     src/test_trajectory_recorder.cpp)
