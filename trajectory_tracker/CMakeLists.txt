@@ -37,9 +37,8 @@ target_include_directories(trajectory_tracker PUBLIC
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(trajectory_tracker ${AMENT_CMAKE_DEPENDS} Eigen3)
 
-# add_executable(trajectory_recorder src/trajectory_recorder.cpp)
-# target_link_libraries(trajectory_recorder ${catkin_LIBRARIES})
-# add_dependencies(trajectory_recorder ${catkin_EXPORTED_TARGETS})
+add_executable(trajectory_recorder src/trajectory_recorder.cpp)
+ament_target_dependencies(trajectory_recorder ${AMENT_CMAKE_DEPENDS})
 
 add_executable(trajectory_saver src/trajectory_saver.cpp)
 ament_target_dependencies(trajectory_saver ${AMENT_CMAKE_DEPENDS})
@@ -60,7 +59,7 @@ endif()
 
 
 install(TARGETS
-    # trajectory_recorder
+    trajectory_recorder
     trajectory_saver
     # trajectory_server
     trajectory_tracker
