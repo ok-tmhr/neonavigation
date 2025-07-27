@@ -13,7 +13,6 @@ set(AMENT_CMAKE_DEPENDS
   tf2_geometry_msgs
   tf2_ros
 
-  # neonavigation_common
   trajectory_tracker_msgs
 )
 
@@ -33,7 +32,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_executable(trajectory_tracker src/trajectory_tracker.cpp)
-# target_link_libraries(trajectory_tracker ${catkin_LIBRARIES})
 target_include_directories(trajectory_tracker PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
@@ -43,9 +41,8 @@ ament_target_dependencies(trajectory_tracker ${AMENT_CMAKE_DEPENDS} Eigen3)
 # target_link_libraries(trajectory_recorder ${catkin_LIBRARIES})
 # add_dependencies(trajectory_recorder ${catkin_EXPORTED_TARGETS})
 
-# add_executable(trajectory_saver src/trajectory_saver.cpp)
-# target_link_libraries(trajectory_saver ${catkin_LIBRARIES})
-# add_dependencies(trajectory_saver ${catkin_EXPORTED_TARGETS})
+add_executable(trajectory_saver src/trajectory_saver.cpp)
+ament_target_dependencies(trajectory_saver ${AMENT_CMAKE_DEPENDS})
 
 # add_executable(trajectory_server src/trajectory_server.cpp)
 # target_link_libraries(trajectory_server ${catkin_LIBRARIES})
@@ -64,7 +61,7 @@ ament_target_dependencies(trajectory_tracker ${AMENT_CMAKE_DEPENDS} Eigen3)
 
 install(TARGETS
     # trajectory_recorder
-    # trajectory_saver
+    trajectory_saver
     # trajectory_server
     trajectory_tracker
   ARCHIVE DESTINATION lib/${PROJECT_NAME}
