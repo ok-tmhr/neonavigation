@@ -189,10 +189,9 @@ private:
 };
 
 TrackerNode::TrackerNode()
-  : rclcpp::Node("trajectory_tracker", rclcpp::NodeOptions().allow_undeclared_parameters(true))
+  : rclcpp::Node("trajectory_tracker", rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true))
   , is_path_updated_(false)
 {
-  // TODO: test the parameters' namespace is "~"
   frame_robot_ = this->declare_parameter<std::string>("frame_robot", "base_link");
   frame_odom_ = this->declare_parameter<std::string>("frame_odom", "odom");
   topic_path_ = this->declare_parameter<std::string>("path", "path");
@@ -203,7 +202,6 @@ TrackerNode::TrackerNode()
   max_dt_ = this->declare_parameter<double>("max_dt", 0.1);
   odom_timeout_sec_ = this->declare_parameter<double>("odom_timeout_sec", 0.1);
 
-  // TODO: test the topics' namespace is ""
   using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
     "path", 2, std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
@@ -212,9 +210,8 @@ TrackerNode::TrackerNode()
   sub_vel_ = this->create_subscription<std_msgs::msg::Float32>(
     "speed", 20, std::bind(&TrackerNode::cbSpeed, this, _1));
   pub_vel_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
-  // TODO: namespace "~" for status, tracking topic
-  pub_status_ = this->create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("status", rclcpp::QoS(10).transient_local());
-  pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("tracking", rclcpp::QoS(10).transient_local());
+  pub_status_ = this->create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("~/status", rclcpp::QoS(10).transient_local());
+  pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", rclcpp::QoS(10).transient_local());
   if (use_odom_)
   {
     // ! ROS 2 cannot specity TCP_NoDelay for a topic
@@ -709,8 +706,8 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  trajectory_tracker::TrackerNode track;
-  track.spin();
+  auto track = std::make_shared<trajectory_tracker::TrackerNode>();
+  track->spin();
 
   return 0;
 }
