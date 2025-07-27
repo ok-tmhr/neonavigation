@@ -11,10 +11,11 @@ target_include_directories(test_${PROJECT_NAME}_path2d PUBLIC
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(test_${PROJECT_NAME}_path2d ${AMENT_CMAKE_DEPENDS})
 
+ament_add_gtest(test_trajectory_recorder src/test_trajectory_recorder.cpp)
 # add_rostest_gtest(test_trajectory_recorder test/trajectory_recorder_rostest.test
 #     src/test_trajectory_recorder.cpp)
 # target_link_libraries(test_trajectory_recorder ${catkin_LIBRARIES})
-# add_dependencies(test_trajectory_recorder trajectory_recorder)
+ament_target_dependencies(test_trajectory_recorder ${AMENT_CMAKE_DEPENDS})
 
 ament_add_gtest(test_trajectory_tracker src/test_trajectory_tracker.cpp)
 # target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES} ${Boost_LIBRARIES})
