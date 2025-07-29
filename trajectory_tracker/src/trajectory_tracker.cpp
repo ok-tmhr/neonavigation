@@ -51,7 +51,6 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-// #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -67,7 +66,6 @@
 #include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
 #include <trajectory_tracker_msgs/msg/trajectory_tracker_status.hpp>
 
-// #include <trajectory_tracker/TrajectoryTrackerConfig.h>
 #include <trajectory_tracker/basic_control.h>
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
@@ -129,14 +127,13 @@ private:
   std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
+  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_hander_;
+  std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> callback_handler_;
   double odom_timeout_sec_;
 
   trajectory_tracker::Path2D path_;
   std_msgs::msg::Header path_header_;
   bool is_path_updated_;
-
-  // mutable boost::recursive_mutex parameter_server_mutex_;
-  // dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
 
   bool use_odom_;
   bool predict_odom_;
@@ -185,11 +182,10 @@ private:
   void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
   TrackingResult getTrackingResult(
       const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double);
-  // void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
 TrackerNode::TrackerNode()
-  : rclcpp::Node("trajectory_tracker", rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true))
+  : rclcpp::Node("trajectory_tracker")
   , is_path_updated_(false)
 {
   frame_robot_ = this->declare_parameter<std::string>("frame_robot", "base_link");
@@ -201,6 +197,38 @@ TrackerNode::TrackerNode()
   predict_odom_ = this->declare_parameter<bool>("predict_odom", true);
   max_dt_ = this->declare_parameter<double>("max_dt", 0.1);
   odom_timeout_sec_ = this->declare_parameter<double>("odom_timeout_sec", 0.1);
+  look_forward_ = this->declare_parameter<double>("look_forward", 0.5);
+  curv_forward_ = this->declare_parameter<double>("curv_forward", 0.5);
+  k_[0]=this->declare_parameter<double>("k_dist", 1.0);
+  k_[1]=this->declare_parameter<double>("k_ang", 1.0);
+  k_[2]=this->declare_parameter<double>("k_avel", 1.0);
+  gain_at_vel_=this->declare_parameter<double>("gain_at_vel", 0.0);
+  d_lim_=this->declare_parameter<double>("dist_lim", 0.5);
+  d_stop_=this->declare_parameter<double>("dist_stop", 2.0);
+  rotate_ang_=this->declare_parameter<double>("rotate_ang", 0.78539816339);
+  vel_[0]=this->declare_parameter<double>("max_vel", 0.5);
+  vel_[1]=this->declare_parameter<double>("max_angvel", 1.0);
+  acc_[0]=this->declare_parameter<double>("max_acc", 1.0);
+  acc_[1]=this->declare_parameter<double>("max_angacc", 2.0);
+  acc_toc_[0]=acc_[0]*this->declare_parameter<double>("acc_toc_factor", 0.9);
+  acc_toc_[1]=acc_[1]* this->declare_parameter<double>("angacc_toc_factor", 0.9);
+  path_step_ = this->declare_parameter<int>("path_step", 1);
+  goal_tolerance_dist_ = this->declare_parameter<double>("goal_tolerance_dist", 0.2);
+  goal_tolerance_ang_ = this->declare_parameter<double>("goal_tolerance_ang", 0.1);
+  stop_tolerance_dist_ = this->declare_parameter<double>("stop_tolerance_dist", 0.1);
+  stop_tolerance_ang_ = this->declare_parameter<double>("stop_tolerance_ang", 0.05);
+  no_pos_cntl_dist_ = this->declare_parameter<double>("no_position_control_dist", 0.0);
+  min_track_path_ = this->declare_parameter<double>("min_tracking_path", 0.0);
+  allow_backward_ = this->declare_parameter<bool>("allow_backward", true);
+  limit_vel_by_avel_ = this->declare_parameter<bool>("limit_vel_by_avel", false);
+  check_old_path_ = this->declare_parameter<bool>("check_old_path", false);
+  epsilon_ = this->declare_parameter<double>("epsilon", 0.001);
+  use_time_optimal_control_ = this->declare_parameter<bool>("use_time_optimal_control", true);
+  time_optimal_control_future_gain_ = this->declare_parameter<double>("time_optimal_control_future_gain", 1.5);
+  k_ang_rotation_ = this->declare_parameter<double>("k_ang_rotation", 1.0);
+  k_avel_rotation_ = this->declare_parameter<double>("k_avel_rotation", 1.0);
+  goal_tolerance_lin_vel_ = this->declare_parameter<double>("goal_tolerance_lin_vel", 0.0);
+  goal_tolerance_ang_vel_ = this->declare_parameter<double>("goal_tolerance_ang_vel", 0.0);
 
   using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
@@ -222,46 +250,48 @@ TrackerNode::TrackerNode()
   tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
-  // boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
-  // parameter_server_.setCallback(boost::bind(&TrackerNode::cbParameter, this, _1, _2));
-}
+  parameter_hander_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+  std::map<std::string, std::function<void(const rclcpp::Parameter&)>> on_parameter_map = {
+      {"look_forward", [this](const rclcpp::Parameter& p) { look_forward_ = p.as_double(); }},
+      {"curv_forward", [this](const rclcpp::Parameter& p) { curv_forward_ = p.as_double(); }},
+      {"k_dist", [this](const rclcpp::Parameter& p) {k_[0]=p.as_double();}},
+      {"k_ang", [this](const rclcpp::Parameter& p) {k_[1]=p.as_double();}},
+      {"k_avel", [this](const rclcpp::Parameter& p) {k_[2]=p.as_double();}},
+      {"gain_at_vel", [this](const rclcpp::Parameter& p) {gain_at_vel_=p.as_double();}},
+      {"dist_lim", [this](const rclcpp::Parameter& p) {d_lim_=p.as_double();}},
+      {"dist_stop", [this](const rclcpp::Parameter& p) {d_stop_=p.as_double();}},
+      {"rotate_ang", [this](const rclcpp::Parameter& p) {rotate_ang_=p.as_double();}},
+      {"max_vel", [this](const rclcpp::Parameter& p) {vel_[0]=p.as_double();}},
+      {"max_angvel", [this](const rclcpp::Parameter& p) {vel_[1]=p.as_double();}},
+      {"max_acc", [this](const rclcpp::Parameter& p) {acc_[0]=p.as_double();acc_toc_[0]=acc_[0]*p.as_double();}},
+      {"max_angacc", [this](const rclcpp::Parameter& p) {acc_[1]=p.as_double();acc_toc_[1]=acc_[1]* p.as_double();}},
+      {"acc_toc_factor", [this](const rclcpp::Parameter& p) {acc_toc_[0]=acc_[0]*p.as_double();}},
+      {"angacc_toc_factor", [this](const rclcpp::Parameter& p) {acc_toc_[1]=acc_[1]* p.as_double();}},
+      {"path_step", [this](const rclcpp::Parameter& p) {path_step_ = p.as_int();}},
+      {"goal_tolerance_dist", [this](const rclcpp::Parameter& p) {goal_tolerance_dist_ = p.as_double();}},
+      {"goal_tolerance_ang", [this](const rclcpp::Parameter& p) {goal_tolerance_ang_ = p.as_double();}},
+      {"stop_tolerance_dist", [this](const rclcpp::Parameter& p) {stop_tolerance_dist_ = p.as_double();}},
+      {"stop_tolerance_ang", [this](const rclcpp::Parameter& p) {stop_tolerance_ang_ = p.as_double();}},
+      {"no_position_control_dist", [this](const rclcpp::Parameter& p) {no_pos_cntl_dist_ = p.as_double();}},
+      {"min_tracking_path", [this](const rclcpp::Parameter& p) {min_track_path_ = p.as_double();}},
+      {"allow_backward", [this](const rclcpp::Parameter& p) {allow_backward_ = p.as_bool();}},
+      {"limit_vel_by_avel", [this](const rclcpp::Parameter& p) {limit_vel_by_avel_ = p.as_bool();}},
+      {"check_old_path", [this](const rclcpp::Parameter& p) {check_old_path_ = p.as_bool();}},
+      {"epsilon", [this](const rclcpp::Parameter& p) {epsilon_ = p.as_double();}},
+      {"use_time_optimal_control", [this](const rclcpp::Parameter& p) {use_time_optimal_control_ = p.as_bool();}},
+      {"time_optimal_control_future_gain", [this](const rclcpp::Parameter& p) {time_optimal_control_future_gain_ = p.as_double();}},
+      {"k_ang_rotation", [this](const rclcpp::Parameter& p) {k_ang_rotation_ = p.as_double();}},
+      {"k_avel_rotation", [this](const rclcpp::Parameter& p) {k_avel_rotation_ = p.as_double();}},
+      {"goal_tolerance_lin_vel", [this](const rclcpp::Parameter& p) {goal_tolerance_lin_vel_ = p.as_double();}},
+      {"goal_tolerance_ang_vel", [this](const rclcpp::Parameter& p) {goal_tolerance_ang_vel_ = p.as_double();}},
+    };
 
-// void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */)
-// {
-//   boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
-//   look_forward_ = config.look_forward;
-//   curv_forward_ = config.curv_forward;
-//   k_[0] = config.k_dist;
-//   k_[1] = config.k_ang;
-//   k_[2] = config.k_avel;
-//   gain_at_vel_ = config.gain_at_vel;
-//   d_lim_ = config.dist_lim;
-//   d_stop_ = config.dist_stop;
-//   rotate_ang_ = config.rotate_ang;
-//   vel_[0] = config.max_vel;
-//   vel_[1] = config.max_angvel;
-//   acc_[0] = config.max_acc;
-//   acc_[1] = config.max_angacc;
-//   acc_toc_[0] = acc_[0] * config.acc_toc_factor;
-//   acc_toc_[1] = acc_[1] * config.angacc_toc_factor;
-//   path_step_ = config.path_step;
-//   goal_tolerance_dist_ = config.goal_tolerance_dist;
-//   goal_tolerance_ang_ = config.goal_tolerance_ang;
-//   stop_tolerance_dist_ = config.stop_tolerance_dist;
-//   stop_tolerance_ang_ = config.stop_tolerance_ang;
-//   no_pos_cntl_dist_ = config.no_position_control_dist;
-//   min_track_path_ = config.min_tracking_path;
-//   allow_backward_ = config.allow_backward;
-//   limit_vel_by_avel_ = config.limit_vel_by_avel;
-//   check_old_path_ = config.check_old_path;
-//   epsilon_ = config.epsilon;
-//   use_time_optimal_control_ = config.use_time_optimal_control;
-//   time_optimal_control_future_gain_ = config.time_optimal_control_future_gain;
-//   k_ang_rotation_ = config.k_ang_rotation;
-//   k_avel_rotation_ = config.k_avel_rotation;
-//   goal_tolerance_lin_vel_ = config.goal_tolerance_lin_vel;
-//   goal_tolerance_ang_vel_ = config.goal_tolerance_ang_vel;
-// }
+  for (const auto& [key, callback]: on_parameter_map)
+  {
+    callback_handler_.push_back(parameter_hander_->add_parameter_callback(key, callback));
+  }
+
+}
 
 TrackerNode::~TrackerNode()
 {
