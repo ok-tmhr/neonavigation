@@ -107,7 +107,6 @@ ServerNode::ServerNode()
   using std::placeholders::_2;
   srv_change_path_ = this->create_service<trajectory_tracker_msgs::srv::ChangePath>(
     "change_path", std::bind(&ServerNode::change, this, _1, _2));
-  srv_im_fb_ = std::make_shared<interactive_markers::InteractiveMarkerServer>(get_namespace(), shared_from_this());
   update_num_ = 0;
   max_markers_ = 0;
 }
@@ -166,7 +165,11 @@ void ServerNode::updateIM()
   viz.type = viz.KEEP_ALIVE;
   viz.seq_num = update_num_++;
   viz.server_id = "Path";
-  srv_im_fb_->clear();
+  if (!srv_im_fb_){
+    srv_im_fb_ = std::make_shared<interactive_markers::InteractiveMarkerServer>(get_namespace(), shared_from_this());
+  } else {
+    srv_im_fb_->clear();
+  }
   int i = 0;
   for (auto& p : path_.poses)
   {

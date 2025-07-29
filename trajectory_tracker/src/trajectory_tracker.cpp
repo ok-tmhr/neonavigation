@@ -218,7 +218,7 @@ TrackerNode::TrackerNode()
   stop_tolerance_dist_ = this->declare_parameter<double>("stop_tolerance_dist", 0.1);
   stop_tolerance_ang_ = this->declare_parameter<double>("stop_tolerance_ang", 0.05);
   no_pos_cntl_dist_ = this->declare_parameter<double>("no_position_control_dist", 0.0);
-  min_track_path_ = this->declare_parameter<double>("min_tracking_path", 0.0);
+  min_track_path_ = this->declare_parameter<double>("min_tracking_path", no_pos_cntl_dist_);
   allow_backward_ = this->declare_parameter<bool>("allow_backward", true);
   limit_vel_by_avel_ = this->declare_parameter<bool>("limit_vel_by_avel", false);
   check_old_path_ = this->declare_parameter<bool>("check_old_path", false);
