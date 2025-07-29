@@ -44,7 +44,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock(RCL_STEADY_TIME);
+  rclcpp::Clock clock;
   const rclcpp::Time start = clock.now();
   while (rclcpp::ok())
   {
@@ -60,7 +60,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node_);
+    rclcpp::spin_some(shared_from_this());
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -70,7 +70,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
     }
 
     // Check multiple times to assert overshoot.
@@ -106,7 +106,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
     rclcpp::Rate rate(50);
-    rclcpp::Clock clock(RCL_STEADY_TIME);
+    rclcpp::Clock clock;
     const rclcpp::Time start = clock.now();
     while (rclcpp::ok())
     {
@@ -123,7 +123,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
       if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
@@ -133,7 +133,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
       {
         publishTransform();
         rate.sleep();
-        rclcpp::spin_some(node_);
+        rclcpp::spin_some(shared_from_this());
       }
 
       // Check multiple times to assert overshoot.
@@ -168,7 +168,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
     rclcpp::Rate rate(50);
-    rclcpp::Clock clock(RCL_STEADY_TIME);
+    rclcpp::Clock clock;
     const rclcpp::Time start = clock.now();
     while (rclcpp::ok())
     {
@@ -185,7 +185,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
       if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
@@ -195,7 +195,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
       {
         publishTransform();
         rate.sleep();
-        rclcpp::spin_some(node_);
+        rclcpp::spin_some(shared_from_this());
       }
 
       // Check multiple times to assert overshoot.
@@ -226,7 +226,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock(RCL_STEADY_TIME);
+  rclcpp::Clock clock;
   const rclcpp::Time start = clock.now();
   while (rclcpp::ok())
   {
@@ -242,7 +242,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node_);
+    rclcpp::spin_some(shared_from_this());
 
     if (0.3 < getPos()[0] && getPos()[0] < 0.35)
     {
@@ -262,7 +262,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
     }
 
     // Check multiple times to assert overshoot.
@@ -295,7 +295,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock(RCL_STEADY_TIME);
+  rclcpp::Clock clock;
   const rclcpp::Time start = clock.now();
   while (rclcpp::ok())
   {
@@ -311,7 +311,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node_);
+    rclcpp::spin_some(shared_from_this());
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -321,7 +321,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
     }
 
     // Check multiple times to assert overshoot.
@@ -371,7 +371,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
         rclcpp::Rate rate(50);
-        rclcpp::Clock clock(RCL_STEADY_TIME);
+        rclcpp::Clock clock;
         const rclcpp::Time start = clock.now();
         for (int i = 0; rclcpp::ok(); ++i)
         {
@@ -388,7 +388,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
           publishTransform();
           rate.sleep();
-          rclcpp::spin_some(node_);
+          rclcpp::spin_some(shared_from_this());
 
           if (cmd_vel_ && i > 5)
           {
@@ -413,7 +413,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           {
             publishTransform();
             rate.sleep();
-            rclcpp::spin_some(node_);
+            rclcpp::spin_some(shared_from_this());
           }
 
           // Check multiple times to assert overshoot.
@@ -448,7 +448,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock(RCL_STEADY_TIME);
+  rclcpp::Clock clock;
   const rclcpp::Time start = clock.now();
   while (rclcpp::ok())
   {
@@ -464,7 +464,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node_);
+    rclcpp::spin_some(shared_from_this());
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -474,7 +474,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
     }
 
     // Check multiple times to assert overshoot.
@@ -511,7 +511,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
   int cnt_arrive_local_goal(0);
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock(RCL_STEADY_TIME);
+  rclcpp::Clock clock;
   const rclcpp::Time start = clock.now();
   for (int i = 0; rclcpp::ok(); i++)
   {
@@ -527,7 +527,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node_);
+    rclcpp::spin_some(shared_from_this());
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
 
@@ -555,7 +555,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
     }
 
     // Check multiple times to assert overshoot.
@@ -581,7 +581,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock(RCL_STEADY_TIME);
+  rclcpp::Clock clock;
   const rclcpp::Time start = clock.now();
   while (rclcpp::ok())
   {
@@ -597,7 +597,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node_);
+    rclcpp::spin_some(shared_from_this());
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -607,7 +607,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(shared_from_this());
     }
 
     // Check multiple times to assert overshoot.
@@ -624,14 +624,18 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 void timeSource()
 {
   auto node = rclcpp::Node::make_shared("time_source");
-  bool use_sim_time = node->declare_parameter<bool>("/use_sim_time", true);
+  auto parameter_client = std::make_shared<rclcpp::SyncParametersClient>(node, "trajectory_tracker");
+  parameter_client->wait_for_service(std::chrono::seconds(5));
+
+  bool use_sim_time = parameter_client->get_parameter<bool>("use_sim_time");
   if (!use_sim_time)
     return;
 
   auto pub = node->create_publisher<rosgraph_msgs::msg::Clock>("clock", 1);
 
   rclcpp::WallRate rate(400.0);  // 400% speed
-  rclcpp::Time time = node->now();
+  rclcpp::Clock clock;
+  rclcpp::Time time = clock.now();
   while (rclcpp::ok())
   {
     rosgraph_msgs::msg::Clock clock;
@@ -649,9 +653,5 @@ int main(int argc, char** argv)
 
   std::thread time_thread(timeSource);
 
-  int result = RUN_ALL_TESTS();
-
-  time_thread.join();
-
-  return result;
+  return RUN_ALL_TESTS();
 }
