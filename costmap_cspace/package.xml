@@ -25,7 +25,6 @@
   <depend>tf2_sensor_msgs</depend>
 
   <depend>costmap_cspace_msgs</depend>
-  <depend>neonavigation_common</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

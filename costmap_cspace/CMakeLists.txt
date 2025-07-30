@@ -11,7 +11,6 @@ set(COLCON_DEPENDS
   tf2_sensor_msgs
 
   costmap_cspace_msgs
-  # neonavigation_common
 )
 
 find_package(ament_cmake REQUIRED)
