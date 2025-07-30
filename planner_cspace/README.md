@@ -11,23 +11,23 @@ planner_3d node provides 2-D/3-DOF seamless global-local path and motion planner
 
 * ~/costmap (new: costmap) [costmap_cspace_msgs::CSpace3D]
 * ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::CSpace3DUpdate]
-* ~/goal (new: move_base_simple/goal) [geometry_msgs::PoseStamped]
+* ~/goal (new: move_base_simple/goal) [geometry_msgs::msg::PoseStamped]
 * /tf
 
 ### Published topics
 
-* ~/path (new: path) [nav_msgs::Path]
+* ~/path (new: path) [nav_msgs::msg::Path]
 * ~/debug [sensor_msgs::PointCloud]
     > debug output of planner internal costmap
 * ~/remembered [sensor_msgs::PointCloud]
     > debug output of obstacles probability estimated by BBF
-* ~/path_start [geometry_msgs::PoseStamped]
-* ~/path_end [geometry_msgs::PoseStamped]
-* ~/status [planner_cspace_msgs::PlannerStatus]
+* ~/path_start [geometry_msgs::msg::PoseStamped]
+* ~/path_end [geometry_msgs::msg::PoseStamped]
+* ~/status [planner_cspace_msgs::msg::PlannerStatus]
 
 ### Services
 
-* ~/forget (new: forget_planning_cost) [std_srvs::Empty]
+* ~/forget (new: forget_planning_cost) [std_srvs::srv::Empty]
 
 ### Called services
 
@@ -76,7 +76,7 @@ planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (
 ### Published topics
 
 * ~/trajectory_out (new: joint_trajectory) [trajectory_msgs::JointTrajectory]
-* ~/status [planner_cspace_msgs::PlannerStatus]
+* ~/status [planner_cspace_msgs::msg::PlannerStatus]
 
 ### Services
 

@@ -31,11 +31,11 @@
 #include <cstddef>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 
 #include <gtest/gtest.h>
 
@@ -56,7 +56,7 @@ protected:
     pub_map_update_ = nh_.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1);
   }
 
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     ++cnt_status_;
   }
@@ -69,23 +69,23 @@ protected:
 
   bool waitStatus(const ros::Duration timeout)
   {
-    const ros::Time deadline = ros::Time::now() + timeout;
-    while (ros::ok())
+    const rclcpp::Time deadline = rclcpp::Time::now() + timeout;
+    while (rclcpp::ok())
     {
       ros::Duration(0.1).sleep();
-      ros::spinOnce();
+      rclcpp::spin_some();
 
       if (cnt_status_ > 5)
         return true;
 
-      if (deadline < ros::Time::now())
+      if (deadline < rclcpp::Time::now())
         break;
     }
     return false;
   }
 
   costmap_cspace_msgs::CSpace3D generateCSpace3DMsg(
-      const ros::Time stamp, const size_t w, const size_t h, const size_t angle)
+      const rclcpp::Time stamp, const size_t w, const size_t h, const size_t angle)
   {
     costmap_cspace_msgs::CSpace3D msg;
     msg.header.stamp = stamp;
@@ -105,7 +105,7 @@ protected:
   }
 
   costmap_cspace_msgs::CSpace3DUpdate generateCSpace3DUpdateMsg(
-      const ros::Time stamp,
+      const rclcpp::Time stamp,
       const size_t x, const size_t y, const size_t yaw,
       const size_t w, const size_t h, const size_t angle)
   {
@@ -129,98 +129,98 @@ protected:
 
 TEST_F(Planner3DMapSize, OutOfRangeX)
 {
-  const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  const rclcpp::Time now = rclcpp::Time::now();
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x80, 4));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x80, 4));
   ros::Duration(0.5).sleep();
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeY)
 {
-  const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  const rclcpp::Time now = rclcpp::Time::now();
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x81, 4));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x81, 4));
   ros::Duration(0.5).sleep();
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAngle)
 {
-  const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  const rclcpp::Time now = rclcpp::Time::now();
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x80, 8));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x80, 8));
   ros::Duration(0.5).sleep();
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAll)
 {
-  const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  const rclcpp::Time now = rclcpp::Time::now();
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x81, 8));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x81, 8));
   ros::Duration(0.5).sleep();
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, ZeroSizeUpdate)
 {
-  const ros::Time now = ros::Time::now();
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  const rclcpp::Time now = rclcpp::Time::now();
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(now, 1, 1, 0, 0, 0, 0));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 1, 1, 0, 0, 0, 0));
   ros::Duration(0.5).sleep();
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdate)
 {
-  const ros::Time now = ros::Time::now();
-  const ros::Time next = now + ros::Duration(0.1);
+  const rclcpp::Time now = rclcpp::Time::now();
+  const rclcpp::Time next = now + ros::Duration(0.1);
 
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
 
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
   ros::Duration(0.1).sleep();
 
-  pub_map_.publish(generateCSpace3DMsg(next, 0x81, 0x81, 8));
+  pub_map_->publish(generateCSpace3DMsg(next, 0x81, 0x81, 8));
   ros::Duration(0.5).sleep();
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdateShrink)
 {
-  const ros::Time now = ros::Time::now();
-  const ros::Time next = now + ros::Duration(0.1);
+  const rclcpp::Time now = rclcpp::Time::now();
+  const rclcpp::Time next = now + ros::Duration(0.1);
 
-  pub_map_.publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
+  pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
   ros::Duration(0.1).sleep();
 
-  pub_map_update_.publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
+  pub_map_update_->publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
   ros::Duration(0.1).sleep();
 
-  pub_map_.publish(generateCSpace3DMsg(next, 0x40, 0x40, 4));
+  pub_map_->publish(generateCSpace3DMsg(next, 0x40, 0x40, 4));
   ros::Duration(0.5).sleep();
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   cnt_status_ = 0;
   ASSERT_TRUE(waitStatus(ros::Duration(2)));
 }
@@ -228,7 +228,7 @@ TEST_F(Planner3DMapSize, IllOrderedUpdateShrink)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_planner_cspace_map_size");
+  rclcpp::init(argc, argv, "test_planner_cspace_map_size");
 
   return RUN_ALL_TESTS();
 }

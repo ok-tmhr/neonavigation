@@ -30,14 +30,14 @@
 #include <cstddef>
 #include <memory>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <actionlib/client/simple_action_client.h>
 
 #include <move_base_msgs/MoveBaseAction.h>
-#include <nav_msgs/Path.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <nav_msgs/msg/path.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <std_msgs/Empty.h>
 
 #include <gtest/gtest.h>
@@ -52,8 +52,8 @@ protected:
   tf2_ros::TransformBroadcaster tfb_;
   ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr status_;
-  nav_msgs::Path::ConstPtr path_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status_;
+  nav_msgs::msg::Path::ConstPtr path_;
   ActionClientPtr move_base_;
 
   NavigateBoundary()
@@ -61,15 +61,15 @@ protected:
     move_base_ = std::make_shared<ActionClient>("/move_base");
     if (!move_base_->waitForServer(ros::Duration(10.0)))
     {
-      ROS_ERROR("Failed to connect move_base action");
+      RCLCPP_ERROR(this->get_logger(), "Failed to connect move_base action");
       exit(EXIT_FAILURE);
     }
   }
 
   void publishTransform(const double x, const double y)
   {
-    geometry_msgs::TransformStamped trans;
-    trans.header.stamp = ros::Time::now();
+    geometry_msgs::msg::TransformStamped trans;
+    trans.header.stamp = rclcpp::Time::now();
     trans.header.frame_id = "odom";
     trans.child_frame_id = "base_link";
     trans.transform.translation.x = x;
@@ -87,18 +87,18 @@ protected:
 
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = ros::Time::now();
+    goal.target_pose.header.stamp = rclcpp::Time::now();
     goal.target_pose.pose.orientation.w = 1;
     goal.target_pose.pose.position.x = 1.4;
     goal.target_pose.pose.position.y = 0.6;
     move_base_->sendGoal(goal);
     ros::Duration(0.5).sleep();
   }
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     path_ = msg;
   }
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     status_ = msg;
   }
@@ -118,7 +118,7 @@ TEST_F(NavigateBoundary, StartPositionScan)
       for (int i = 0; i < 100; ++i)
       {
         ros::Duration(0.05).sleep();
-        ros::spinOnce();
+        rclcpp::spin_some();
         if (path_ && status_)
           break;
       }
@@ -146,10 +146,10 @@ TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
       for (int i = 0; i < 10; ++i)
       {
         std_msgs::Empty msg;
-        pub_trigger.publish(msg);
+        pub_trigger->publish(msg);
 
         ros::Duration(0.2).sleep();
-        ros::spinOnce();
+        rclcpp::spin_some();
         if (path_ && status_)
           break;
       }
@@ -164,7 +164,7 @@ TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_navigate_boundary");
+  rclcpp::init(argc, argv, "test_navigate_boundary");
 
   return RUN_ALL_TESTS();
 }

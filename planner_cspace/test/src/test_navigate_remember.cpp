@@ -33,14 +33,14 @@
 #include <unistd.h>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <std_srvs/Empty.h>
+#include <nav_msgs/msg/path.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <std_srvs/srv/empty.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
@@ -55,9 +55,9 @@ protected:
   ros::NodeHandle nh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
-  nav_msgs::Path::ConstPtr path_;
+  nav_msgs::msg::Path::ConstPtr path_;
   ros::Subscriber sub_costmap_;
   ros::Subscriber sub_status_;
   ros::Subscriber sub_path_;
@@ -79,7 +79,7 @@ protected:
             "forget_planning_cost");
     pub_initial_pose_ =
         nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
-    pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+    pub_patrol_nodes_ = nh_.advertise<nav_msgs::msg::Path>("patrol_nodes", 1, true);
   }
 
   virtual void SetUp()
@@ -87,22 +87,22 @@ protected:
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
     srv_forget_.waitForExistence(ros::Duration(10.0));
-    ros::Rate rate(10.0);
+    rclcpp::Rate rate(10.0);
 
     geometry_msgs::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
     pose.pose.pose.position.x = 2.1;
     pose.pose.pose.position.y = 3.0;
     pose.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-    pub_initial_pose_.publish(pose);
+    pub_initial_pose_->publish(pose);
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
+    const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(15);
 
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = rclcpp::Time::now();
       if (now > deadline)
       {
         FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
@@ -113,11 +113,11 @@ protected:
       }
     }
 
-    while (ros::ok() && !costmap_)
+    while (rclcpp::ok() && !costmap_)
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = rclcpp::Time::now();
       if (now > deadline)
       {
         FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
@@ -135,7 +135,7 @@ protected:
     costmap_ = msg;
     std::cerr << test_scope_ << msg->header.stamp << " Costmap received." << std::endl;
   }
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
@@ -143,7 +143,7 @@ protected:
     }
     planner_status_ = msg;
   }
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     if (!path_ || path_->poses.size() != msg->poses.size())
     {
@@ -161,9 +161,9 @@ protected:
       path_ = msg;
     }
   }
-  tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
+  tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
-    geometry_msgs::TransformStamped trans_tmp =
+    geometry_msgs::msg::TransformStamped trans_tmp =
         tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
@@ -195,17 +195,17 @@ protected:
 
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
-    ros::spinOnce();
+    rclcpp::spin_some();
     ros::Duration(0.2).sleep();
 
-    ros::Rate wait(10);
-    ros::Time deadline = ros::Time::now() + ros::Duration(10);
-    while (ros::ok())
+    rclcpp::Rate wait(10);
+    rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       wait.sleep();
 
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = rclcpp::Time::now();
 
       if (now > deadline)
       {
@@ -226,29 +226,29 @@ protected:
 
 TEST_F(NavigateWithRememberUpdates, Navigate)
 {
-  ros::spinOnce();
+  rclcpp::spin_some();
   ros::Duration(0.2).sleep();
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.5;
   path.poses[0].pose.position.y = 5.6;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(120);
-  while (ros::ok())
+  rclcpp::Rate wait(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(120);
+  while (rclcpp::ok())
   {
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -286,7 +286,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_navigate_remember");
+  rclcpp::init(argc, argv, "test_navigate_remember");
 
   return RUN_ALL_TESTS();
 }

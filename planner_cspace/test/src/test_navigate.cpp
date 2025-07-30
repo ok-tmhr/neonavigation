@@ -34,19 +34,19 @@
 #include <unistd.h>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <nav_msgs/msg/path.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <std_msgs/Empty.h>
-#include <std_srvs/Empty.h>
+#include <std_srvs/srv/empty.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
-#include <trajectory_tracker_msgs/PathWithVelocity.h>
+#include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
 
 #include <planner_cspace/planner_status.h>
 
@@ -61,10 +61,10 @@ protected:
   tf2_ros::TransformListener tfl_;
   nav_msgs::OccupancyGrid::ConstPtr map_;
   nav_msgs::OccupancyGrid::Ptr map_local_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
-  nav_msgs::Path::ConstPtr path_;
-  trajectory_tracker_msgs::PathWithVelocity::ConstPtr path_vel_;
+  nav_msgs::msg::Path::ConstPtr path_;
+  trajectory_tracker_msgs::msg::PathWithVelocity::ConstPtr path_vel_;
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_local_;
   ros::Subscriber sub_costmap_;
@@ -99,7 +99,7 @@ protected:
     pub_map_local_ = nh_.advertise<nav_msgs::OccupancyGrid>("overlay", 1, true);
     pub_initial_pose_ =
         nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
-    pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+    pub_patrol_nodes_ = nh_.advertise<nav_msgs::msg::Path>("patrol_nodes", 1, true);
   }
 
   void SetUp() override
@@ -108,13 +108,13 @@ protected:
         "[" + std::to_string(getpid()) + "/" +
         ::testing::UnitTest::GetInstance()->current_test_info()->name() + "] ";
 
-    ros::Rate rate(10.0);
+    rclcpp::Rate rate(10.0);
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(15.0);
-    while (ros::ok())
+    const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(15.0);
+    while (rclcpp::ok())
     {
       rate.sleep();
-      ASSERT_LT(ros::Time::now(), deadline)
+      ASSERT_LT(rclcpp::Time::now(), deadline)
           << test_scope_ << "Initialization timeout: "
           << "sub_map:" << sub_map_.getNumPublishers() << " "
           << "sub_map_local:" << sub_map_local_.getNumPublishers() << " "
@@ -143,13 +143,13 @@ protected:
     pose.pose.pose.position.x = 2.5;
     pose.pose.pose.position.y = 0.45;
     pose.pose.pose.orientation.z = 1.0;
-    pub_initial_pose_.publish(pose);
+    pub_initial_pose_->publish(pose);
 
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = rclcpp::Time::now();
       ASSERT_LT(now, deadline) << test_scope_ << "Initial transform timeout";
       if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
       {
@@ -157,27 +157,27 @@ protected:
       }
     }
 
-    while (ros::ok() && !map_)
+    while (rclcpp::ok() && !map_)
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
-      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial map timeout";
+      ASSERT_LT(rclcpp::Time::now(), deadline) << test_scope_ << "Initial map timeout";
     }
-    pub_map_.publish(map_);
-    std::cerr << test_scope_ << ros::Time::now() << " Map applied." << std::endl;
+    pub_map_->publish(map_);
+    std::cerr << test_scope_ << rclcpp::Time::now() << " Map applied." << std::endl;
 
-    while (ros::ok() && !map_local_)
+    while (rclcpp::ok() && !map_local_)
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
-      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial local map timeout";
+      ASSERT_LT(rclcpp::Time::now(), deadline) << test_scope_ << "Initial local map timeout";
     }
 
-    while (ros::ok() && !costmap_)
+    while (rclcpp::ok() && !costmap_)
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
-      ASSERT_LT(ros::Time::now(), deadline) << test_scope_ << "Initial costmap timeout";
+      ASSERT_LT(rclcpp::Time::now(), deadline) << test_scope_ << "Initial costmap timeout";
     }
 
     std_srvs::EmptyRequest req;
@@ -189,8 +189,8 @@ protected:
   void TearDown() override
   {
     // Clear goal
-    nav_msgs::Path path;
-    pub_patrol_nodes_.publish(path);
+    nav_msgs::msg::Path path;
+    pub_patrol_nodes_->publish(path);
     ros::Duration(2.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
@@ -212,7 +212,7 @@ protected:
     map_local_.reset(new nav_msgs::OccupancyGrid(*msg));
     std::cerr << test_scope_ << msg->header.stamp << " Local map received." << std::endl;
   }
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
@@ -220,7 +220,7 @@ protected:
     }
     planner_status_ = msg;
   }
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     if (!path_ || path_->poses.size() != msg->poses.size())
     {
@@ -238,7 +238,7 @@ protected:
       path_ = msg;
     }
   }
-  void cbPathVel(const trajectory_tracker_msgs::PathWithVelocity::ConstPtr& msg)
+  void cbPathVel(const trajectory_tracker_msgs::msg::PathWithVelocity::ConstPtr& msg)
   {
     if (!path_vel_ || path_vel_->poses.size() != msg->poses.size())
     {
@@ -262,7 +262,7 @@ protected:
     {
       return;
     }
-    pub_map_local_.publish(map_local_);
+    pub_map_local_->publish(map_local_);
     if ((local_map_apply_cnt_++) % 30 == 0)
     {
       int num_occupied = 0;
@@ -276,9 +276,9 @@ protected:
       std::cerr << test_scope_ << " Local map applied. occupied grids:" << num_occupied << std::endl;
     }
   }
-  tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
+  tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
-    geometry_msgs::TransformStamped trans_tmp =
+    geometry_msgs::msg::TransformStamped trans_tmp =
         tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
@@ -310,21 +310,21 @@ protected:
 
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
-    ros::spinOnce();
+    rclcpp::spin_some();
     ASSERT_TRUE(static_cast<bool>(map_));
     ASSERT_TRUE(static_cast<bool>(map_local_));
     pubMapLocal();
     ros::Duration(0.2).sleep();
 
-    ros::Rate wait(10);
-    ros::Time deadline = ros::Time::now() + ros::Duration(10);
-    while (ros::ok())
+    rclcpp::Rate wait(10);
+    rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
+    while (rclcpp::ok())
     {
       pubMapLocal();
-      ros::spinOnce();
+      rclcpp::spin_some();
       wait.sleep();
 
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = rclcpp::Time::now();
 
       if (now > deadline)
       {
@@ -345,10 +345,10 @@ protected:
 
 TEST_F(Navigate, Navigate)
 {
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(2);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
@@ -359,19 +359,19 @@ TEST_F(Navigate, Navigate)
   path.poses[1].pose.position.x = 1.9;
   path.poses[1].pose.position.y = 2.8;
   path.poses[1].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -1.57));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  while (ros::ok())
+  rclcpp::Rate wait(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(60);
+  while (rclcpp::ok())
   {
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -425,33 +425,33 @@ TEST_F(Navigate, Navigate)
 
 TEST_F(Navigate, NavigateWithLocalMap)
 {
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
   pubMapLocal();
   ros::Duration(0.2).sleep();
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.7;
   path.poses[0].pose.position.y = 2.8;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  while (ros::ok())
+  rclcpp::Rate wait(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(60);
+  while (rclcpp::ok())
   {
     pubMapLocal();
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -510,7 +510,7 @@ TEST_F(Navigate, GlobalPlan)
       nh_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
           "/planner_3d/make_plan");
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
 
   nav_msgs::GetPlanRequest req;
@@ -556,7 +556,7 @@ TEST_F(Navigate, GlobalPlan)
   EXPECT_NEAR(req.goal.pose.position.x, res.plan.poses.back().pose.position.x, 1.0e-5);
   EXPECT_NEAR(req.goal.pose.position.y, res.plan.poses.back().pose.position.y, 1.0e-5);
 
-  for (const geometry_msgs::PoseStamped& p : res.plan.poses)
+  for (const geometry_msgs::msg::PoseStamped& p : res.plan.poses)
   {
     const int map_x = p.pose.position.x / map_->info.resolution;
     const int map_y = p.pose.position.y / map_->info.resolution;
@@ -572,35 +572,35 @@ TEST_F(Navigate, GlobalPlan)
 
 TEST_F(Navigate, RobotIsInRockOnSetGoal)
 {
-  ros::Publisher pub_path = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+  ros::Publisher pub_path = nh_.advertise<nav_msgs::msg::Path>("patrol_nodes", 1, true);
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
   pubMapLocal();
   ros::Duration(0.2).sleep();
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.19;
   path.poses[0].pose.position.y = 1.90;
   path.poses[0].pose.orientation.w = 1.0;
-  pub_path.publish(path);
+  pub_path->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
-  while (ros::ok())
+  rclcpp::Rate wait(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
+  while (rclcpp::ok())
   {
     pubMapLocal();
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -612,7 +612,7 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
       break;
     }
 
-    if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND)
+    if (planner_status_->error == planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND)
     {
       return;
     }
@@ -627,7 +627,7 @@ TEST_F(Navigate, GoalIsInRockRecovered)
     GTEST_SKIP() << "enable_crowd_mode is set";
   }
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
@@ -641,16 +641,16 @@ TEST_F(Navigate, GoalIsInRockRecovered)
   }
   pubMapLocal();
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.25;
   path.poses[0].pose.position.y = 2.55;
   path.poses[0].pose.orientation.w = 1.0;
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
-  waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+  waitForPlannerStatus("Got stuck", planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND);
   ASSERT_FALSE(::testing::Test::HasFailure());
 
   for (int x = 10; x <= 16; ++x)
@@ -661,12 +661,12 @@ TEST_F(Navigate, GoalIsInRockRecovered)
       map_local_->data[pos] = 0;
     }
   }
-  waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
+  waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::msg::PlannerStatus::GOING_WELL);
 }
 
 TEST_F(Navigate, RobotIsInRockOnRecovered)
 {
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
@@ -680,16 +680,16 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
   }
   pubMapLocal();
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.25;
   path.poses[0].pose.position.y = 2.55;
   path.poses[0].pose.orientation.w = 1.0;
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
-  waitForPlannerStatus("Got stuck", planner_cspace_msgs::PlannerStatus::IN_ROCK);
+  waitForPlannerStatus("Got stuck", planner_cspace_msgs::msg::PlannerStatus::IN_ROCK);
   ASSERT_FALSE(::testing::Test::HasFailure());
 
   for (int x = 21; x <= 28; ++x)
@@ -700,7 +700,7 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
       map_local_->data[pos] = 0;
     }
   }
-  waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::PlannerStatus::GOING_WELL);
+  waitForPlannerStatus("Stuck recovered", planner_cspace_msgs::msg::PlannerStatus::GOING_WELL);
 }
 
 TEST_F(Navigate, CrowdEscapeOnSurrounded)
@@ -710,31 +710,31 @@ TEST_F(Navigate, CrowdEscapeOnSurrounded)
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.6;
   path.poses[0].pose.position.y = 2.2;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  while (ros::ok())
+  rclcpp::Rate wait(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(60);
+  while (rclcpp::ok())
   {
     pubMapLocal();
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -757,12 +757,12 @@ TEST_F(Navigate, CrowdEscapeOnSurrounded)
       continue;
     }
 
-    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
+    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::msg::PlannerStatus::GOING_WELL);
 
     const auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
-        planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
+        planner_status_->status == planner_cspace_msgs::msg::PlannerStatus::DONE)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
       return;
@@ -791,27 +791,27 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.6;
   path.poses[0].pose.position.y = 2.2;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
+  rclcpp::Rate wait(10);
   bool unreachable = false;
-  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  ros::Time check_until = deadline;
-  while (ros::ok())
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(60);
+  rclcpp::Time check_until = deadline;
+  while (rclcpp::ok())
   {
     const size_t data_size = map_local_->data.size();
     for (int x = 0; x < map_local_->info.width; ++x)
@@ -821,10 +821,10 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
     }
     pubMapLocal();
 
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -836,14 +836,14 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
       break;
     }
 
-    if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND && !unreachable)
+    if (planner_status_->error == planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND && !unreachable)
     {
       unreachable = true;
       check_until = now + ros::Duration(2);  // Check another 2 seconds that state is not changed
     }
     if (unreachable)
     {
-      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND);
     }
     if (now > check_until)
     {
@@ -859,27 +859,27 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.5;
   path.poses[0].pose.position.y = 0.45;
   path.poses[0].pose.orientation.z = 1.0;
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
+  rclcpp::Rate wait(10);
   bool unreachable = false;
-  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  ros::Time check_until = deadline;
-  while (ros::ok())
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(60);
+  rclcpp::Time check_until = deadline;
+  while (rclcpp::ok())
   {
     const size_t data_size = map_local_->data.size();
     const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
@@ -893,10 +893,10 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
     }
     pubMapLocal();
 
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -908,14 +908,14 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
       break;
     }
 
-    if (planner_status_->error == planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND && !unreachable)
+    if (planner_status_->error == planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND && !unreachable)
     {
       unreachable = true;
       check_until = now + ros::Duration(2);  // Check another 2 seconds that state is not changed
     }
     if (unreachable)
     {
-      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+      EXPECT_EQ(planner_status_->error, planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND);
     }
     if (now > check_until)
     {
@@ -931,27 +931,27 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.5;
   path.poses[0].pose.position.y = 0.45;
   path.poses[0].pose.orientation.z = 1.0;
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
+  rclcpp::Rate wait(10);
   bool unreachable = false;
-  const ros::Time check_until = ros::Time::now() + ros::Duration(2);
+  const rclcpp::Time check_until = rclcpp::Time::now() + ros::Duration(2);
   int cnt_planning = 0;
-  while (ros::ok())
+  while (rclcpp::ok())
   {
     const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
     const size_t gy = path.poses[0].pose.position.y / map_->info.resolution;
@@ -966,18 +966,18 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
     }
     pubMapLocal();
 
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
-    if (planner_status_->status == planner_cspace_msgs::PlannerStatus::DOING)
+    if (planner_status_->status == planner_cspace_msgs::msg::PlannerStatus::DOING)
     {
       if (cnt_planning > 1)
       {
         // Temporary goal is selected from cells with cost<50 by default.
         // No temporary goal should be selected on this map.
-        EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND);
+        EXPECT_EQ(planner_status_->error, planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND);
       }
       cnt_planning++;
     }
@@ -998,25 +998,25 @@ TEST_F(Navigate, ForceTemporaryEscape)
 
   ros::Publisher pub_trigger = nh_.advertise<std_msgs::Empty>("/planner_3d/temporary_escape", 1);
 
-  ros::spinOnce();
+  rclcpp::spin_some();
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.6;
   path.poses[0].pose.position.y = 2.2;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(2);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(60);
-  while (ros::ok())
+  rclcpp::Rate wait(2);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(60);
+  while (rclcpp::ok())
   {
     const size_t data_size = map_local_->data.size();
     map_local_->data.clear();
@@ -1024,12 +1024,12 @@ TEST_F(Navigate, ForceTemporaryEscape)
     pubMapLocal();
 
     std_msgs::Empty msg;
-    pub_trigger.publish(msg);
+    pub_trigger->publish(msg);
 
-    ros::spinOnce();
+    rclcpp::spin_some();
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = rclcpp::Time::now();
 
     if (now > deadline)
     {
@@ -1052,12 +1052,12 @@ TEST_F(Navigate, ForceTemporaryEscape)
       continue;
     }
 
-    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::PlannerStatus::GOING_WELL);
+    EXPECT_EQ(planner_status_->error, planner_cspace_msgs::msg::PlannerStatus::GOING_WELL);
 
     const auto goal_rel = trans.inverse() * goal;
     if (goal_rel.getOrigin().length() < 0.2 &&
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2 &&
-        planner_status_->status == planner_cspace_msgs::PlannerStatus::DONE)
+        planner_status_->status == planner_cspace_msgs::msg::PlannerStatus::DONE)
     {
       std::cerr << test_scope_ << "Navigation success." << std::endl;
       return;
@@ -1068,7 +1068,7 @@ TEST_F(Navigate, ForceTemporaryEscape)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_navigate");
+  rclcpp::init(argc, argv, "test_navigate");
 
   return RUN_ALL_TESTS();
 }

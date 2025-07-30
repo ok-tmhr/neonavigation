@@ -30,7 +30,7 @@
 #include <algorithm>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <tf2/utils.h>
 
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
@@ -39,10 +39,10 @@ namespace planner_cspace
 {
 namespace planner_3d
 {
-bool StartPosePredictor::process(const geometry_msgs::Pose& robot_pose,
+bool StartPosePredictor::process(const geometry_msgs::msg::Pose& robot_pose,
                                  const GridAstar<3, 2>::Gridmap<char, 0x40>& cm,
-                                 const costmap_cspace_msgs::MapMetaData3D& map_info,
-                                 const nav_msgs::Path& previous_path_msg,
+                                 const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
+                                 const nav_msgs::msg::Path& previous_path_msg,
                                  StartPosePredictor::Astar::Vec& result_start_grid)
 {
   clear();
@@ -80,7 +80,7 @@ void planner_cspace::planner_3d::StartPosePredictor::clear()
   preserved_path_length_ = 0.0;
 }
 
-bool StartPosePredictor::removeAlreadyPassed(const geometry_msgs::Pose& start_metric)
+bool StartPosePredictor::removeAlreadyPassed(const geometry_msgs::msg::Pose& start_metric)
 {
   const Eigen::Vector2d robot_pose_2d(start_metric.position.x, start_metric.position.y);
   double dist_err;
@@ -89,7 +89,7 @@ bool StartPosePredictor::removeAlreadyPassed(const geometry_msgs::Pose& start_me
       previous_path_2d_.findNearestWithDistance(previous_path_2d_.begin(), previous_path_2d_.end(), robot_pose_2d);
   if (dist_err > config_.dist_stop_)
   {
-    ROS_WARN("The robot is too far from path. An empty path is published. dist: %f, thr: %f",
+    RCLCPP_WARN(this->get_logger(), "The robot is too far from path. An empty path is published. dist: %f, thr: %f",
              dist_err, config_.dist_stop_);
     return false;
   }
@@ -120,7 +120,7 @@ bool StartPosePredictor::removeAlreadyPassed(const geometry_msgs::Pose& start_me
 }
 
 double StartPosePredictor::getInitialETA(
-    const geometry_msgs::Pose& robot_pose, const trajectory_tracker::Pose2D& initial_path_pose) const
+    const geometry_msgs::msg::Pose& robot_pose, const trajectory_tracker::Pose2D& initial_path_pose) const
 {
   double angle_diff = std::abs(initial_path_pose.yaw_ - tf2::getYaw(robot_pose.orientation));
   angle_diff = (angle_diff > M_PI) ? 2 * M_PI - angle_diff : angle_diff;  // Normalize
@@ -131,13 +131,13 @@ double StartPosePredictor::getInitialETA(
 
 bool StartPosePredictor::buildResults(
     const trajectory_tracker::Path2D::ConstIterator& expected_start_pose_it,
-    const geometry_msgs::Pose& robot_pose,
+    const geometry_msgs::msg::Pose& robot_pose,
     const GridAstar<3, 2>::Gridmap<char, 0x40>& cm,
     StartPosePredictor::Astar::Vec& start_grid)
 {
   if (isPathColliding(previous_path_2d_.begin(), expected_start_pose_it, cm))
   {
-    ROS_WARN("The robot might collide with an obstacle during the next planning. An empty path is published.");
+    RCLCPP_WARN(this->get_logger(), "The robot might collide with an obstacle during the next planning. An empty path is published.");
     clear();
     return false;
   }
@@ -211,14 +211,14 @@ trajectory_tracker::Path2D::ConstIterator StartPosePredictor::getSwitchBack(cons
       if ((config_.prediction_sec_ < local_goal_eta) &&
           (local_goal_eta < config_.switch_back_prediction_sec_))
       {
-        ROS_INFO("The robot will reach a switch back point in %f sec. The next plan starts from the switch back.",
+        RCLCPP_INFO(this->get_logger(), "The robot will reach a switch back point in %f sec. The next plan starts from the switch back.",
                  local_goal_eta);
         return local_goal - 1;
       }
     }
     else
     {
-      ROS_WARN("The switch back point is not placed on a grid center. (%f, %f, %f) -> (%f, %f, %f)",
+      RCLCPP_WARN(this->get_logger(), "The switch back point is not placed on a grid center. (%f, %f, %f) -> (%f, %f, %f)",
                previous_path_2d_[local_goal_index].pos_.x(), previous_path_2d_[local_goal_index].pos_.y(),
                previous_path_2d_[local_goal_index].yaw_, previous_path_2d_[local_goal_index + 1].pos_.x(),
                previous_path_2d_[local_goal_index + 1].pos_.y(), previous_path_2d_[local_goal_index + 1].yaw_);

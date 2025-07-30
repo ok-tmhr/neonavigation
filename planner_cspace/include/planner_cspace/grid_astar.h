@@ -41,7 +41,7 @@
 #include <utility>
 #include <vector>
 
-#include <boost/chrono.hpp>
+#include <chrono>
 
 #include <planner_cspace/reservable_priority_queue.h>
 #include <planner_cspace/cyclic_vec.h>

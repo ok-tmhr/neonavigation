@@ -29,12 +29,12 @@
 
 #include <memory>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/MoveWithToleranceAction.h>
-#include <nav_msgs/Path.h>
+#include <nav_msgs/msg/path.hpp>
 
 #include <neonavigation_common/compatibility.h>
 
@@ -51,14 +51,14 @@ protected:
   std::shared_ptr<MoveBaseClient> act_cli_;
   std::shared_ptr<MoveWithToleranceClient> act_cli_tolerant_;
 
-  nav_msgs::Path path_;
+  nav_msgs::msg::Path path_;
   size_t pos_;
   bool with_tolerance_;
   double tolerance_lin_;
   double tolerance_ang_;
   double tolerance_ang_finish_;
 
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     if (path_.poses.size() > 0)
     {
@@ -106,7 +106,7 @@ public:
   {
     if (path_.poses.size() <= pos_)
     {
-      ROS_WARN("Patrol finished. Waiting next path.");
+      RCLCPP_WARN(this->get_logger(), "Patrol finished. Waiting next path.");
       path_.poses.clear();
 
       return false;
@@ -117,7 +117,7 @@ public:
       planner_cspace_msgs::MoveWithToleranceGoal goal;
 
       goal.target_pose.header = path_.poses[pos_].header;
-      goal.target_pose.header.stamp = ros::Time::now();
+      goal.target_pose.header.stamp = rclcpp::Time::now();
       goal.target_pose.pose = path_.poses[pos_].pose;
       goal.goal_tolerance_lin = tolerance_lin_;
       goal.goal_tolerance_ang = tolerance_ang_;
@@ -130,7 +130,7 @@ public:
       move_base_msgs::MoveBaseGoal goal;
 
       goal.target_pose.header = path_.poses[pos_].header;
-      goal.target_pose.header.stamp = ros::Time::now();
+      goal.target_pose.header.stamp = rclcpp::Time::now();
       goal.target_pose.pose = path_.poses[pos_].pose;
 
       act_cli_->sendGoal(goal);
@@ -141,11 +141,11 @@ public:
   }
   void spin()
   {
-    ros::Rate rate(10.0);
+    rclcpp::Rate rate(10.0);
 
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some();
       rate.sleep();
 
       if (path_.poses.size() == 0)
@@ -165,12 +165,12 @@ public:
               act_cli_->getState();
       if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
       {
-        ROS_INFO("Action has been finished.");
+        RCLCPP_INFO(this->get_logger(), "Action has been finished.");
         sendNextGoal();
       }
       else if (state == actionlib::SimpleClientGoalState::ABORTED)
       {
-        ROS_ERROR("Action has been aborted. Skipping.");
+        RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
         sendNextGoal();
       }
       else if (state == actionlib::SimpleClientGoalState::LOST)
@@ -183,7 +183,7 @@ public:
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "patrol");
+  rclcpp::init(argc, argv, "patrol");
 
   PatrolActionNode pa;
   pa.spin();

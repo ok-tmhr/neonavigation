@@ -40,7 +40,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/chrono.hpp>
+#include <chrono>
 
 #include <planner_cspace/reservable_priority_queue.h>
 

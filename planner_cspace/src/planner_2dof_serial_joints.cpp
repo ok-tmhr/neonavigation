@@ -38,9 +38,9 @@
 
 #include <omp.h>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <sensor_msgs/JointState.h>
 #include <tf2_ros/transform_listener.h>
@@ -156,9 +156,9 @@ private:
   };
   LinkBody links_[2];
 
-  planner_cspace_msgs::PlannerStatus status_;
+  planner_cspace_msgs::msg::PlannerStatus status_;
   sensor_msgs::JointState joint_;
-  ros::Time replan_prev_;
+  rclcpp::Time replan_prev_;
   ros::Duration replan_interval_;
   bool has_joint_states_;
 
@@ -174,15 +174,15 @@ private:
     }
     if (id[0] == -1 || id[1] == -1)
     {
-      ROS_ERROR("joint_state does not contain link group %s.", group_.c_str());
+      RCLCPP_ERROR(this->get_logger(), "joint_state does not contain link group %s.", group_.c_str());
       return;
     }
     links_[0].current_th_ = msg->position[id[0]];
     links_[1].current_th_ = msg->position[id[1]];
     has_joint_states_ = true;
 
-    if ((replan_prev_ + replan_interval_ < ros::Time::now() ||
-         replan_prev_ == ros::Time(0)) &&
+    if ((replan_prev_ + replan_interval_ < rclcpp::Time::now() ||
+         replan_prev_ == rclcpp::Time(0)) &&
         replan_interval_ > ros::Duration(0))
     {
       replan();
@@ -204,12 +204,12 @@ private:
     }
     if (id_[0] == -1 || id_[1] == -1)
     {
-      ROS_ERROR("joint_trajectory does not contains link group %s.", group_.c_str());
+      RCLCPP_ERROR(this->get_logger(), "joint_trajectory does not contains link group %s.", group_.c_str());
       return;
     }
     if (msg->points.size() != 1)
     {
-      ROS_ERROR("single trajectory point required.");
+      RCLCPP_ERROR(this->get_logger(), "single trajectory point required.");
     }
     decltype(cmd_prev_) cmd;
     cmd.first = msg->points[0].time_from_start;
@@ -228,7 +228,7 @@ private:
     if (!has_joint_states_)
       return;
 
-    replan_prev_ = ros::Time::now();
+    replan_prev_ = rclcpp::Time::now();
     if (id_[0] == -1 || id_[1] == -1)
       return;
 
@@ -239,18 +239,18 @@ private:
         static_cast<float>(traj_prev_.points[0].positions[id_[0]]),
         static_cast<float>(traj_prev_.points[0].positions[id_[1]]));
 
-    ROS_INFO("link %s: %0.3f, %0.3f", group_.c_str(),
+    RCLCPP_INFO(this->get_logger(), "link %s: %0.3f, %0.3f", group_.c_str(),
              traj_prev_.points[0].positions[id_[0]],
              traj_prev_.points[0].positions[id_[1]]);
 
-    status_.status = planner_cspace_msgs::PlannerStatus::DOING;
-    status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+    status_.status = planner_cspace_msgs::msg::PlannerStatus::DOING;
+    status_.error = planner_cspace_msgs::msg::PlannerStatus::GOING_WELL;
 
-    ROS_INFO("Start searching");
+    RCLCPP_INFO(this->get_logger(), "Start searching");
     std::list<Astar::Vecf> path;
     if (makePlan(start, end, path))
     {
-      ROS_INFO("Trajectory found");
+      RCLCPP_INFO(this->get_logger(), "Trajectory found");
 
       if (avg_vel_ < 0)
       {
@@ -284,7 +284,7 @@ private:
 
       trajectory_msgs::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = ros::Time(0);
+      out.header.stamp = rclcpp::Time(0);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -344,13 +344,13 @@ private:
         p.positions[1] = (*it)[1];
         out.points.push_back(p);
       }
-      pub_trajectory_.publish(out);
+      pub_trajectory_->publish(out);
     }
     else
     {
       trajectory_msgs::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = ros::Time(0);
+      out.header.stamp = rclcpp::Time(0);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -360,13 +360,13 @@ private:
       p.positions[1] = links_[1].current_th_;
       p.velocities.resize(2);
       out.points.push_back(p);
-      pub_trajectory_.publish(out);
+      pub_trajectory_->publish(out);
 
-      ROS_WARN("Trajectory not found");
+      RCLCPP_WARN(this->get_logger(), "Trajectory not found");
     }
 
-    status_.header.stamp = ros::Time::now();
-    pub_status_.publish(status_);
+    status_.header.stamp = rclcpp::Time::now();
+    pub_status_->publish(status_);
   }
 
 public:
@@ -390,7 +390,7 @@ public:
         nh_, "joint_states",
         pnh_, "joint", 1, &Planner2dofSerialJointsNode::cbJoint, this);
 
-    pub_status_ = nh_group.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
+    pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
 
     nh_group.param("resolution", resolution_, 128);
     pnh_.param("debug_aa", debug_aa_, false);
@@ -398,13 +398,13 @@ public:
     double interval;
     pnh_.param("replan_interval", interval, 0.2);
     replan_interval_ = ros::Duration(interval);
-    replan_prev_ = ros::Time(0);
+    replan_prev_ = rclcpp::Time(0);
 
     int queue_size_limit;
     nh_group.param("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
-    status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+    status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
 
     cm_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     as_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
@@ -434,9 +434,9 @@ public:
     id_[0] = -1;
     id_[1] = -1;
 
-    ROS_INFO("link group: %s", group_.c_str());
-    ROS_INFO(" - link0: %s", links_[0].name_.c_str());
-    ROS_INFO(" - link1: %s", links_[1].name_.c_str());
+    RCLCPP_INFO(this->get_logger(), "link group: %s", group_.c_str());
+    RCLCPP_INFO(this->get_logger(), " - link0: %s", links_[0].name_.c_str());
+    RCLCPP_INFO(this->get_logger(), " - link1: %s", links_[1].name_.c_str());
 
     Astar::Vecf euclid_cost_coef;
     nh_group.param("link0_coef", euclid_cost_coef[0], 1.0f);
@@ -456,9 +456,9 @@ public:
     else if (point_vel_mode.compare("avg") == 0)
       point_vel_ = VEL_AVG;
     else
-      ROS_ERROR("point_vel_mode must be prev/next/avg");
+      RCLCPP_ERROR(this->get_logger(), "point_vel_mode must be prev/next/avg");
 
-    ROS_INFO("Resolution: %d", resolution_);
+    RCLCPP_INFO(this->get_logger(), "Resolution: %d", resolution_);
     Astar::Vec p;
     for (p[0] = 0; p[0] < resolution_ * 2; p[0]++)
     {
@@ -548,19 +548,19 @@ private:
     Astar::Vec s, e;
     metric2Grid(s, sg);
     metric2Grid(e, eg);
-    ROS_INFO("Planning from (%d, %d) to (%d, %d)",
+    RCLCPP_INFO(this->get_logger(), "Planning from (%d, %d) to (%d, %d)",
              s[0], s[1], e[0], e[1]);
 
     if (cm_[s] == 100)
     {
-      ROS_WARN("Path plan failed (current status is in collision)");
-      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+      RCLCPP_WARN(this->get_logger(), "Path plan failed (current status is in collision)");
+      status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     if (cm_[e] == 100)
     {
-      ROS_WARN("Path plan failed (goal status is in collision)");
-      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+      RCLCPP_WARN(this->get_logger(), "Path plan failed (goal status is in collision)");
+      status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     Astar::Vec d = e - s;
@@ -575,7 +575,7 @@ private:
       path.push_back(eg);
       if (s == e)
       {
-        replan_prev_ = ros::Time(0);
+        replan_prev_ = rclcpp::Time(0);
       }
       return true;
     }
@@ -589,12 +589,12 @@ private:
             std::bind(&Planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1, std::placeholders::_2),
             0, cancel, true))
     {
-      ROS_WARN("Path plan failed (goal unreachable)");
-      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+      RCLCPP_WARN(this->get_logger(), "Path plan failed (goal unreachable)");
+      status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     // const auto tnow = std::chrono::high_resolution_clock::now();
-    // ROS_INFO("Path found (%0.3f sec.)",
+    // RCLCPP_INFO(this->get_logger(), "Path found (%0.3f sec.)",
     //   std::chrono::duration<float>(tnow - ts).count());
 
     bool first = false;
@@ -609,7 +609,7 @@ private:
         continue;
       }
       if (i == 0)
-        ROS_INFO("  next: %d, %d", n[0], n[1]);
+        RCLCPP_INFO(this->get_logger(), "  next: %d, %d", n[0], n[1]);
       Astar::Vec n_diff = n - n_prev;
       n_diff.cycle(resolution_, resolution_);
       Astar::Vec n2 = n_prev + n_diff;
@@ -668,7 +668,7 @@ private:
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "planner_2dof_serial_joints");
+  rclcpp::init(argc, argv, "planner_2dof_serial_joints");
   ros::NodeHandle pnh("~");
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;

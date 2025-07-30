@@ -30,7 +30,7 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
 #define PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
 
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 
 namespace planner_cspace
 {
@@ -54,11 +54,11 @@ uint8_t temporaryEscapeStatus2PlannerErrorStatus(const TemporaryEscapeStatus r)
   {
     case TemporaryEscapeStatus::NOT_ESCAPING:
     case TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT:
-      return planner_cspace_msgs::PlannerStatus::GOING_WELL;
+      return planner_cspace_msgs::msg::PlannerStatus::GOING_WELL;
     case TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT:
-      return planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+      return planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
     default:
-      return planner_cspace_msgs::PlannerStatus::INTERNAL_ERROR;
+      return planner_cspace_msgs::msg::PlannerStatus::INTERNAL_ERROR;
   }
 }
 

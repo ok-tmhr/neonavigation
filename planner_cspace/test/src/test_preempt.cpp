@@ -34,8 +34,8 @@
 
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <ros/ros.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <planner_cspace/action_test_base.h>
 
@@ -46,7 +46,7 @@ protected:
   move_base_msgs::MoveBaseGoal CreateGoalInFree()
   {
     move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
+    goal.target_pose.header.stamp = rclcpp::Time::now();
     goal.target_pose.header.frame_id = "map";
     goal.target_pose.pose.position.x = 1.24;
     goal.target_pose.pose.position.y = 0.65;
@@ -61,7 +61,7 @@ protected:
 
 TEST_F(PreemptTest, Preempt)
 {
-  const ros::Time deadline = ros::Time::now() + ros::Duration(5);
+  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(5);
   const ros::Duration wait(1.0);
 
   move_base_->sendGoal(CreateGoalInFree());
@@ -69,7 +69,7 @@ TEST_F(PreemptTest, Preempt)
          actionlib::SimpleClientGoalState::ACTIVE)
   {
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
+    ASSERT_LT(rclcpp::Time::now(), deadline)
         << "Action didn't get active: " << move_base_->getState().toString()
         << statusString();
   }
@@ -78,7 +78,7 @@ TEST_F(PreemptTest, Preempt)
   {
     move_base_->cancelAllGoals();
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
+    ASSERT_LT(rclcpp::Time::now(), deadline)
         << "Action didn't get inactive: " << move_base_->getState().toString()
         << statusString();
   }
@@ -87,16 +87,16 @@ TEST_F(PreemptTest, Preempt)
 
   ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
             move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DONE,
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::DONE,
             planner_status_->status);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_preempt");
+  rclcpp::init(argc, argv, "test_preempt");
 
   ros::AsyncSpinner spinner(1);
   spinner.start();

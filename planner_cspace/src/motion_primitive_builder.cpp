@@ -32,7 +32,7 @@
 #include <utility>
 #include <vector>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
@@ -42,7 +42,7 @@ namespace planner_cspace
 namespace planner_3d
 {
 std::vector<std::vector<MotionPrimitiveBuilder::Vec>> MotionPrimitiveBuilder::build(
-    const costmap_cspace_msgs::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
+    const costmap_cspace_msgs::msg::MapMetaData3D& map_info, const CostCoeff& cc, const int range)
 {
   RotationCache rot_cache;
   rot_cache.reset(map_info.linear_resolution, map_info.angular_resolution, range);

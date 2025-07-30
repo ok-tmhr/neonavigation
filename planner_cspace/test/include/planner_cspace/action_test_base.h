@@ -35,12 +35,12 @@
 
 #include <gtest/gtest.h>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <nav_msgs/GetPlan.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <tf2/utils.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -70,8 +70,8 @@ public:
         node_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
             "/planner_3d/make_plan");
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(10.0);
-    while (ros::ok())
+    const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10.0);
+    while (rclcpp::ok())
     {
       nav_msgs::GetPlanRequest req;
       nav_msgs::GetPlanResponse res;
@@ -89,12 +89,12 @@ public:
         // Planner is ready.
         break;
       }
-      if (ros::Time::now() > deadline)
+      if (rclcpp::Time::now() > deadline)
       {
         FAIL() << "planner_3d didn't receive map";
       }
       ros::Duration(1).sleep();
-      ros::spinOnce();
+      rclcpp::spin_some();
     }
   }
   ~ActionTestBase()
@@ -105,7 +105,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     planner_status_ = msg;
   }
@@ -123,7 +123,7 @@ protected:
   ros::NodeHandle node_;
   ros::Subscriber sub_status_;
   ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   bool map_ready_;
