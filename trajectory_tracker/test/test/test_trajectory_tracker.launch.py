@@ -85,7 +85,7 @@ def generate_test_description():
                 "use_time_optimal_control": use_time_optimal_control,
                 "k_ang_rotation": 8.0,
                 "k_avel_rotation": 5.0,
-            }.items()
+            }
         ],
         output="screen",
     )
