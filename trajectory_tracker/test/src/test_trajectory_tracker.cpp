@@ -60,7 +60,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -70,7 +70,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -123,7 +123,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
       if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
@@ -133,7 +133,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
       {
         publishTransform();
         rate.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(node_);
       }
 
       // Check multiple times to assert overshoot.
@@ -185,7 +185,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
       if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
@@ -195,7 +195,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
       {
         publishTransform();
         rate.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(node_);
       }
 
       // Check multiple times to assert overshoot.
@@ -242,7 +242,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
 
     if (0.3 < getPos()[0] && getPos()[0] < 0.35)
     {
@@ -262,7 +262,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -311,7 +311,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -321,7 +321,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -388,7 +388,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
           publishTransform();
           rate.sleep();
-          rclcpp::spin_some(shared_from_this());
+          rclcpp::spin_some(node_);
 
           if (cmd_vel_ && i > 5)
           {
@@ -413,7 +413,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           {
             publishTransform();
             rate.sleep();
-            rclcpp::spin_some(shared_from_this());
+            rclcpp::spin_some(node_);
           }
 
           // Check multiple times to assert overshoot.
@@ -464,7 +464,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -474,7 +474,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -527,7 +527,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
 
@@ -555,7 +555,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -597,7 +597,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -607,7 +607,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -651,7 +651,10 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  std::thread time_thread(timeSource);
+  auto time_thread = std::thread(timeSource);
 
-  return RUN_ALL_TESTS();
+  auto result = RUN_ALL_TESTS();
+  rclcpp::shutdown();
+  time_thread.join();
+  return result;
 }

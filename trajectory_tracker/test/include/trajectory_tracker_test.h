@@ -59,7 +59,7 @@
 
 #include <gtest/gtest.h>
 
-class TrajectoryTrackerTest : public ::testing::Test, public rclcpp::Node
+class TrajectoryTrackerTest : public ::testing::Test
 {
 private:
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
@@ -67,7 +67,7 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::PathWithVelocity>::SharedPtr pub_path_vel_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
-  std::shared_ptr<tf2_ros::TransformBroadcaster> tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Time cmd_vel_time_;
   rclcpp::Time trans_stamp_last_;
 
@@ -100,7 +100,8 @@ private:
   }
   void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
   {
-    const rclcpp::Time now = this->now();
+    rclcpp::Clock clock;
+    const rclcpp::Time now = clock.now();
     if (cmd_vel_time_ == rclcpp::Time(0))
       cmd_vel_time_ = now;
     const float dt = std::min((now - cmd_vel_time_).seconds(), 0.1);
@@ -113,41 +114,40 @@ private:
   }
 
 public:
+  rclcpp::Node::SharedPtr node_;
   tf2::Transform pose_;
   trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr status_;
   geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
   rclcpp::Duration delay_;
 
-  TrajectoryTrackerTest(const std::string& node_name = "test_trajectory_tracker", const rclcpp::NodeOptions& options = rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true))
-  : rclcpp::Node(node_name, options)
-  , delay_(rclcpp::Duration(0, 0))
+  TrajectoryTrackerTest(const std::string& node_name = "test_trajectory_tracker")
+  : delay_(rclcpp::Duration(0, 0))
   {
+    node_ = rclcpp::Node::make_shared(node_name);
     using std::placeholders::_1;
-    sub_cmd_vel_ = this->create_subscription<geometry_msgs::msg::Twist>(
+    sub_cmd_vel_ = node_->create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel", 1, std::bind(&TrajectoryTrackerTest::cbCmdVel, this, _1));
-    sub_status_ = this->create_subscription<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>(
+    sub_status_ = node_->create_subscription<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>(
       "trajectory_tracker/status", 1, std::bind(&TrajectoryTrackerTest::cbStatus, this, _1));
-    pub_path_ = this->create_publisher<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local());
-    pub_path_vel_ = this->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
+    pub_path_ = node_->create_publisher<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local());
+    pub_path_vel_ = node_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
         "path_velocity", rclcpp::QoS(1).transient_local());
-    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10).transient_local());
+    pub_odom_ = node_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10).transient_local());
 
-    this->set_parameter(rclcpp::Parameter("use_sim_time", true));
     double delay;
-    delay = this->declare_parameter<double>("odom_delay", 0.0);
+    delay = node_->declare_parameter<double>("odom_delay", 0.0);
     delay_ = rclcpp::Duration::from_seconds(delay);
-    error_lin_ = this->declare_parameter<double>("error_lin", 0.01);
-    error_large_lin_ = this->declare_parameter<double>("error_large_lin", 0.1);
-    error_ang_ = this->declare_parameter<double>("error_ang", 0.01);
+    error_lin_ = node_->declare_parameter<double>("error_lin", 0.01);
+    error_large_lin_ = node_->declare_parameter<double>("error_large_lin", 0.1);
+    error_ang_ = node_->declare_parameter<double>("error_ang", 0.01);
 
-    // dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
-    tfb_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_.get());
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
     {
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
       if (pub_path_->get_subscription_count() > 0)
         break;
     }
@@ -169,7 +169,7 @@ public:
       publishTransform();
 
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
       if (status_ &&
           status_->status != trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
@@ -196,7 +196,7 @@ public:
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
       if (status_ &&
           status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
@@ -211,7 +211,7 @@ public:
   {
     nav_msgs::msg::Path path;
     path.header.frame_id = "odom";
-    path.header.stamp = this->now();
+    path.header.stamp = node_->now();
 
     for (const Eigen::Vector3d& p : poses)
     {
@@ -235,7 +235,7 @@ public:
   {
     trajectory_tracker_msgs::msg::PathWithVelocity path;
     path.header.frame_id = "odom";
-    path.header.stamp = this->now();
+    path.header.stamp = node_->now();
 
     for (const Eigen::Vector4d& p : poses)
     {
@@ -260,7 +260,7 @@ public:
   }
   void publishTransform()
   {
-    const rclcpp::Time now = this->now();
+    const rclcpp::Time now = node_->now();
 
     nav_msgs::msg::Odometry odom;
     odom.header.frame_id = "odom";
