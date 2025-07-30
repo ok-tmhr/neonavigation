@@ -554,7 +554,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     tf2::fromMsg(
         tfbuf_->lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0)), path_to_odom);
     const tf2::Transform path_to_robot = path_to_odom * odom_to_robot;
-    transform_delay = (now() - tf2_ros::toRclcpp(path_to_odom.stamp_)).seconds();
+    transform_delay = (now() - rclcpp::Time(tf2_ros::toRclcpp(path_to_odom.stamp_), get_clock()->get_clock_type())).seconds();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)
     {
       RCLCPP_ERROR_THROTTLE(
