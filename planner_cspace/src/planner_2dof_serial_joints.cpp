@@ -371,6 +371,7 @@ public:
     : rclcpp::Node("planner_2dof_serial_joints")
     , has_joint_states_(false)
     , replan_interval_(rclcpp::Duration(0, 0))
+    , cmd_prev_(rclcpp::Duration(0, 0), {})
   {
 
     group_ = group_name;
