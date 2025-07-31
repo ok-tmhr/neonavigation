@@ -66,7 +66,7 @@ install(TARGETS
 )
 
 install(DIRECTORY include/
-  DESTINATION include/${PROJECT_NAME}
+  DESTINATION include
 )
 
 ament_package()
