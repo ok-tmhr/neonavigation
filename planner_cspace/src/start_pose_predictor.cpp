@@ -69,7 +69,7 @@ bool StartPosePredictor::process(const geometry_msgs::msg::Pose& robot_pose,
   {
     return buildResults(expected_pose_it, robot_pose, cm, result_start_grid);
   }
-  ROS_DEBUG("The robot will reach the goal in %f sec.", etas.back());
+  RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "The robot will reach the goal in %f sec.", etas.back());
   return buildResults(previous_path_2d_.end() - 1, robot_pose, cm, result_start_grid);
 }
 
@@ -89,7 +89,7 @@ bool StartPosePredictor::removeAlreadyPassed(const geometry_msgs::msg::Pose& sta
       previous_path_2d_.findNearestWithDistance(previous_path_2d_.begin(), previous_path_2d_.end(), robot_pose_2d);
   if (dist_err > config_.dist_stop_)
   {
-    RCLCPP_WARN(this->get_logger(), "The robot is too far from path. An empty path is published. dist: %f, thr: %f",
+    RCLCPP_WARN(rclcpp::get_logger("start_pose_predictor"), "The robot is too far from path. An empty path is published. dist: %f, thr: %f",
              dist_err, config_.dist_stop_);
     return false;
   }
@@ -106,13 +106,13 @@ bool StartPosePredictor::removeAlreadyPassed(const geometry_msgs::msg::Pose& sta
                                                   start_metric.position.y - previous_path_2d_.begin()->pos_.y());
     if (std::abs(distance_from_start - dist_err) < 1.0e-6)
     {
-      ROS_DEBUG("Nearest pose in previous path: (%f, %f, %f), dist: %f, index: 0, remaining poses num: %lu",
+      RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "Nearest pose in previous path: (%f, %f, %f), dist: %f, index: 0, remaining poses num: %lu",
                 previous_path_2d_.begin()->pos_.x(), previous_path_2d_.begin()->pos_.y(),
                 previous_path_2d_.begin()->yaw_, dist_err, previous_path_2d_.size());
       return true;
     }
   }
-  ROS_DEBUG("Nearest pose in previous path: (%f, %f, %f), dist: %f, index: %lu, remaining poses num: %lu",
+  RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "Nearest pose in previous path: (%f, %f, %f), dist: %f, index: %lu, remaining poses num: %lu",
             it_nearest->pos_.x(), it_nearest->pos_.y(), it_nearest->yaw_, dist_err, nearest_pos,
             previous_path_2d_.size() - nearest_pos);
   previous_path_2d_.erase(previous_path_2d_.begin(), it_nearest);
@@ -137,7 +137,7 @@ bool StartPosePredictor::buildResults(
 {
   if (isPathColliding(previous_path_2d_.begin(), expected_start_pose_it, cm))
   {
-    RCLCPP_WARN(this->get_logger(), "The robot might collide with an obstacle during the next planning. An empty path is published.");
+    RCLCPP_WARN(rclcpp::get_logger("start_pose_predictor"), "The robot might collide with an obstacle during the next planning. An empty path is published.");
     clear();
     return false;
   }
@@ -148,7 +148,7 @@ bool StartPosePredictor::buildResults(
   start_grid.cycleUnsigned(map_info_.angle);
   const size_t previous_path_size = previous_path_2d_.size();
   previous_path_2d_.erase(expected_start_pose_it + 1, previous_path_2d_.end());
-  ROS_DEBUG("Robot Pose: (%f, %f, %f), Start Pose: (%f, %f, %f), Start Grid: (%d, %d, %d), path size: %lu -> %lu",
+  RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "Robot Pose: (%f, %f, %f), Start Pose: (%f, %f, %f), Start Grid: (%d, %d, %d), path size: %lu -> %lu",
             robot_pose.position.x, robot_pose.position.y, tf2::getYaw(robot_pose.orientation),
             expected_start_pose_it->pos_.x(), expected_start_pose_it->pos_.y(), expected_start_pose_it->yaw_,
             start_grid[0], start_grid[1], start_grid[2], previous_path_size, previous_path_2d_.size());
@@ -184,7 +184,7 @@ bool StartPosePredictor::isPathColliding(const trajectory_tracker::Path2D::Const
     grid.cycleUnsigned(map_info_.angle);
     if (cm[grid] == 100)
     {
-      ROS_DEBUG("Path colliding at (%f, %f, %f)", it->pos_.x(), it->pos_.y(), it->yaw_);
+      RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "Path colliding at (%f, %f, %f)", it->pos_.x(), it->pos_.y(), it->yaw_);
       return true;
     }
   }
@@ -205,20 +205,20 @@ trajectory_tracker::Path2D::ConstIterator StartPosePredictor::getSwitchBack(cons
     // Note that Path2D::findNearest() never returns the begin iterator and we can safely subtract 1.
     const size_t local_goal_index = local_goal - previous_path_2d_.begin() - 1;
     const double local_goal_eta = etas[local_goal_index];
-    ROS_DEBUG("Switch back index: %lu, eta: %f", local_goal_index, local_goal_eta);
+    RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "Switch back index: %lu, eta: %f", local_goal_index, local_goal_eta);
     if (isGridCenter(previous_path_2d_[local_goal_index]))
     {
       if ((config_.prediction_sec_ < local_goal_eta) &&
           (local_goal_eta < config_.switch_back_prediction_sec_))
       {
-        RCLCPP_INFO(this->get_logger(), "The robot will reach a switch back point in %f sec. The next plan starts from the switch back.",
+        RCLCPP_INFO(rclcpp::get_logger("start_pose_predictor"), "The robot will reach a switch back point in %f sec. The next plan starts from the switch back.",
                  local_goal_eta);
         return local_goal - 1;
       }
     }
     else
     {
-      RCLCPP_WARN(this->get_logger(), "The switch back point is not placed on a grid center. (%f, %f, %f) -> (%f, %f, %f)",
+      RCLCPP_WARN(rclcpp::get_logger("start_pose_predictor"), "The switch back point is not placed on a grid center. (%f, %f, %f) -> (%f, %f, %f)",
                previous_path_2d_[local_goal_index].pos_.x(), previous_path_2d_[local_goal_index].pos_.y(),
                previous_path_2d_[local_goal_index].yaw_, previous_path_2d_[local_goal_index + 1].pos_.x(),
                previous_path_2d_[local_goal_index + 1].pos_.y(), previous_path_2d_[local_goal_index + 1].yaw_);
@@ -235,7 +235,7 @@ trajectory_tracker::Path2D::ConstIterator StartPosePredictor::getExpectedPose(co
     {
       if (isGridCenter(previous_path_2d_[i]))
       {
-        ROS_DEBUG("The robot will reach a grid center in %f sec.", etas[i]);
+        RCLCPP_DEBUG(rclcpp::get_logger("start_pose_predictor"), "The robot will reach a grid center in %f sec.", etas[i]);
         return previous_path_2d_.begin() + i;
       }
     }
