@@ -98,4 +98,8 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
+)
+
 ament_package()
