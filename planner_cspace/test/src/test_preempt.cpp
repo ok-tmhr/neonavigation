@@ -61,8 +61,8 @@ protected:
 
 TEST_F(PreemptTest, Preempt)
 {
-  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(5);
-  const ros::Duration wait(1.0);
+  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(5);
+  const rclcpp::Duration wait(1.0);
 
   move_base_->sendGoal(CreateGoalInFree());
   while (move_base_->getState().state_ !=

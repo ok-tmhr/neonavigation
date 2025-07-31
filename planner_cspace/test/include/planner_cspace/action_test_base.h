@@ -61,7 +61,7 @@ public:
   }
   void SetUp()
   {
-    if (!move_base_->waitForServer(ros::Duration(30.0)))
+    if (!move_base_->waitForServer(rclcpp::Duration(30.0)))
     {
       FAIL() << "Failed to connect move_base action";
     }
@@ -70,7 +70,7 @@ public:
         node_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
             "/planner_3d/make_plan");
 
-    const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10.0);
+    const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10.0);
     while (rclcpp::ok())
     {
       nav_msgs::GetPlanRequest req;
@@ -93,7 +93,7 @@ public:
       {
         FAIL() << "planner_3d didn't receive map";
       }
-      ros::Duration(1).sleep();
+      rclcpp::Duration(1).sleep();
       rclcpp::spin_some();
     }
   }

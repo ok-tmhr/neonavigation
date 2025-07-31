@@ -71,7 +71,7 @@ protected:
     try
     {
       const geometry_msgs::msg::TransformStamped map_to_robot =
-          tfbuf_.lookupTransform("map", "base_link", rclcpp::Time(), ros::Duration(0.1));
+          tfbuf_->lookupTransform("map", "base_link", rclcpp::Time(), rclcpp::Duration(0.1));
       return std::hypot(map_to_robot.transform.translation.x - goal.target_pose.pose.position.x,
                         map_to_robot.transform.translation.y - goal.target_pose.pose.position.y);
     }
@@ -84,11 +84,11 @@ protected:
 
 TEST_F(TolerantActionTest, GoalWithTolerance)
 {
-  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
-  const ros::Duration wait(1.0);
+  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10);
+  const rclcpp::Duration wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   const planner_cspace_msgs::MoveWithToleranceGoal goal = createGoalInFree();
   move_base_->sendGoal(goal);
 

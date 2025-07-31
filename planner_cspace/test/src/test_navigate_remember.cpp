@@ -78,7 +78,7 @@ protected:
         nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
             "forget_planning_cost");
     pub_initial_pose_ =
-        nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
+        nh_.advertise<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, true);
     pub_patrol_nodes_ = nh_.advertise<nav_msgs::msg::Path>("patrol_nodes", 1, true);
   }
 
@@ -86,17 +86,17 @@ protected:
   {
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
-    srv_forget_.waitForExistence(ros::Duration(10.0));
+    srv_forget_.waitForExistence(rclcpp::Duration(10.0));
     rclcpp::Rate rate(10.0);
 
-    geometry_msgs::PoseWithCovarianceStamped pose;
+    geometry_msgs::msg::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
     pose.pose.pose.position.x = 2.1;
     pose.pose.pose.position.y = 3.0;
     pose.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
     pub_initial_pose_->publish(pose);
 
-    const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(15);
+    const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(15);
 
     while (rclcpp::ok())
     {
@@ -107,7 +107,7 @@ protected:
       {
         FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
       }
-      if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
+      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration(0.5)))
       {
         break;
       }
@@ -128,7 +128,7 @@ protected:
     std_srvs::EmptyResponse res;
     srv_forget_.call(req, res);
 
-    ros::Duration(1.0).sleep();
+    rclcpp::Duration(1.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
   {
@@ -164,7 +164,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
+        tfbuf_->lookupTransform("map", "base_link", now, rclcpp::Duration(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);
@@ -196,10 +196,10 @@ protected:
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
     rclcpp::spin_some();
-    ros::Duration(0.2).sleep();
+    rclcpp::Duration(0.2).sleep();
 
     rclcpp::Rate wait(10);
-    rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
+    rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10);
     while (rclcpp::ok())
     {
       rclcpp::spin_some();
@@ -227,7 +227,7 @@ protected:
 TEST_F(NavigateWithRememberUpdates, Navigate)
 {
   rclcpp::spin_some();
-  ros::Duration(0.2).sleep();
+  rclcpp::Duration(0.2).sleep();
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);
@@ -242,7 +242,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(120);
+  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(120);
   while (rclcpp::ok())
   {
     rclcpp::spin_some();
@@ -276,7 +276,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      ros::Duration(2.0).sleep();
+      rclcpp::Duration(2.0).sleep();
       return;
     }
   }

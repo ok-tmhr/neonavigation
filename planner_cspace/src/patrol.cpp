@@ -36,7 +36,6 @@
 #include <planner_cspace_msgs/MoveWithToleranceAction.h>
 #include <nav_msgs/msg/path.hpp>
 
-#include <neonavigation_common/compatibility.h>
 
 class PatrolActionNode
 {
@@ -81,7 +80,7 @@ public:
     : nh_()
     , pnh_("~")
   {
-    neonavigation_common::compat::checkCompatMode();
+
     sub_path_ = neonavigation_common::compat::subscribe(
         nh_, "patrol_nodes",
         pnh_, "path", 1, &PatrolActionNode::cbPath, this);

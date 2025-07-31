@@ -69,13 +69,13 @@ planner_2dof_serial_joints provides collision avoidance for 2-DOF serial joint (
 
 ### Subscribed topics
 
-* ~/trajectory_in (new: trajectory_in) [trajectory_msgs::JointTrajectory]
-* ~/joint (new: joint_states) [sensor_msgs::JointState]
+* ~/trajectory_in (new: trajectory_in) [trajectory_msgs::msg::JointTrajectory]
+* ~/joint (new: joint_states) [sensor_msgs::msg::JointState]
 * /tf
 
 ### Published topics
 
-* ~/trajectory_out (new: joint_trajectory) [trajectory_msgs::JointTrajectory]
+* ~/trajectory_out (new: joint_trajectory) [trajectory_msgs::msg::JointTrajectory]
 * ~/status [planner_cspace_msgs::msg::PlannerStatus]
 
 ### Services

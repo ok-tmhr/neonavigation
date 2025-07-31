@@ -101,7 +101,7 @@ GridAstarModel3D::GridAstarModel3D(
           static_cast<int>(map_info_.height),
           static_cast<int>(map_info_.angle)) -
       min_boundary_;
-  RCLCPP_INFO(this->get_logger(), "x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
+  RCLCPP_INFO(rclcpp::get_logger(__func__), "x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
 
   updateCostParameters(euclid_cost_coef_, cc_, local_range_);
   search_list_rough_.clear();

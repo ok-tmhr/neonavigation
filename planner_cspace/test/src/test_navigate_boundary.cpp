@@ -59,7 +59,7 @@ protected:
   NavigateBoundary()
   {
     move_base_ = std::make_shared<ActionClient>("/move_base");
-    if (!move_base_->waitForServer(ros::Duration(10.0)))
+    if (!move_base_->waitForServer(rclcpp::Duration(10.0)))
     {
       RCLCPP_ERROR(this->get_logger(), "Failed to connect move_base action");
       exit(EXIT_FAILURE);
@@ -75,7 +75,7 @@ protected:
     trans.transform.translation.x = x;
     trans.transform.translation.y = y;
     trans.transform.rotation.w = 1.0;
-    tfb_.sendTransform(trans);
+    tfb_->sendTransform(trans);
   }
   virtual void SetUp()
   {
@@ -83,7 +83,7 @@ protected:
     sub_path_ = nh_.subscribe("path", 1, &NavigateBoundary::cbPath, this);
 
     publishTransform(1.0, 0.6);
-    ros::Duration(0.5).sleep();
+    rclcpp::Duration(0.5).sleep();
 
     move_base_msgs::MoveBaseGoal goal;
     goal.target_pose.header.frame_id = "map";
@@ -92,7 +92,7 @@ protected:
     goal.target_pose.pose.position.x = 1.4;
     goal.target_pose.pose.position.y = 0.6;
     move_base_->sendGoal(goal);
-    ros::Duration(0.5).sleep();
+    rclcpp::Duration(0.5).sleep();
   }
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
@@ -117,7 +117,7 @@ TEST_F(NavigateBoundary, StartPositionScan)
       status_ = nullptr;
       for (int i = 0; i < 100; ++i)
       {
-        ros::Duration(0.05).sleep();
+        rclcpp::Duration(0.05).sleep();
         rclcpp::spin_some();
         if (path_ && status_)
           break;
@@ -148,7 +148,7 @@ TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
         std_msgs::Empty msg;
         pub_trigger->publish(msg);
 
-        ros::Duration(0.2).sleep();
+        rclcpp::Duration(0.2).sleep();
         rclcpp::spin_some();
         if (path_ && status_)
           break;

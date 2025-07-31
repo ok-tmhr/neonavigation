@@ -64,15 +64,15 @@ protected:
   virtual void SetUp()
   {
     // Wait planner
-    ASSERT_TRUE(waitStatus(ros::Duration(5))) << "planner_3d is not up";
+    ASSERT_TRUE(waitStatus(rclcpp::Duration(5))) << "planner_3d is not up";
   }
 
-  bool waitStatus(const ros::Duration timeout)
+  bool waitStatus(const rclcpp::Duration timeout)
   {
     const rclcpp::Time deadline = rclcpp::Time::now() + timeout;
     while (rclcpp::ok())
     {
-      ros::Duration(0.1).sleep();
+      rclcpp::Duration(0.1).sleep();
       rclcpp::spin_some();
 
       if (cnt_status_ > 5)
@@ -131,98 +131,98 @@ TEST_F(Planner3DMapSize, OutOfRangeX)
 {
   const rclcpp::Time now = rclcpp::Time::now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x80, 4));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeY)
 {
   const rclcpp::Time now = rclcpp::Time::now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x81, 4));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAngle)
 {
   const rclcpp::Time now = rclcpp::Time::now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x80, 8));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAll)
 {
   const rclcpp::Time now = rclcpp::Time::now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x81, 8));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, ZeroSizeUpdate)
 {
   const rclcpp::Time now = rclcpp::Time::now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 1, 1, 0, 0, 0, 0));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdate)
 {
   const rclcpp::Time now = rclcpp::Time::now();
-  const rclcpp::Time next = now + ros::Duration(0.1);
+  const rclcpp::Time next = now + rclcpp::Duration(0.1);
 
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
 
   pub_map_update_->publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
 
   pub_map_->publish(generateCSpace3DMsg(next, 0x81, 0x81, 8));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
 
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdateShrink)
 {
   const rclcpp::Time now = rclcpp::Time::now();
-  const rclcpp::Time next = now + ros::Duration(0.1);
+  const rclcpp::Time next = now + rclcpp::Duration(0.1);
 
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
 
   pub_map_update_->publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
-  ros::Duration(0.1).sleep();
+  rclcpp::Duration(0.1).sleep();
 
   pub_map_->publish(generateCSpace3DMsg(next, 0x40, 0x40, 4));
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
 
   rclcpp::spin_some();
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(ros::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
 }
 
 int main(int argc, char** argv)

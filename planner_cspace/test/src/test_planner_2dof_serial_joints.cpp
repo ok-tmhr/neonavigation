@@ -29,23 +29,23 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
-#include <sensor_msgs/JointState.h>
-#include <trajectory_msgs/JointTrajectory.h>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <trajectory_msgs/msg/joint_trajectory.hpp>
 
 #include <gtest/gtest.h>
 
 TEST(Planner2DOFSerialJoints, Plan)
 {
   ros::NodeHandle nh;
-  ros::Publisher pub_state = nh.advertise<sensor_msgs::JointState>("joint_states", 1, true);
-  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::JointTrajectory>("trajectory_in", 1, true);
+  ros::Publisher pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", 1, true);
+  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", 1, true);
 
-  trajectory_msgs::JointTrajectory::ConstPtr planned;
-  const auto cb_plan = [&planned](const trajectory_msgs::JointTrajectory::ConstPtr& msg)
+  trajectory_msgs::msg::JointTrajectory::ConstPtr planned;
+  const auto cb_plan = [&planned](const trajectory_msgs::msg::JointTrajectory::ConstPtr& msg)
   {
     planned = msg;
   };
-  ros::Subscriber sub_plan = nh.subscribe<trajectory_msgs::JointTrajectory>("joint_trajectory", 1, cb_plan);
+  ros::Subscriber sub_plan = nh.subscribe<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", 1, cb_plan);
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
@@ -55,22 +55,22 @@ TEST(Planner2DOFSerialJoints, Plan)
   ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::msg::PlannerStatus>(
       "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
-  sensor_msgs::JointState s;
+  sensor_msgs::msg::JointState s;
   s.name.push_back("front");
   s.position.push_back(-1.57);
   s.name.push_back("rear");
   s.position.push_back(0.0);
 
-  trajectory_msgs::JointTrajectory cmd;
+  trajectory_msgs::msg::JointTrajectory cmd;
   cmd.joint_names.push_back("front");
   cmd.joint_names.push_back("rear");
-  trajectory_msgs::JointTrajectoryPoint p;
+  trajectory_msgs::msg::JointTrajectoryPoint p;
   p.positions.push_back(-4.71);
   p.positions.push_back(0.0);
   cmd.points.push_back(p);
 
   rclcpp::Rate rate(1);
-  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10);
   int cnt = 0;
   while (rclcpp::ok())
   {
@@ -107,8 +107,8 @@ TEST(Planner2DOFSerialJoints, Plan)
   const float rc = 0.0;
   for (int i = 1; i < static_cast<int>(planned->points.size()); ++i)
   {
-    const trajectory_msgs::JointTrajectoryPoint& p0 = planned->points[i - 1];
-    const trajectory_msgs::JointTrajectoryPoint& p1 = planned->points[i];
+    const trajectory_msgs::msg::JointTrajectoryPoint& p0 = planned->points[i - 1];
+    const trajectory_msgs::msg::JointTrajectoryPoint& p1 = planned->points[i];
     ASSERT_EQ(2u, p0.positions.size());
     ASSERT_EQ(2u, p1.positions.size());
 
@@ -147,8 +147,8 @@ TEST(Planner2DOFSerialJoints, Plan)
 TEST(Planner2DOFSerialJoints, NoPath)
 {
   ros::NodeHandle nh;
-  ros::Publisher pub_state = nh.advertise<sensor_msgs::JointState>("joint_states", 1, true);
-  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::JointTrajectory>("trajectory_in", 1, true);
+  ros::Publisher pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", 1, true);
+  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", 1, true);
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
@@ -158,22 +158,22 @@ TEST(Planner2DOFSerialJoints, NoPath)
   ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::msg::PlannerStatus>(
       "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
-  sensor_msgs::JointState s;
+  sensor_msgs::msg::JointState s;
   s.name.push_back("front");
   s.position.push_back(-1.57);
   s.name.push_back("rear");
   s.position.push_back(0.0);
 
-  trajectory_msgs::JointTrajectory cmd;
+  trajectory_msgs::msg::JointTrajectory cmd;
   cmd.joint_names.push_back("front");
   cmd.joint_names.push_back("rear");
-  trajectory_msgs::JointTrajectoryPoint p;
+  trajectory_msgs::msg::JointTrajectoryPoint p;
   p.positions.push_back(3.14);
   p.positions.push_back(0.0);  // Collided state
   cmd.points.push_back(p);
 
   rclcpp::Rate rate(1);
-  const rclcpp::Time deadline = rclcpp::Time::now() + ros::Duration(10);
+  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10);
   int cnt = 0;
   while (rclcpp::ok())
   {

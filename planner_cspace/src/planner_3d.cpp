@@ -73,7 +73,6 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <planner_cspace_msgs/MoveWithToleranceAction.h>
 
-#include <neonavigation_common/compatibility.h>
 
 #include <planner_cspace/Planner3DConfig.h>
 #include <planner_cspace/bbf.h>
@@ -238,7 +237,7 @@ protected:
   bool is_start_occupied_;
 
   diagnostic_updater::Updater diag_updater_;
-  ros::Duration costmap_watchdog_;
+  rclcpp::Duration costmap_watchdog_;
   rclcpp::Time last_costmap_;
 
   int prev_map_update_x_min_;
@@ -968,7 +967,7 @@ protected:
       updateStart();
       applyCostmapUpdate(msg);
       planPath(last_costmap_);
-      if (costmap_watchdog_ > ros::Duration(0))
+      if (costmap_watchdog_ > rclcpp::Duration(0))
       {
         no_map_update_timer_ =
             nh_.createTimer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
@@ -1134,7 +1133,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(), ros::Duration(0.1));
+          tfbuf_->lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(), rclcpp::Duration(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)
@@ -1158,7 +1157,7 @@ public:
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
+
     sub_map_ = neonavigation_common::compat::subscribe(
         nh_, "costmap",
         pnh_, "costmap", 1, &Planner3dNode::cbMap, this);
@@ -1217,7 +1216,7 @@ public:
 
     double costmap_watchdog;
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
-    costmap_watchdog_ = ros::Duration(costmap_watchdog);
+    costmap_watchdog_ = rclcpp::Duration(costmap_watchdog);
 
     pnh_.param("max_vel", cc_.max_vel_, 0.3f);
     pnh_.param("max_ang_vel", cc_.max_ang_vel_, 0.6f);
@@ -1388,7 +1387,7 @@ public:
     search_timeout_abort_ = config.search_timeout_abort;
     search_range_ = config.search_range;
     antialias_start_ = config.antialias_start;
-    costmap_watchdog_ = ros::Duration(config.costmap_watchdog);
+    costmap_watchdog_ = rclcpp::Duration(config.costmap_watchdog);
 
     cc_.max_vel_ = config.max_vel;
     cc_.max_ang_vel_ = config.max_ang_vel;
@@ -1534,7 +1533,7 @@ public:
       {
         return;
       }
-      ros::Duration(0.01).sleep();
+      rclcpp::Duration(0.01).sleep();
     }
   }
 
@@ -1545,9 +1544,9 @@ public:
       createCostEstimCache();
     }
     bool has_costmap(false);
-    if (costmap_watchdog_ > ros::Duration(0))
+    if (costmap_watchdog_ > rclcpp::Duration(0))
     {
-      const ros::Duration costmap_delay = now - last_costmap_;
+      const rclcpp::Duration costmap_delay = now - last_costmap_;
       metrics_.data.push_back(neonavigation_metrics_msgs::metric(
           "costmap_delay",
           costmap_delay.toSec(),
@@ -1739,12 +1738,12 @@ public:
         planPath(now);
         if (is_path_switchback_)
         {
-          next_replan_time = now + ros::Duration(sw_wait_);
+          next_replan_time = now + rclcpp::Duration(sw_wait_);
           RCLCPP_INFO(this->get_logger(), "Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
         }
         else
         {
-          next_replan_time = now + ros::Duration(1.0 / freq_);
+          next_replan_time = now + rclcpp::Duration(1.0 / freq_);
         }
       }
     }
