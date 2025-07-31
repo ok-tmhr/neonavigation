@@ -4,7 +4,6 @@ project(trajectory_tracker)
 set(AMENT_CMAKE_DEPENDS
   rclcpp
 
-  # dynamic_reconfigure
   geometry_msgs
   interactive_markers
   nav_msgs
@@ -22,10 +21,6 @@ foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
 endforeach()
 
 find_package(Eigen3 REQUIRED)
-
-# generate_dynamic_reconfigure_options(
-#   cfg/TrajectoryTracker.cfg
-# )
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -68,6 +63,10 @@ install(TARGETS
   ARCHIVE DESTINATION lib/${PROJECT_NAME}
   LIBRARY DESTINATION lib/${PROJECT_NAME}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 ament_package()
