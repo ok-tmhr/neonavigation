@@ -1159,8 +1159,8 @@ protected:
     }
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
-  void cbAccepted(const std::shared_ptr<GoalHandlePlanner3DAction> goal_handle){}
-  void cbTolerantAccepted(const std::shared_ptr<GoalHandlePlanner3DTolerantAction> goal_handle){}
+  void cbAccepted(const std::shared_ptr<GoalHandlePlanner3DAction> goal_handle){ goal_handle_act_ = goal_handle; }
+  void cbTolerantAccepted(const std::shared_ptr<GoalHandlePlanner3DTolerantAction> goal_handle){ goal_handle_act_tolerant_ = goal_handle; }
 
   void updateStart()
   {
