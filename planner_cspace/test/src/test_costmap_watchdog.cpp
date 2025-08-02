@@ -108,7 +108,7 @@ TEST(Planner3D, CostmapWatchdog)
 
       ASSERT_TRUE(static_cast<bool>(diag));
       ASSERT_EQ(diag->status.size(), 1u);
-      ASSERT_EQ(diag->status[0].level, diagnostic_msgs::DiagnosticStatus::ERROR);
+      ASSERT_EQ(diag->status[0].level, diagnostic_msgs::msg::DiagnosticStatus::ERROR);
       ASSERT_NE(diag->status[0].message.find("missing"), std::string::npos);
     }
     else if (10 < cnt && cnt < 13)
@@ -117,7 +117,7 @@ TEST(Planner3D, CostmapWatchdog)
       ASSERT_EQ(status->error, planner_cspace_msgs::msg::PlannerStatus::GOING_WELL);
 
       ASSERT_EQ(diag->status.size(), 1u);
-      ASSERT_EQ(diag->status[0].level, diagnostic_msgs::DiagnosticStatus::OK);
+      ASSERT_EQ(diag->status[0].level, diagnostic_msgs::msg::DiagnosticStatus::OK);
       ASSERT_NE(diag->status[0].message.find("well"), std::string::npos);
     }
     else if (cnt >= 13)
