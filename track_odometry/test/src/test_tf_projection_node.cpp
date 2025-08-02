@@ -30,7 +30,7 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/utils.h>
 #include <tf2_ros/buffer.h>
@@ -58,12 +58,12 @@ public:
 
 TEST_P(TfProjectionTest, ProjectionTransform)
 {
-  EXPECT_TRUE(tfbuf_.canTransform("map", projected_frame_, ros::Time(0), ros::Duration(10.0)));
+  EXPECT_TRUE(tfbuf_.canTransform("map", projected_frame_, rclcpp::Time(0), rclcpp::Duration(10.0)));
 
-  geometry_msgs::TransformStamped out;
+  geometry_msgs::msg::TransformStamped out;
   try
   {
-    out = tfbuf_.lookupTransform("map", projected_frame_, ros::Time(0), ros::Duration(1.0));
+    out = tfbuf_->lookupTransform("map", projected_frame_, rclcpp::Time(0), rclcpp::Duration(1.0));
   }
   catch (tf2::TransformException& e)
   {
@@ -102,7 +102,7 @@ INSTANTIATE_TEST_CASE_P(
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_tf_projection_node");
+  rclcpp::init(argc, argv, "test_tf_projection_node");
 
   return RUN_ALL_TESTS();
 }

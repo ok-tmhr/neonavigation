@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -30,9 +30,9 @@
 #include <string>
 #include <vector>
 
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <sensor_msgs/Imu.h>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -41,46 +41,46 @@
 class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
 protected:
-  std::vector<nav_msgs::Odometry> odom_msg_buffer_;
+  std::vector<nav_msgs::msg::Odometry> odom_msg_buffer_;
 
 public:
   void initializeNode(const std::string& ns)
   {
     ros::NodeHandle nh(ns);
-    pub_odom_ = nh.advertise<nav_msgs::Odometry>("odom_raw", 10);
-    pub_imu_ = nh.advertise<sensor_msgs::Imu>("imu/data", 10);
+    pub_odom_ = nh.advertise<nav_msgs::msg::Odometry>("odom_raw", 10);
+    pub_imu_ = nh.advertise<sensor_msgs::msg::Imu>("imu/data", 10);
     sub_odom_ = nh.subscribe("odom", 10, &TrackOdometryTest::cbOdom, this);
   }
   bool initializeTrackOdometry(
-      nav_msgs::Odometry& odom_raw,
-      sensor_msgs::Imu& imu)
+      nav_msgs::msg::Odometry& odom_raw,
+      sensor_msgs::msg::Imu& imu)
   {
-    ros::Duration(0.1).sleep();
-    ros::Rate rate(100);
+    rclcpp::Duration(0.1).sleep();
+    rclcpp::Rate rate(100);
     odom_ = nullptr;
-    for (int i = 0; i < 1000 && ros::ok(); ++i)
+    for (int i = 0; i < 1000 && rclcpp::ok(); ++i)
     {
-      odom_raw.header.stamp = ros::Time::now();
-      imu.header.stamp = odom_raw.header.stamp + ros::Duration(0.0001);
-      pub_odom_.publish(odom_raw);
-      pub_imu_.publish(imu);
+      odom_raw.header.stamp = rclcpp::Time::now();
+      imu.header.stamp = odom_raw.header.stamp + rclcpp::Duration(0.0001);
+      pub_odom_->publish(odom_raw);
+      pub_imu_->publish(imu);
       rate.sleep();
       odom_.reset();
-      ros::spinOnce();
+      rclcpp::spin_some();
       if (odom_ && i > 50)
         break;
     }
     return static_cast<bool>(odom_);
   }
   bool run(
-      nav_msgs::Odometry& odom_raw,
-      sensor_msgs::Imu& imu,
+      nav_msgs::msg::Odometry& odom_raw,
+      sensor_msgs::msg::Imu& imu,
       const double dt, const int steps)
   {
-    ros::Rate rate(1.0 / dt);
+    rclcpp::Rate rate(1.0 / dt);
     int cnt(0);
 
-    while (ros::ok())
+    while (rclcpp::ok())
     {
       tf2::Quaternion quat_odom;
       tf2::fromMsg(odom_raw.pose.pose.orientation, quat_odom);
@@ -102,21 +102,21 @@ public:
       stepAndPublish(odom_raw, imu, dt);
 
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some();
       if (++cnt >= steps)
         break;
     }
     flushOdomMsgs();
-    return ros::ok();
+    return rclcpp::ok();
   }
   void stepAndPublish(
-      nav_msgs::Odometry& odom_raw,
-      sensor_msgs::Imu& imu,
+      nav_msgs::msg::Odometry& odom_raw,
+      sensor_msgs::msg::Imu& imu,
       const double dt)
   {
-    odom_raw.header.stamp += ros::Duration(dt);
-    imu.header.stamp += ros::Duration(dt);
-    pub_imu_.publish(imu);
+    odom_raw.header.stamp += rclcpp::Duration(dt);
+    imu.header.stamp += rclcpp::Duration(dt);
+    pub_imu_->publish(imu);
 
     // Buffer odom message to add delay and jitter.
     // Send odometry in half rate of IMU.
@@ -130,19 +130,19 @@ public:
   }
   void flushOdomMsgs()
   {
-    for (nav_msgs::Odometry& o : odom_msg_buffer_)
+    for (nav_msgs::msg::Odometry& o : odom_msg_buffer_)
     {
-      pub_odom_.publish(o);
+      pub_odom_->publish(o);
     }
     odom_msg_buffer_.clear();
   }
   void waitAndSpinOnce()
   {
-    nav_msgs::Odometry::ConstPtr odom_prev = odom_;
+    nav_msgs::msg::Odometry::ConstPtr odom_prev = odom_;
     while (true)
     {
-      ros::Duration(0.1).sleep();
-      ros::spinOnce();
+      rclcpp::Duration(0.1).sleep();
+      rclcpp::spin_some();
       if (odom_prev == odom_)
       {
         // no more new messages
@@ -156,10 +156,10 @@ protected:
   ros::Publisher pub_odom_;
   ros::Publisher pub_imu_;
   ros::Subscriber sub_odom_;
-  nav_msgs::Odometry::ConstPtr odom_;
+  nav_msgs::msg::Odometry::ConstPtr odom_;
   size_t odom_cnt_;
 
-  void cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
+  void cbOdom(const nav_msgs::msg::Odometry::ConstPtr& msg)
   {
     odom_ = msg;
   };
@@ -172,11 +172,11 @@ TEST_F(TrackOdometryTest, OdomImuFusion)
   const double dt = 0.01;
   const int steps = 200;
 
-  nav_msgs::Odometry odom_raw;
+  nav_msgs::msg::Odometry odom_raw;
   odom_raw.header.frame_id = "odom";
   odom_raw.pose.pose.orientation.w = 1;
 
-  sensor_msgs::Imu imu;
+  sensor_msgs::msg::Imu imu;
   imu.header.frame_id = "base_link";
   imu.orientation.w = 1;
   imu.linear_acceleration.z = 9.8;
@@ -237,11 +237,11 @@ TEST_P(TrackOdometryTest, ZFilterOff)
   const double dt = 0.01;
   const int steps = 200;
 
-  nav_msgs::Odometry odom_raw;
+  nav_msgs::msg::Odometry odom_raw;
   odom_raw.header.frame_id = "odom";
   odom_raw.pose.pose.orientation.w = 1;
 
-  sensor_msgs::Imu imu;
+  sensor_msgs::msg::Imu imu;
   imu.header.frame_id = "base_link";
   imu.orientation.y = sin(-M_PI / 4);
   imu.orientation.w = cos(-M_PI / 4);
@@ -271,11 +271,11 @@ TEST_P(TrackOdometryTest, ZFilterOn)
   const double dt = 0.01;
   const int steps = 200;
 
-  nav_msgs::Odometry odom_raw;
+  nav_msgs::msg::Odometry odom_raw;
   odom_raw.header.frame_id = "odom";
   odom_raw.pose.pose.orientation.w = 1;
 
-  sensor_msgs::Imu imu;
+  sensor_msgs::msg::Imu imu;
   imu.header.frame_id = "base_link";
   imu.orientation.y = sin(-M_PI / 4);
   imu.orientation.w = cos(-M_PI / 4);
@@ -302,7 +302,7 @@ INSTANTIATE_TEST_CASE_P(
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_track_odometry");
+  rclcpp::init(argc, argv, "test_track_odometry");
 
   return RUN_ALL_TESTS();
 }
