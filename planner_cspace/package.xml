@@ -18,7 +18,7 @@
   <test_depend>map_server</test_depend>
   <test_depend>trajectory_tracker</test_depend>
 
-  <!-- <depend>rclcpp_action</depend> -->
+  <depend>rclcpp_action</depend>
   <depend>geometry_msgs</depend>
   <depend>move_base_msgs</depend>
   <depend>nav_msgs</depend>

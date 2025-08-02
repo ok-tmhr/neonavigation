@@ -5,7 +5,7 @@ set(AMENT_CMAKE_DEPENDS
   rclcpp
 
   geometry_msgs
-  move_base_msgs
+  nav2_msgs
   nav_msgs
   sensor_msgs
   std_srvs
