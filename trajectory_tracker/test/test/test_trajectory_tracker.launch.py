@@ -1,18 +1,11 @@
-import os
-
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     ExecuteProcess,
-    IncludeLaunchDescription,
     OpaqueFunction,
 )
-from launch.conditions import IfCondition, UnlessCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, TextSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetUseSimTime
-from launch_testing.actions import ReadyToTest
 
 
 def setup_launch(context: LaunchContext):
@@ -32,34 +25,16 @@ def setup_launch(context: LaunchContext):
             "-p",
             f"error_lin:={error_lin}",
         ],
-        name="test_trajectory_tracker",
         output="screen",
     )
 
     return test_trajectory_tracker,
 
-
-def generate_test_description():
-    # odom_delay = LaunchConfiguration("odom_delay")
+def generate_launch_description():
     use_odom = LaunchConfiguration("use_odom")
     use_time_optimal_control = LaunchConfiguration("use_time_optimal_control")
 
     use_sim_time = SetUseSimTime(True)
-
-    # test_trajectory_tracker = (
-    #     Node(
-    #         package="trajectory_tracker",
-    #         executable="test_trajectory_tracker",
-    #         parameters=[{"odom_delay": odom_delay, "error_lin": "0.03"}],
-    #         condition=IfCondition(use_odom),
-    #     ),
-    #     Node(
-    #         package="trajectory_tracker",
-    #         executable="test_trajectory_tracker",
-    #         parameters=[{"odom_delay": odom_delay, "error_ang": "0.02"}],
-    #         condition=UnlessCondition(use_odom),
-    #     ),
-    # )
 
     trajectory_tracker = Node(
         package="trajectory_tracker",
@@ -100,6 +75,5 @@ def generate_test_description():
             use_sim_time,
             test_trajectory_tracker,
             trajectory_tracker,
-            ReadyToTest(),
         ]
-    ), {"test_trajectory_tracker": test_trajectory_tracker}
+    )

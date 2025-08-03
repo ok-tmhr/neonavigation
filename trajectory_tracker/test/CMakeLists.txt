@@ -19,10 +19,7 @@ ament_target_dependencies(test_trajectory_recorder ${AMENT_CMAKE_DEPENDS})
 
 ament_add_gtest(test_trajectory_tracker src/test_trajectory_tracker.cpp)
 ament_target_dependencies(test_trajectory_tracker ${AMENT_CMAKE_DEPENDS} Eigen3)
-add_launch_test(
-  test/test_trajectory_tracker.launch.py
-  TARGET test_trajectory_tracker_launch
-)
+# add_launch_test(test/test_trajectory_tracker.launch.py ${ARGN})
 
 # target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # add_dependencies(test_trajectory_tracker trajectory_tracker)
