@@ -187,6 +187,7 @@ private:
 TrackerNode::TrackerNode()
   : rclcpp::Node("trajectory_tracker")
   , is_path_updated_(false)
+  , prev_odom_stamp_(0LL, RCL_ROS_TIME)
 {
   frame_robot_ = this->declare_parameter<std::string>("frame_robot", "base_link");
   frame_odom_ = this->declare_parameter<std::string>("frame_odom", "odom");
@@ -346,7 +347,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
     }
   }
 
-  if (prev_odom_stamp_ != rclcpp::Time())
+  if (prev_odom_stamp_ != rclcpp::Time(0LL, prev_odom_stamp_.get_clock_type()))
   {
     const double dt = std::min(max_dt_, (rclcpp::Time(odom->header.stamp) - prev_odom_stamp_).seconds());
     nav_msgs::msg::Odometry odom_compensated = *odom;
