@@ -1,23 +1,20 @@
 # trajectory_tracker package
 
-The topic names will be migrated to ROS recommended namespace model.
-Set `/neonavigation_compatible` parameter to `1` to use new topic names.
-
 ## trajectory_tracker
 
 trajectory_tracker node controls vehicle velocity to follow given path.
 
 ### Subscribed topics
 
-* ~/path (new: path) [nav_msgs::msg::Path]
-* ~/speed (new: speed) [std_msgs::msg::Float32]
+* /path [nav_msgs::msg::Path]
+* /speed [std_msgs::msg::Float32]
 * /tf
 * /odom [nav_msgs::msg::Odometry] (Optional: this topic is subscribed only when "use_odom" option is true)
 
 
 ### Published topics
 
-* ~/cmd_vel (new: cmd_vel) [geometry_msgs::msg::Twist]
+* /cmd_vel [geometry_msgs::msg::Twist]
 * ~/status [trajectory_tracker_msgs::msg::TrajectoryTrackerStatus]
 * ~/tracking [geometry_msgs::msg::PoseStamped]
 
@@ -88,7 +85,7 @@ trajectory_recorder node generates Path message from TF.
 
 ### Published topics
 
-* ~/recpath (new: path) [nav_msgs::msg::Path]
+* /path [nav_msgs::msg::Path]
 
 ### Services
 
@@ -112,7 +109,7 @@ trajectory_saver node saves Path message to file.
 
 ### Subscribed topics
 
-* ~/recpath (new: path) [nav_msgs::msg::Path]
+* /path [nav_msgs::msg::Path]
 * /tf
 
 ### Published topics
@@ -141,12 +138,12 @@ trajectory_server node loads Path from file and publishes it.
 
 ### Published topics
 
-* ~/path (new: path) [nav_msgs::msg::Path]
+* /path [nav_msgs::msg::Path]
 * ~/status [trajectory_tracker_msgs::msg::TrajectoryServerStatus]
 
 ### Services
 
-* ~/ChangePath (new: change_path) [trajectory_tracker_msgs::srv::ChangePath]
+* /change_path [trajectory_tracker_msgs::srv::ChangePath]
 
 ### Called services
 
