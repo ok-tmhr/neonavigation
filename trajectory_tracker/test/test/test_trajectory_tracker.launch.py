@@ -3,15 +3,19 @@ from launch.actions import (
     DeclareLaunchArgument,
     ExecuteProcess,
     OpaqueFunction,
+    SetEnvironmentVariable,
 )
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetUseSimTime
 
 
 def setup_launch(context: LaunchContext):
-    use_odom = LaunchConfiguration("use_odom").perform(context).lower() in ("true", "1")
+    use_odom = LaunchConfiguration("use_odom").perform(context).lower()
     odom_delay = LaunchConfiguration("odom_delay").perform(context)
-    if use_odom:
+    use_time_optimal_control = LaunchConfiguration("use_time_optimal_control").perform(
+        context
+    )
+    if use_odom.lower() == "true":
         error_lin = 0.03
     else:
         error_lin = 0.02
@@ -27,8 +31,13 @@ def setup_launch(context: LaunchContext):
         ],
         output="screen",
     )
+    env = SetEnvironmentVariable(
+        "GCOV_PREFIX",
+        f"/tmp/gcov/trajectory_tracker_d{odom_delay}_{use_odom}_{use_time_optimal_control}",
+    )
 
-    return test_trajectory_tracker,
+    return (env, test_trajectory_tracker)
+
 
 def generate_launch_description():
     use_odom = LaunchConfiguration("use_odom")
