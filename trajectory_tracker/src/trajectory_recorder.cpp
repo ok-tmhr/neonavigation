@@ -88,7 +88,7 @@ RecorderNode::RecorderNode()
   using std::placeholders::_1;
   using std::placeholders::_2;
   srs_clear_path_ = this->create_service<std_srvs::srv::Empty>(
-    "clear_path", std::bind(&RecorderNode::clearPath, this, _1, _2));
+    "~/clear_path", std::bind(&RecorderNode::clearPath, this, _1, _2));
 
   tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
