@@ -52,7 +52,8 @@ protected:
     poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-    auto result = node_->set_parameters_atomically({
+    auto client = std::make_shared<rclcpp::SyncParametersClient>(node_, "trajectory_tracker");
+    auto result = client->set_parameters_atomically({
       rclcpp::Parameter("goal_tolerance_lin_vel", goal_tolerance_lin_vel),
       rclcpp::Parameter("goal_tolerance_ang_vel", goal_tolerance_ang_vel)
     });
@@ -77,11 +78,11 @@ protected:
 
     rclcpp::Rate rate(50);
     rclcpp::Clock clock;
-    const rclcpp::Time initial_time = clock.now();
+    const rclcpp::Time initial_time = node_->now();
     const rclcpp::Time time_limit = initial_time + rclcpp::Duration(5, 0);
-    while (rclcpp::ok() && time_limit > clock.now())
+    while (rclcpp::ok() && time_limit > node_->now())
     {
-      odom.header.stamp = clock.now();
+      odom.header.stamp = node_->now();
       publishTransform(odom);
       rate.sleep();
       rclcpp::spin_some(node_);

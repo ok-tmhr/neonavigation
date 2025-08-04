@@ -101,8 +101,8 @@ private:
   void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
   {
     rclcpp::Clock clock;
-    const rclcpp::Time now = clock.now();
-    if (cmd_vel_time_ == rclcpp::Time(0))
+    const rclcpp::Time now = node_->now();
+    if (cmd_vel_time_ == rclcpp::Time(0LL, RCL_ROS_TIME))
       cmd_vel_time_ = now;
     const float dt = std::min((now - cmd_vel_time_).seconds(), 0.1);
     const tf2::Transform pose_diff(tf2::Quaternion(tf2::Vector3(0, 0, 1), msg->angular.z * dt),
@@ -122,6 +122,9 @@ public:
 
   TrajectoryTrackerTest(const std::string& node_name = "test_trajectory_tracker")
   : delay_(rclcpp::Duration(0, 0))
+  , trans_stamp_last_(0LL, RCL_ROS_TIME)
+  , initial_cmd_vel_time_(0LL, RCL_ROS_TIME)
+  , cmd_vel_time_(0LL, RCL_ROS_TIME)
   {
     node_ = rclcpp::Node::make_shared(node_name);
     using std::placeholders::_1;
@@ -157,12 +160,12 @@ public:
     // Wait trajectory_tracker node
     rclcpp::Rate rate(10);
     rclcpp::Clock clock;
-    const auto start = clock.now();
+    const auto start = node_->now();
     while (rclcpp::ok())
     {
       nav_msgs::msg::Path path;
       path.header.frame_id = "odom";
-      path.header.stamp = clock.now();
+      path.header.stamp = node_->now();
       pub_path_->publish(path);
 
       pose_ = pose;
@@ -173,7 +176,7 @@ public:
       if (status_ &&
           status_->status != trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(clock.now(), start + rclcpp::Duration::from_seconds(10.0))
+      ASSERT_LT(node_->now(), start + rclcpp::Duration::from_seconds(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
@@ -188,7 +191,7 @@ public:
   {
     rclcpp::Rate rate(50);
     rclcpp::Clock clock;
-    const auto start = clock.now();
+    const auto start = node_->now();
     while (rclcpp::ok())
     {
       if (func)
@@ -200,11 +203,11 @@ public:
       if (status_ &&
           status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(clock.now(), start + rclcpp::Duration::from_seconds(10.0))
+      ASSERT_LT(node_->now(), start + rclcpp::Duration::from_seconds(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
-    initial_cmd_vel_time_ = clock.now();
+    initial_cmd_vel_time_ = node_->now();
     cmd_vel_count_ = 0;
   }
   void publishPath(const std::vector<Eigen::Vector3d>& poses)

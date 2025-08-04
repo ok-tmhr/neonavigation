@@ -39,9 +39,12 @@ ament_target_dependencies(test_trajectory_tracker ${AMENT_CMAKE_DEPENDS} Eigen3)
 # target_link_libraries(test_trajectory_tracker_with_odom ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # add_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)
 
-# ament_add_gtest(test_trajectory_tracker_overshoot src/test_trajectory_tracker_overshoot.cpp)
+ament_add_gtest(test_trajectory_tracker_overshoot src/test_trajectory_tracker_overshoot.cpp)
 # add_rostest_gtest(test_trajectory_tracker_overshoot test/trajectory_tracker_overshoot_rostest.test
 #     src/test_trajectory_tracker_overshoot.cpp)
 # target_link_libraries(test_trajectory_tracker_overshoot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # add_dependencies(test_trajectory_tracker_overshoot trajectory_tracker)
-# ament_target_dependencies(test_trajectory_tracker_overshoot ${AMENT_CMAKE_DEPENDS})
+target_include_directories(test_trajectory_tracker_overshoot PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(test_trajectory_tracker_overshoot ${AMENT_CMAKE_DEPENDS})
