@@ -30,9 +30,6 @@
 #include <vector>
 
 #include <trajectory_tracker_test.h>
-// #include <trajectory_tracker/TrajectoryTrackerConfig.h>
-
-// #include <dynamic_reconfigure/client.h>
 
 class TrajectoryTrackerOvershootTest : public TrajectoryTrackerTest
 {

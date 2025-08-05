@@ -68,7 +68,7 @@ private:
 
   nav_msgs::msg::Path path_;
   std::string topic_path_;
-  trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
+  trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req_path_;
   double hz_;
   std::vector<uint8_t> buffer_;
   int serial_size_;
@@ -96,7 +96,7 @@ ServerNode::ServerNode()
   , buffer_(1024)
 {
   topic_path_ = this->declare_parameter<std::string>("path", "path");
-  req_path_.filename = this->declare_parameter<std::string>("file", "a.path");
+  req_path_->filename = this->declare_parameter<std::string>("file", "a.path");
   hz_ = this->declare_parameter<double>("hz", 5.0);
   filter_step_ = this->declare_parameter<double>("filter_step", 0.0);
 
@@ -116,7 +116,7 @@ ServerNode::~ServerNode()
 
 bool ServerNode::loadFile()
 {
-  std::ifstream ifs(req_path_.filename.c_str());
+  std::ifstream ifs(req_path_->filename.c_str());
   if (ifs.good())
   {
     ifs.seekg(0, ifs.end);
@@ -235,7 +235,7 @@ void ServerNode::updateIM()
 void ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
                         trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res)
 {
-  req_path_ = *req;
+  req_path_ = req;
   res->success = false;
 
   if (loadFile())
@@ -270,7 +270,7 @@ void ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::Share
   else
   {
     serial_size_ = 0;
-    req_path_.filename = "";
+    req_path_->filename = "";
     path_.poses.clear();
     path_.header.frame_id = "map";
   }
@@ -284,8 +284,8 @@ void ServerNode::spin()
   while (rclcpp::ok())
   {
     status.header = path_.header;
-    status.filename = req_path_.filename;
-    status.id = req_path_.id;
+    status.filename = req_path_->filename;
+    status.id = req_path_->id;
     pub_status_->publish(status);
     rclcpp::spin_some(shared_from_this());
     loop_rate.sleep();

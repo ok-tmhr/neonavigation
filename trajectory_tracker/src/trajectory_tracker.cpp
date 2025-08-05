@@ -128,7 +128,7 @@ private:
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_hander_;
-  std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> callback_handler_;
+  std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> callback_handles_;
   double odom_timeout_sec_;
 
   trajectory_tracker::Path2D path_;
@@ -289,7 +289,7 @@ TrackerNode::TrackerNode()
 
   for (const auto& [key, callback]: on_parameter_map)
   {
-    callback_handler_.push_back(parameter_hander_->add_parameter_callback(key, callback));
+    callback_handles_.push_back(parameter_hander_->add_parameter_callback(key, callback));
   }
 
 }

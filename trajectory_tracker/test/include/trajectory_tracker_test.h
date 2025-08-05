@@ -44,7 +44,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-// #include <dynamic_reconfigure/client.h>
+
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
@@ -81,8 +81,6 @@ protected:
   double error_lin_;
   double error_large_lin_;
   double error_ang_;
-  // using ParamType = trajectory_tracker::TrajectoryTrackerConfig;
-  // std::unique_ptr<dynamic_reconfigure::Client<ParamType>> dynamic_reconfigure_client_;
 
   double getYaw() const
   {

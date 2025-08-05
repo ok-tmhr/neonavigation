@@ -43,10 +43,10 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
 
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
-    ASSERT_LT(clock.now() - start, rclcpp::Duration(10, 0));
+    ASSERT_LT(node_->now() - start, rclcpp::Duration(10, 0));
 
     publishTransform();
     rate.sleep();
