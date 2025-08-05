@@ -189,6 +189,19 @@ TrackerNode::TrackerNode()
   , is_path_updated_(false)
   , prev_odom_stamp_(0LL, RCL_ROS_TIME)
 {
+  const auto desc = [] (const double from, const double to){
+    rcl_interfaces::msg::ParameterDescriptor desc;
+    desc.floating_point_range.resize(1);
+    desc.floating_point_range[0].from_value = from;
+    desc.floating_point_range[0].to_value = to;
+    return desc;
+  };
+  auto basic_desc = desc(0.0, 100.0);
+  rcl_interfaces::msg::ParameterDescriptor desc_path_step;
+  desc_path_step.integer_range.resize(1);
+  desc_path_step.integer_range[0].from_value = 1;
+  desc_path_step.integer_range[0].to_value = 100;
+
   frame_robot_ = this->declare_parameter<std::string>("frame_robot", "base_link");
   frame_odom_ = this->declare_parameter<std::string>("frame_odom", "odom");
   topic_path_ = this->declare_parameter<std::string>("path", "path");
@@ -198,38 +211,38 @@ TrackerNode::TrackerNode()
   predict_odom_ = this->declare_parameter<bool>("predict_odom", true);
   max_dt_ = this->declare_parameter<double>("max_dt", 0.1);
   odom_timeout_sec_ = this->declare_parameter<double>("odom_timeout_sec", 0.1);
-  look_forward_ = this->declare_parameter<double>("look_forward", 0.5);
-  curv_forward_ = this->declare_parameter<double>("curv_forward", 0.5);
-  k_[0]=this->declare_parameter<double>("k_dist", 1.0);
-  k_[1]=this->declare_parameter<double>("k_ang", 1.0);
-  k_[2]=this->declare_parameter<double>("k_avel", 1.0);
-  gain_at_vel_=this->declare_parameter<double>("gain_at_vel", 0.0);
-  d_lim_=this->declare_parameter<double>("dist_lim", 0.5);
-  d_stop_=this->declare_parameter<double>("dist_stop", 2.0);
-  rotate_ang_=this->declare_parameter<double>("rotate_ang", 0.78539816339);
-  vel_[0]=this->declare_parameter<double>("max_vel", 0.5);
-  vel_[1]=this->declare_parameter<double>("max_angvel", 1.0);
-  acc_[0]=this->declare_parameter<double>("max_acc", 1.0);
-  acc_[1]=this->declare_parameter<double>("max_angacc", 2.0);
-  acc_toc_[0]=acc_[0]*this->declare_parameter<double>("acc_toc_factor", 0.9);
-  acc_toc_[1]=acc_[1]* this->declare_parameter<double>("angacc_toc_factor", 0.9);
-  path_step_ = this->declare_parameter<int>("path_step", 1);
-  goal_tolerance_dist_ = this->declare_parameter<double>("goal_tolerance_dist", 0.2);
-  goal_tolerance_ang_ = this->declare_parameter<double>("goal_tolerance_ang", 0.1);
-  stop_tolerance_dist_ = this->declare_parameter<double>("stop_tolerance_dist", 0.1);
-  stop_tolerance_ang_ = this->declare_parameter<double>("stop_tolerance_ang", 0.05);
-  no_pos_cntl_dist_ = this->declare_parameter<double>("no_position_control_dist", 0.0);
-  min_track_path_ = this->declare_parameter<double>("min_tracking_path", no_pos_cntl_dist_);
+  look_forward_ = this->declare_parameter<double>("look_forward", 0.5, basic_desc);
+  curv_forward_ = this->declare_parameter<double>("curv_forward", 0.5, basic_desc);
+  k_[0]=this->declare_parameter<double>("k_dist", 1.0, basic_desc);
+  k_[1]=this->declare_parameter<double>("k_ang", 1.0, basic_desc);
+  k_[2]=this->declare_parameter<double>("k_avel", 1.0, basic_desc);
+  gain_at_vel_=this->declare_parameter<double>("gain_at_vel", 0.0, basic_desc);
+  d_lim_=this->declare_parameter<double>("dist_lim", 0.5, basic_desc);
+  d_stop_=this->declare_parameter<double>("dist_stop", 2.0, basic_desc);
+  rotate_ang_=this->declare_parameter<double>("rotate_ang", 0.78539816339, desc(0.0, 3.1415));
+  vel_[0]=this->declare_parameter<double>("max_vel", 0.5, basic_desc);
+  vel_[1]=this->declare_parameter<double>("max_angvel", 1.0, basic_desc);
+  acc_[0]=this->declare_parameter<double>("max_acc", 1.0, basic_desc);
+  acc_[1]=this->declare_parameter<double>("max_angacc", 2.0, basic_desc);
+  acc_toc_[0]=acc_[0]*this->declare_parameter<double>("acc_toc_factor", 0.9, desc(0.0, 1.0));
+  acc_toc_[1]=acc_[1]* this->declare_parameter<double>("angacc_toc_factor", 0.9, desc(0.0, 1.0));
+  path_step_ = this->declare_parameter<int>("path_step", 1, desc_path_step);
+  goal_tolerance_dist_ = this->declare_parameter<double>("goal_tolerance_dist", 0.2, basic_desc);
+  goal_tolerance_ang_ = this->declare_parameter<double>("goal_tolerance_ang", 0.1, basic_desc);
+  stop_tolerance_dist_ = this->declare_parameter<double>("stop_tolerance_dist", 0.1, basic_desc);
+  stop_tolerance_ang_ = this->declare_parameter<double>("stop_tolerance_ang", 0.05, basic_desc);
+  no_pos_cntl_dist_ = this->declare_parameter<double>("no_position_control_dist", 0.0, basic_desc);
+  min_track_path_ = this->declare_parameter<double>("min_tracking_path", no_pos_cntl_dist_, basic_desc);
   allow_backward_ = this->declare_parameter<bool>("allow_backward", true);
   limit_vel_by_avel_ = this->declare_parameter<bool>("limit_vel_by_avel", false);
   check_old_path_ = this->declare_parameter<bool>("check_old_path", false);
-  epsilon_ = this->declare_parameter<double>("epsilon", 0.001);
+  epsilon_ = this->declare_parameter<double>("epsilon", 0.001, desc(0.0, 10.0));
   use_time_optimal_control_ = this->declare_parameter<bool>("use_time_optimal_control", true);
-  time_optimal_control_future_gain_ = this->declare_parameter<double>("time_optimal_control_future_gain", 1.5);
-  k_ang_rotation_ = this->declare_parameter<double>("k_ang_rotation", 1.0);
-  k_avel_rotation_ = this->declare_parameter<double>("k_avel_rotation", 1.0);
-  goal_tolerance_lin_vel_ = this->declare_parameter<double>("goal_tolerance_lin_vel", 0.0);
-  goal_tolerance_ang_vel_ = this->declare_parameter<double>("goal_tolerance_ang_vel", 0.0);
+  time_optimal_control_future_gain_ = this->declare_parameter<double>("time_optimal_control_future_gain", 1.5, basic_desc);
+  k_ang_rotation_ = this->declare_parameter<double>("k_ang_rotation", 1.0, basic_desc);
+  k_avel_rotation_ = this->declare_parameter<double>("k_avel_rotation", 1.0, basic_desc);
+  goal_tolerance_lin_vel_ = this->declare_parameter<double>("goal_tolerance_lin_vel", 0.0, basic_desc);
+  goal_tolerance_ang_vel_ = this->declare_parameter<double>("goal_tolerance_ang_vel", 0.0, basic_desc);
 
   using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
@@ -255,37 +268,46 @@ TrackerNode::TrackerNode()
   std::map<std::string, std::function<void(const rclcpp::Parameter&)>> on_parameter_map = {
       {"look_forward", [this](const rclcpp::Parameter& p) { look_forward_ = p.as_double(); }},
       {"curv_forward", [this](const rclcpp::Parameter& p) { curv_forward_ = p.as_double(); }},
-      {"k_dist", [this](const rclcpp::Parameter& p) {k_[0]=p.as_double();}},
-      {"k_ang", [this](const rclcpp::Parameter& p) {k_[1]=p.as_double();}},
-      {"k_avel", [this](const rclcpp::Parameter& p) {k_[2]=p.as_double();}},
-      {"gain_at_vel", [this](const rclcpp::Parameter& p) {gain_at_vel_=p.as_double();}},
-      {"dist_lim", [this](const rclcpp::Parameter& p) {d_lim_=p.as_double();}},
-      {"dist_stop", [this](const rclcpp::Parameter& p) {d_stop_=p.as_double();}},
-      {"rotate_ang", [this](const rclcpp::Parameter& p) {rotate_ang_=p.as_double();}},
-      {"max_vel", [this](const rclcpp::Parameter& p) {vel_[0]=p.as_double();}},
-      {"max_angvel", [this](const rclcpp::Parameter& p) {vel_[1]=p.as_double();}},
-      {"max_acc", [this](const rclcpp::Parameter& p) {acc_[0]=p.as_double();acc_toc_[0]=acc_[0]*p.as_double();}},
-      {"max_angacc", [this](const rclcpp::Parameter& p) {acc_[1]=p.as_double();acc_toc_[1]=acc_[1]* p.as_double();}},
-      {"acc_toc_factor", [this](const rclcpp::Parameter& p) {acc_toc_[0]=acc_[0]*p.as_double();}},
-      {"angacc_toc_factor", [this](const rclcpp::Parameter& p) {acc_toc_[1]=acc_[1]* p.as_double();}},
-      {"path_step", [this](const rclcpp::Parameter& p) {path_step_ = p.as_int();}},
-      {"goal_tolerance_dist", [this](const rclcpp::Parameter& p) {goal_tolerance_dist_ = p.as_double();}},
-      {"goal_tolerance_ang", [this](const rclcpp::Parameter& p) {goal_tolerance_ang_ = p.as_double();}},
-      {"stop_tolerance_dist", [this](const rclcpp::Parameter& p) {stop_tolerance_dist_ = p.as_double();}},
-      {"stop_tolerance_ang", [this](const rclcpp::Parameter& p) {stop_tolerance_ang_ = p.as_double();}},
-      {"no_position_control_dist", [this](const rclcpp::Parameter& p) {no_pos_cntl_dist_ = p.as_double();}},
-      {"min_tracking_path", [this](const rclcpp::Parameter& p) {min_track_path_ = p.as_double();}},
-      {"allow_backward", [this](const rclcpp::Parameter& p) {allow_backward_ = p.as_bool();}},
-      {"limit_vel_by_avel", [this](const rclcpp::Parameter& p) {limit_vel_by_avel_ = p.as_bool();}},
-      {"check_old_path", [this](const rclcpp::Parameter& p) {check_old_path_ = p.as_bool();}},
-      {"epsilon", [this](const rclcpp::Parameter& p) {epsilon_ = p.as_double();}},
-      {"use_time_optimal_control", [this](const rclcpp::Parameter& p) {use_time_optimal_control_ = p.as_bool();}},
-      {"time_optimal_control_future_gain", [this](const rclcpp::Parameter& p) {time_optimal_control_future_gain_ = p.as_double();}},
-      {"k_ang_rotation", [this](const rclcpp::Parameter& p) {k_ang_rotation_ = p.as_double();}},
-      {"k_avel_rotation", [this](const rclcpp::Parameter& p) {k_avel_rotation_ = p.as_double();}},
-      {"goal_tolerance_lin_vel", [this](const rclcpp::Parameter& p) {goal_tolerance_lin_vel_ = p.as_double();}},
-      {"goal_tolerance_ang_vel", [this](const rclcpp::Parameter& p) {goal_tolerance_ang_vel_ = p.as_double();}},
-    };
+      {"k_dist", [this](const rclcpp::Parameter& p) { k_[0] = p.as_double(); }},
+      {"k_ang", [this](const rclcpp::Parameter& p) { k_[1] = p.as_double(); }},
+      {"k_avel", [this](const rclcpp::Parameter& p) { k_[2] = p.as_double(); }},
+      {"gain_at_vel", [this](const rclcpp::Parameter& p) { gain_at_vel_ = p.as_double(); }},
+      {"dist_lim", [this](const rclcpp::Parameter& p) { d_lim_ = p.as_double(); }},
+      {"dist_stop", [this](const rclcpp::Parameter& p) { d_stop_ = p.as_double(); }},
+      {"rotate_ang", [this](const rclcpp::Parameter& p) { rotate_ang_ = p.as_double(); }},
+      {"max_vel", [this](const rclcpp::Parameter& p) { vel_[0] = p.as_double(); }},
+      {"max_angvel", [this](const rclcpp::Parameter& p) { vel_[1] = p.as_double(); }},
+      {"max_acc",
+       [this](const rclcpp::Parameter& p) {
+           acc_[0] = p.as_double();
+           acc_toc_[0] = acc_[0] * p.as_double();
+       }},
+      {"max_angacc",
+       [this](const rclcpp::Parameter& p) {
+           acc_[1] = p.as_double();
+           acc_toc_[1] = acc_[1] * p.as_double();
+       }},
+      {"acc_toc_factor", [this](const rclcpp::Parameter& p) { acc_toc_[0] = acc_[0] * p.as_double(); }},
+      {"angacc_toc_factor", [this](const rclcpp::Parameter& p) { acc_toc_[1] = acc_[1] * p.as_double(); }},
+      {"path_step", [this](const rclcpp::Parameter& p) { path_step_ = p.as_int(); }},
+      {"goal_tolerance_dist", [this](const rclcpp::Parameter& p) { goal_tolerance_dist_ = p.as_double(); }},
+      {"goal_tolerance_ang", [this](const rclcpp::Parameter& p) { goal_tolerance_ang_ = p.as_double(); }},
+      {"stop_tolerance_dist", [this](const rclcpp::Parameter& p) { stop_tolerance_dist_ = p.as_double(); }},
+      {"stop_tolerance_ang", [this](const rclcpp::Parameter& p) { stop_tolerance_ang_ = p.as_double(); }},
+      {"no_position_control_dist", [this](const rclcpp::Parameter& p) { no_pos_cntl_dist_ = p.as_double(); }},
+      {"min_tracking_path", [this](const rclcpp::Parameter& p) { min_track_path_ = p.as_double(); }},
+      {"allow_backward", [this](const rclcpp::Parameter& p) { allow_backward_ = p.as_bool(); }},
+      {"limit_vel_by_avel", [this](const rclcpp::Parameter& p) { limit_vel_by_avel_ = p.as_bool(); }},
+      {"check_old_path", [this](const rclcpp::Parameter& p) { check_old_path_ = p.as_bool(); }},
+      {"epsilon", [this](const rclcpp::Parameter& p) { epsilon_ = p.as_double(); }},
+      {"use_time_optimal_control", [this](const rclcpp::Parameter& p) { use_time_optimal_control_ = p.as_bool(); }},
+      {"time_optimal_control_future_gain",
+       [this](const rclcpp::Parameter& p) { time_optimal_control_future_gain_ = p.as_double(); }},
+      {"k_ang_rotation", [this](const rclcpp::Parameter& p) { k_ang_rotation_ = p.as_double(); }},
+      {"k_avel_rotation", [this](const rclcpp::Parameter& p) { k_avel_rotation_ = p.as_double(); }},
+      {"goal_tolerance_lin_vel", [this](const rclcpp::Parameter& p) { goal_tolerance_lin_vel_ = p.as_double(); }},
+      {"goal_tolerance_ang_vel", [this](const rclcpp::Parameter& p) { goal_tolerance_ang_vel_ = p.as_double(); }},
+  };
 
   for (const auto& [key, callback]: on_parameter_map)
   {
