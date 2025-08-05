@@ -45,10 +45,10 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
-    if (clock.now() > start + rclcpp::Duration(10, 0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -107,10 +107,10 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 
     rclcpp::Rate rate(50);
     rclcpp::Clock clock;
-    const rclcpp::Time start = clock.now();
+    const rclcpp::Time start = node_->now();
     while (rclcpp::ok())
     {
-      if (clock.now() > start + rclcpp::Duration(10, 0))
+      if (node_->now() > start + rclcpp::Duration(10, 0))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -169,10 +169,10 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 
     rclcpp::Rate rate(50);
     rclcpp::Clock clock;
-    const rclcpp::Time start = clock.now();
+    const rclcpp::Time start = node_->now();
     while (rclcpp::ok())
     {
-      if (clock.now() > start + rclcpp::Duration::from_seconds(5.0 + path_length / vel))
+      if (node_->now() > start + rclcpp::Duration::from_seconds(5.0 + path_length / vel))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -227,10 +227,10 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
-    if (clock.now() > start + rclcpp::Duration(10, 0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -296,10 +296,10 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
-    if (clock.now() > start + rclcpp::Duration(20, 0))
+    if (node_->now() > start + rclcpp::Duration(20, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -372,10 +372,10 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
         rclcpp::Rate rate(50);
         rclcpp::Clock clock;
-        const rclcpp::Time start = clock.now();
+        const rclcpp::Time start = node_->now();
         for (int i = 0; rclcpp::ok(); ++i)
         {
-          if (clock.now() > start + rclcpp::Duration(10, 0))
+          if (node_->now() > start + rclcpp::Duration(10, 0))
           {
             FAIL()
                 << condition_name.str()
@@ -449,10 +449,10 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
 
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
-    if (clock.now() > start + rclcpp::Duration(10, 0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -512,10 +512,10 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   int cnt_arrive_local_goal(0);
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   for (int i = 0; rclcpp::ok(); i++)
   {
-    if (clock.now() > start + rclcpp::Duration(15, 0))
+    if (node_->now() > start + rclcpp::Duration(15, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -582,10 +582,10 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
   rclcpp::Rate rate(50);
   rclcpp::Clock clock;
-  const rclcpp::Time start = clock.now();
+  const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
-    if (clock.now() > start + rclcpp::Duration(10, 0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -635,7 +635,7 @@ void timeSource()
 
   rclcpp::WallRate rate(400.0);  // 400% speed
   rclcpp::Clock clock;
-  rclcpp::Time time = clock.now();
+  rclcpp::Time time = node->now();
   while (rclcpp::ok())
   {
     rosgraph_msgs::msg::Clock clock;
