@@ -43,11 +43,11 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > start + ros::Duration(10.0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -59,8 +59,8 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int j = 0; j < 5; ++j)
@@ -69,7 +69,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
     {
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -104,11 +104,11 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     poses.push_back(Eigen::Vector3d(0.5, 0, 0));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-    ros::Rate rate(50);
-    const ros::Time start = ros::Time::now();
-    while (ros::ok())
+    rclcpp::Rate rate(50);
+    const rclcpp::Time start = node_->now();
+    while (rclcpp::ok())
     {
-      if (ros::Time::now() > start + ros::Duration(10.0))
+      if (node_->now() > start + rclcpp::Duration(10, 0))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -121,8 +121,8 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
-      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      rclcpp::spin_some(node_);
+      if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
     for (int j = 0; j < 5; ++j)
@@ -131,7 +131,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
       {
         publishTransform();
         rate.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(node_);
       }
 
       // Check multiple times to assert overshoot.
@@ -165,11 +165,11 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     poses.push_back(Eigen::Vector4d(path_length, 0.0, 0.0, vel));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
-    ros::Rate rate(50);
-    const ros::Time start = ros::Time::now();
-    while (ros::ok())
+    rclcpp::Rate rate(50);
+    const rclcpp::Time start = node_->now();
+    while (rclcpp::ok())
     {
-      if (ros::Time::now() > start + ros::Duration(5.0 + path_length / vel))
+      if (node_->now() > start + rclcpp::Duration::from_seconds(5.0 + path_length / vel))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -182,8 +182,8 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
-      if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+      rclcpp::spin_some(node_);
+      if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
     for (int j = 0; j < 5; ++j)
@@ -192,7 +192,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
       {
         publishTransform();
         rate.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(node_);
       }
 
       // Check multiple times to assert overshoot.
@@ -222,11 +222,11 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > start + ros::Duration(10.0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -238,7 +238,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(node_);
 
     if (0.3 < getPos()[0] && getPos()[0] < 0.35)
     {
@@ -249,7 +249,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
       ASSERT_NEAR(cmd_vel_->linear.x, 0.5, error_lin_);
     }
 
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int j = 0; j < 5; ++j)
@@ -258,7 +258,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     {
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -290,11 +290,11 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   }
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > start + ros::Duration(20.0))
+    if (node_->now() > start + rclcpp::Duration(20, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -306,8 +306,8 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int j = 0; j < 5; ++j)
@@ -316,7 +316,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     {
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -365,11 +365,11 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         }
         waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-        ros::Rate rate(50);
-        const ros::Time start = ros::Time::now();
-        for (int i = 0; ros::ok(); ++i)
+        rclcpp::Rate rate(50);
+        const rclcpp::Time start = node_->now();
+        for (int i = 0; rclcpp::ok(); ++i)
         {
-          if (ros::Time::now() > start + ros::Duration(10.0))
+          if (node_->now() > start + rclcpp::Duration(10, 0))
           {
             FAIL()
                 << condition_name.str()
@@ -382,7 +382,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
           publishTransform();
           rate.sleep();
-          ros::spinOnce();
+          rclcpp::spin_some(node_);
 
           if (cmd_vel_ && i > 5)
           {
@@ -397,7 +397,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
                 << condition_name.str();
           }
 
-          if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+          if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
             break;
         }
         ASSERT_TRUE(static_cast<bool>(cmd_vel_)) << condition_name.str();
@@ -407,7 +407,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           {
             publishTransform();
             rate.sleep();
-            ros::spinOnce();
+            rclcpp::spin_some(node_);
           }
 
           // Check multiple times to assert overshoot.
@@ -441,11 +441,11 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   }
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > start + ros::Duration(10.0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -457,8 +457,8 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int j = 0; j < 5; ++j)
@@ -467,7 +467,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     {
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -503,11 +503,11 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   int cnt_arrive_local_goal(0);
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  for (int i = 0; ros::ok(); i++)
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  for (int i = 0; rclcpp::ok(); i++)
   {
-    if (ros::Time::now() > start + ros::Duration(15.0))
+    if (node_->now() > start + rclcpp::Duration(15, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -519,8 +519,8 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
 
     if ((pos_local_goal - getPos()).norm() < 0.1)
@@ -547,7 +547,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     {
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -572,11 +572,11 @@ TEST_F(TrajectoryTrackerTest, FarAray)
   poses.push_back(Eigen::Vector3d(0.5, y_pos, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > start + ros::Duration(10.0))
+    if (node_->now() > start + rclcpp::Duration(10, 0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -588,8 +588,8 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int j = 0; j < 5; ++j)
@@ -598,7 +598,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
     {
       publishTransform();
       rate.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(node_);
     }
 
     // Check multiple times to assert overshoot.
@@ -614,32 +614,38 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
 void timeSource()
 {
-  ros::NodeHandle nh("/");
-  bool use_sim_time;
-  nh.param("/use_sim_time", use_sim_time, false);
+  auto node = rclcpp::Node::make_shared("time_source");
+  auto parameter_client = std::make_shared<rclcpp::SyncParametersClient>(node, "trajectory_tracker");
+  parameter_client->wait_for_service(std::chrono::seconds(5));
+
+  bool use_sim_time = parameter_client->get_parameter<bool>("use_sim_time");
   if (!use_sim_time)
     return;
 
-  ros::Publisher pub = nh.advertise<rosgraph_msgs::Clock>("clock", 1);
+  auto pub = node->create_publisher<rosgraph_msgs::msg::Clock>("clock", 1);
 
-  ros::WallRate rate(400.0);  // 400% speed
-  ros::WallTime time = ros::WallTime::now();
-  while (ros::ok())
+  rclcpp::WallRate rate(400.0);  // 400% speed
+  rclcpp::Clock clock;
+  rclcpp::Time time = clock.now();
+  while (rclcpp::ok())
   {
-    rosgraph_msgs::Clock clock;
-    clock.clock.fromNSec(time.toNSec());
-    pub.publish(clock);
+    rosgraph_msgs::msg::Clock clock;
+    clock.clock = time;
+    pub->publish(clock);
     rate.sleep();
-    time += ros::WallDuration(0.01);
+    time += rclcpp::Duration::from_seconds(0.01);
   }
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_tracker");
+  rclcpp::init(argc, argv);
 
-  boost::thread time_thread(timeSource);
+  auto time_thread = std::thread(timeSource);
 
-  return RUN_ALL_TESTS();
+  auto result = RUN_ALL_TESTS();
+  rclcpp::shutdown();
+  time_thread.join();
+  return result;
 }
