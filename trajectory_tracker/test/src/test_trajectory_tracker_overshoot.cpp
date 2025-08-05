@@ -74,7 +74,6 @@ protected:
     odom.twist.twist.angular.z = rotation_vel;
 
     rclcpp::Rate rate(50);
-    rclcpp::Clock clock;
     const rclcpp::Time initial_time = node_->now();
     const rclcpp::Time time_limit = initial_time + rclcpp::Duration(5, 0);
     while (rclcpp::ok() && time_limit > node_->now())

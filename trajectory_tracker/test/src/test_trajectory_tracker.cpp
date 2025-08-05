@@ -44,7 +44,6 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
@@ -106,7 +105,6 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
     rclcpp::Rate rate(50);
-    rclcpp::Clock clock;
     const rclcpp::Time start = node_->now();
     while (rclcpp::ok())
     {
@@ -168,7 +166,6 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
     rclcpp::Rate rate(50);
-    rclcpp::Clock clock;
     const rclcpp::Time start = node_->now();
     while (rclcpp::ok())
     {
@@ -226,7 +223,6 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
@@ -295,7 +291,6 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
@@ -371,7 +366,6 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
         rclcpp::Rate rate(50);
-        rclcpp::Clock clock;
         const rclcpp::Time start = node_->now();
         for (int i = 0; rclcpp::ok(); ++i)
         {
@@ -448,7 +442,6 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
@@ -511,7 +504,6 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
   int cnt_arrive_local_goal(0);
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   for (int i = 0; rclcpp::ok(); i++)
   {
@@ -581,7 +573,6 @@ TEST_F(TrajectoryTrackerTest, FarAray)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {
@@ -635,7 +626,7 @@ void timeSource()
 
   rclcpp::WallRate rate(400.0);  // 400% speed
   rclcpp::Clock clock;
-  rclcpp::Time time = node->now();
+  rclcpp::Time time = clock.now();
   while (rclcpp::ok())
   {
     rosgraph_msgs::msg::Clock clock;

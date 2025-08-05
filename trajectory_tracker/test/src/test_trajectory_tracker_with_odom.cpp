@@ -42,7 +42,6 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
   rclcpp::Rate rate(50);
-  rclcpp::Clock clock;
   const rclcpp::Time start = node_->now();
   while (rclcpp::ok())
   {

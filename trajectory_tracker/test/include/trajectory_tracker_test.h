@@ -98,7 +98,6 @@ private:
   }
   void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
   {
-    rclcpp::Clock clock;
     const rclcpp::Time now = node_->now();
     if (cmd_vel_time_ == rclcpp::Time(0LL, RCL_ROS_TIME))
       cmd_vel_time_ = now;
@@ -158,7 +157,7 @@ public:
     // Wait trajectory_tracker node
     rclcpp::Rate rate(10);
     rclcpp::Clock clock;
-    const auto start = node_->now();
+    const auto start = clock.now();
     while (rclcpp::ok())
     {
       nav_msgs::msg::Path path;
@@ -174,7 +173,7 @@ public:
       if (status_ &&
           status_->status != trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(node_->now(), start + rclcpp::Duration::from_seconds(10.0))
+      ASSERT_LT(clock.now(), start + rclcpp::Duration::from_seconds(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
@@ -189,7 +188,7 @@ public:
   {
     rclcpp::Rate rate(50);
     rclcpp::Clock clock;
-    const auto start = node_->now();
+    const auto start = clock.now();
     while (rclcpp::ok())
     {
       if (func)
@@ -201,7 +200,7 @@ public:
       if (status_ &&
           status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING)
         break;
-      ASSERT_LT(node_->now(), start + rclcpp::Duration::from_seconds(10.0))
+      ASSERT_LT(clock.now(), start + rclcpp::Duration::from_seconds(10.0))
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }

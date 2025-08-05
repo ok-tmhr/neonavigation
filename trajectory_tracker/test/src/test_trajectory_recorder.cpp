@@ -66,14 +66,13 @@ TEST(TrajectoryRecorder, TfToPath)
   const size_t len = sizeof(points) / sizeof(tf2::Transform);
 
   rclcpp::sleep_for(std::chrono::seconds(1));
-  rclcpp::Clock clock;
   for (auto& p : points)
   {
     for (size_t i = 0; i < 3; ++i)
     {
       geometry_msgs::msg::TransformStamped trans =
           tf2::toMsg(tf2::Stamped<tf2::Transform>(
-              p, tf2_ros::fromRclcpp(clock.now() + rclcpp::Duration::from_seconds(0.1)), "map"));
+              p, tf2_ros::fromRclcpp(node->now() + rclcpp::Duration::from_seconds(0.1)), "map"));
       trans.child_frame_id = "base_link";
       tfb->sendTransform(trans);
       rclcpp::sleep_for(std::chrono::microseconds(100));
