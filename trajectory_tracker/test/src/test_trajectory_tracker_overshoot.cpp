@@ -30,12 +30,13 @@
 #include <vector>
 
 #include <trajectory_tracker_test.h>
-#include <trajectory_tracker/TrajectoryTrackerConfig.h>
-
-#include <dynamic_reconfigure/client.h>
 
 class TrajectoryTrackerOvershootTest : public TrajectoryTrackerTest
 {
+public:
+  TrajectoryTrackerOvershootTest() : TrajectoryTrackerTest("test_trajectory_tracker_overshoot")
+  {
+  }
 protected:
   void runTest(const double goal_tolerance_lin_vel, const double goal_tolerance_ang_vel,
                const double linear_vel, const double rotation_vel, const int32_t expected_status)
@@ -48,13 +49,14 @@ protected:
     poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-    ParamType param;
-    ASSERT_TRUE(getConfig(param));
-    param.goal_tolerance_lin_vel = goal_tolerance_lin_vel;
-    param.goal_tolerance_ang_vel = goal_tolerance_ang_vel;
-    ASSERT_TRUE(setConfig(param));
+    auto client = std::make_shared<rclcpp::SyncParametersClient>(node_, "trajectory_tracker");
+    auto result = client->set_parameters_atomically({
+      rclcpp::Parameter("goal_tolerance_lin_vel", goal_tolerance_lin_vel),
+      rclcpp::Parameter("goal_tolerance_ang_vel", goal_tolerance_ang_vel)
+    });
+    ASSERT_TRUE(result.successful);
 
-    nav_msgs::Odometry odom;
+    nav_msgs::msg::Odometry odom;
     odom.header.frame_id = "odom";
     odom.child_frame_id = "base_link";
     odom.pose.pose.position.x = 0.5;
@@ -71,16 +73,16 @@ protected:
     odom.twist.twist.angular.y = 0.0;
     odom.twist.twist.angular.z = rotation_vel;
 
-    ros::Rate rate(50);
-    const ros::Time initial_time = ros::Time::now();
-    const ros::Time time_limit = initial_time + ros::Duration(5.0);
-    while (ros::ok() && time_limit > ros::Time::now())
+    rclcpp::Rate rate(50);
+    const rclcpp::Time initial_time = node_->now();
+    const rclcpp::Time time_limit = initial_time + rclcpp::Duration(5, 0);
+    while (rclcpp::ok() && time_limit > node_->now())
     {
-      odom.header.stamp = ros::Time::now();
+      odom.header.stamp = node_->now();
       publishTransform(odom);
       rate.sleep();
-      ros::spinOnce();
-      if ((status_->header.stamp > initial_time + ros::Duration(0.5)) && (status_->status == expected_status))
+      rclcpp::spin_some(node_);
+      if ((rclcpp::Time(status_->header.stamp) > initial_time + rclcpp::Duration::from_seconds(0.5)) && (status_->status == expected_status))
       {
         return;
       }
@@ -92,43 +94,43 @@ protected:
 TEST_F(TrajectoryTrackerOvershootTest, NoVelocityToleranceWithRemainingLinearVel)
 {
   SCOPED_TRACE("NoVelocityToleranceWithRemainingLinearVel");
-  runTest(0.0, 0.0, 0.1, 0.0, trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL);
+  runTest(0.0, 0.0, 0.1, 0.0, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL);
 }
 
 TEST_F(TrajectoryTrackerOvershootTest, NoVelocityToleranceWithRemainingAngularVel)
 {
   SCOPED_TRACE("NoVelocityToleranceWithRemainingAngularVel");
-  runTest(0.0, 0.0, 0.0, 0.1, trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL);
+  runTest(0.0, 0.0, 0.0, 0.1, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL);
 }
 
 TEST_F(TrajectoryTrackerOvershootTest, LinearVelocityToleranceWithRemainingLinearVel)
 {
   SCOPED_TRACE("LinearVelocityToleranceWithRemainingLinearVel");
-  runTest(0.05, 0.0, 0.1, 0.0, trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING);
+  runTest(0.05, 0.0, 0.1, 0.0, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING);
 }
 
 TEST_F(TrajectoryTrackerOvershootTest, LinearVelocityToleranceWithRemainingAngularVel)
 {
   SCOPED_TRACE("LinearVelocityToleranceWithRemainingAngularVel");
-  runTest(0.05, 0.0, 0.0, 0.1, trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL);
+  runTest(0.05, 0.0, 0.0, 0.1, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL);
 }
 
 TEST_F(TrajectoryTrackerOvershootTest, AngularrVelocityToleranceWithRemainingLinearVel)
 {
   SCOPED_TRACE("AngularrVelocityToleranceWithRemainingLinearVel");
-  runTest(0.0, 0.05, 0.1, 0.0, trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL);
+  runTest(0.0, 0.05, 0.1, 0.0, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL);
 }
 
 TEST_F(TrajectoryTrackerOvershootTest, AngularrVelocityToleranceWithRemainingAngularVel)
 {
   SCOPED_TRACE("AngularrVelocityToleranceWithRemainingAngularVel");
-  runTest(0.0, 0.05, 0.0, 0.1, trajectory_tracker_msgs::TrajectoryTrackerStatus::FOLLOWING);
+  runTest(0.0, 0.05, 0.0, 0.1, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_tracker_overshoot");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
