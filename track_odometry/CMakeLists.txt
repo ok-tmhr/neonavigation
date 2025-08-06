@@ -32,14 +32,13 @@ add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
 target_include_directories(tf_projection PRIVATE include)
 ament_target_dependencies(tf_projection ${AMENT_CMAKE_DEPENDS})
 
-# if(CATKIN_ENABLE_TESTING)
-#   find_package(rostest REQUIRED)
-#   add_subdirectory(test)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  add_subdirectory(test)
 
-#   find_package(roslint REQUIRED)
-#   roslint_cpp()
-#   roslint_add_test()
-# endif()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 
 install(TARGETS
