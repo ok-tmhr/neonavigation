@@ -24,15 +24,13 @@ find_package(Eigen3 REQUIRED)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
 add_executable(track_odometry src/track_odometry.cpp)
-target_link_libraries(track_odometry ${catkin_LIBRARIES})
-add_dependencies(track_odometry ${catkin_EXPORTED_TARGETS})
+target_include_directories(track_odometry PRIVATE include)
+ament_target_dependencies(track_odometry ${AMENT_CMAKE_DEPENDS} Eigen3)
 
 add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
-target_link_libraries(tf_projection ${catkin_LIBRARIES})
-add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
-
+target_include_directories(tf_projection PRIVATE include)
+ament_target_dependencies(tf_projection ${AMENT_CMAKE_DEPENDS})
 
 # if(CATKIN_ENABLE_TESTING)
 #   find_package(rostest REQUIRED)

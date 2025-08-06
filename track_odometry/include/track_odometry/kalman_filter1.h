@@ -31,6 +31,7 @@
 #define TRACK_ODOMETRY_KALMAN_FILTER1_H
 
 #include <limits>
+#include <cmath>
 
 namespace track_odometry
 {

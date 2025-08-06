@@ -32,6 +32,7 @@
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -39,15 +40,13 @@
 
 #include <track_odometry/tf_projection.h>
 
-class TfProjectionNode
+class TfProjectionNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-  tf2_ros::StaticTransformBroadcaster tf_static_broadcaster_;
-  tf2_ros::TransformBroadcaster tf_broadcaster_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   double rate_;
   double tf_tolerance_;
@@ -62,38 +61,41 @@ private:
 
 public:
   TfProjectionNode()
-    : nh_()
-    , pnh_("~")
-    , tf_listener_(tf_buffer_)
+    : Node("tf_projection")
   {
-    if (pnh_.hasParam("base_link_frame") ||
-        pnh_.hasParam("projection_frame") ||
-        pnh_.hasParam("target_frame") ||
-        pnh_.hasParam("frame"))
+    tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(*this);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
+    if (this->has_parameter("base_link_frame") ||
+        this->has_parameter("projection_frame") ||
+        this->has_parameter("target_frame") ||
+        this->has_parameter("frame"))
     {
       RCLCPP_ERROR(this->get_logger(),
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
           "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
-      pnh_.param("base_link_frame", source_frame_, std::string("base_link"));
-      pnh_.param("projection_frame", projection_surface_frame_, std::string("map"));
-      pnh_.param("target_frame", parent_frame_, std::string("map"));
-      pnh_.param("frame", projected_frame_, std::string("base_link_projected"));
+      source_frame_ = this->declare_parameter("base_link_frame", std::string("base_link"));
+      projection_surface_frame_ = this->declare_parameter("projection_frame", std::string("map"));
+      parent_frame_ = this->declare_parameter("target_frame", std::string("map"));
+      projected_frame_ = this->declare_parameter("frame", std::string("base_link_projected"));
     }
     else
     {
-      pnh_.param("source_frame", source_frame_, std::string("base_link"));
-      pnh_.param("projection_surface_frame", projection_surface_frame_, std::string("map"));
-      pnh_.param("parent_frame", parent_frame_, std::string("map"));
-      pnh_.param("projected_frame", projected_frame_, std::string("base_link_projected"));
+      source_frame_ = this->declare_parameter("source_frame", std::string("base_link"));
+      projection_surface_frame_ = this->declare_parameter("projection_surface_frame", std::string("map"));
+      parent_frame_ = this->declare_parameter("parent_frame", std::string("map"));
+      projected_frame_ = this->declare_parameter("projected_frame", std::string("base_link_projected"));
     }
 
-    pnh_.param("hz", rate_, 10.0);
-    pnh_.param("tf_tolerance", tf_tolerance_, 0.1);
-    pnh_.param("flat", flat_, false);
+    rate_ = this->declare_parameter("hz", 10.0);
+    tf_tolerance_ = this->declare_parameter("tf_tolerance", 0.1);
+    flat_ = this->declare_parameter("flat", false);
 
-    pnh_.param("project_posture", project_posture_, false);
-    pnh_.param("align_all_posture_to_source", align_all_posture_to_source_, false);
+    project_posture_ = this->declare_parameter("project_posture", false);
+    align_all_posture_to_source_ = this->declare_parameter("align_all_posture_to_source", false);
   }
   void process()
   {
@@ -102,20 +104,20 @@ public:
     try
     {
       tf2::fromMsg(
-          tf_buffer_->lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration(0.1)),
+          tf_buffer_->lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1)),
           trans);
       tf2::fromMsg(
-          tf_buffer_->lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, rclcpp::Duration(0.1)),
+          tf_buffer_->lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, tf2::durationFromSec(0.1)),
           trans_target);
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN_THROTTLE(1.0, "%s", e.what());
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "%s", e.what());
       return;
     }
 
-    if (!trans.stamp_.isZero())
-      trans.stamp_ += rclcpp::Duration(tf_tolerance_);
+    if (trans.stamp_ != tf2::TimePointZero)
+      trans.stamp_ += tf2::durationFromSec(tf_tolerance_);
 
     if (project_posture_)
     {
@@ -146,33 +148,33 @@ public:
     }
     trans_out.child_frame_id = projected_frame_;
 
-    if (trans.stamp_.isZero())
+    if (trans.stamp_ == tf2::TimePointZero)
     {
-      tf_static_broadcaster_.sendTransform(trans_out);
+      tf_static_broadcaster_->sendTransform(trans_out);
     }
     else
     {
-      tf_broadcaster_.sendTransform(trans_out);
+      tf_broadcaster_->sendTransform(trans_out);
     }
   }
-  void cbTimer(const ros::TimerEvent& event)
+  void cbTimer()
   {
     process();
   }
   void spin()
   {
-    rclcpp::TimerBase::SharedPtr timer = nh_.createTimer(
-        rclcpp::Duration(1.0 / rate_), &TfProjectionNode::cbTimer, this);
-    ros::spin();
+    rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
+        std::chrono::duration<double>(1.0 / rate_), std::bind(&TfProjectionNode::cbTimer, this));
+    rclcpp::spin(shared_from_this());
   }
 };
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "tf_projection");
+  rclcpp::init(argc, argv);
 
-  TfProjectionNode proj;
-  proj.spin();
+  auto proj = std::make_shared<TfProjectionNode>();
+  proj->spin();
 
   return 0;
 }
