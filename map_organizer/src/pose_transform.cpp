@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -29,73 +29,72 @@
 
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <neonavigation_common/compatibility.h>
 
-class PoseTransformNode
+class PoseTransformNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle pnh_;
-  ros::NodeHandle nh_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string to_;
 
-  ros::Publisher pub_pose_;
-  ros::Subscriber sub_pose_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_;
 
-  void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr& msg)
+  void cbPose(const geometry_msgs::msg::PoseWithCovarianceStamped::Ptr msg)
   {
     try
     {
-      geometry_msgs::PoseStamped in;
-      geometry_msgs::PoseStamped out;
-      geometry_msgs::PoseWithCovarianceStamped out_msg;
+      geometry_msgs::msg::PoseStamped in;
+      geometry_msgs::msg::PoseStamped out;
+      geometry_msgs::msg::PoseWithCovarianceStamped out_msg;
       in.header = msg->header;
-      in.header.stamp = ros::Time(0);
+      in.header.stamp = rclcpp::Time(0);
       in.pose = msg->pose.pose;
-      geometry_msgs::TransformStamped trans = tfbuf_.lookupTransform(
-          to_, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
+      geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
+          to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(in, out, trans);
       out_msg = *msg;
       out_msg.header = out.header;
       out_msg.pose.pose = out.pose;
-      pub_pose_.publish(out_msg);
+      pub_pose_->publish(out_msg);
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN("pose_transform: %s", e.what());
+      RCLCPP_WARN(this->get_logger(), "pose_transform: %s", e.what());
     }
   }
 
 public:
   PoseTransformNode()
-    : pnh_("~")
-    , tfl_(tfbuf_)
+    : Node("pose_transform")
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_pose_ = neonavigation_common::compat::subscribe(
-        nh_, "pose_in",
-        pnh_, "pose_in", 1, &PoseTransformNode::cbPose, this);
-    pub_pose_ = neonavigation_common::compat::advertise<geometry_msgs::PoseWithCovarianceStamped>(
-        nh_, "pose_out",
-        pnh_, "pose_out", 1, false);
-    pnh_.param("to_frame", to_, std::string("map"));
+
+    sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+        "pose_in",
+        1, std::bind(&PoseTransformNode::cbPose, this, std::placeholders::_1));
+    pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+        "pose_out",
+        1);
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
+    to_ = this->declare_parameter("to_frame", std::string("map"));
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "pose_transform");
+  rclcpp::init(argc, argv);
 
-  PoseTransformNode ptn();
-  ros::spin();
+  auto ptn = std::make_shared<PoseTransformNode>();
+  rclcpp::spin(ptn);
 
   return 0;
 }
