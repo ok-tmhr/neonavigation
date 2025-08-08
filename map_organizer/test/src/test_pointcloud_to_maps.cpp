@@ -30,15 +30,15 @@
 #include <string>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <map_organizer_msgs/OccupancyGridArray.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 
 #include <gtest/gtest.h>
 
-sensor_msgs::PointCloud2 generateMapCloud()
+sensor_msgs::msg::PointCloud2 generateMapCloud()
 {
   struct Point
   {
@@ -87,16 +87,16 @@ sensor_msgs::PointCloud2 generateMapCloud()
     points.push_back(Point(0.775, x, 2.5));
   }
 
-  sensor_msgs::PointCloud2 cloud;
+  sensor_msgs::msg::PointCloud2 cloud;
   cloud.header.frame_id = "map";
   cloud.is_bigendian = false;
   cloud.is_dense = false;
   sensor_msgs::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2Fields(
       3,
-      "x", 1, sensor_msgs::PointField::FLOAT32,
-      "y", 1, sensor_msgs::PointField::FLOAT32,
-      "z", 1, sensor_msgs::PointField::FLOAT32);
+      "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+      "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+      "z", 1, sensor_msgs::msg::PointField::FLOAT32);
   modifier.resize(points.size());
   cloud.height = 1;
   cloud.width = points.size();
@@ -117,23 +117,23 @@ sensor_msgs::PointCloud2 generateMapCloud()
 
 TEST(PointcloudToMaps, Convert)
 {
-  ros::NodeHandle nh;
+  auto nh = rclcpp::Node::make_shared("test_pointcloud_to_maps");
 
-  map_organizer_msgs::OccupancyGridArray::ConstPtr maps;
-  const boost::function<void(const map_organizer_msgs::OccupancyGridArray::ConstPtr&)>
-      cb = [&maps](const map_organizer_msgs::OccupancyGridArray::ConstPtr& msg) -> void
+  map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
+  const std::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr msg) -> void
   {
     maps = msg;
   };
-  ros::Subscriber sub = nh.subscribe("maps", 1, cb);
-  ros::Publisher pub = nh.advertise<sensor_msgs::PointCloud2>("mapcloud", 1, true);
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, cb);
+  auto pub = nh->create_publisher<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local());
 
-  pub.publish(generateMapCloud());
-  ros::Rate rate(10.0);
-  for (int i = 0; i < 50 && ros::ok(); ++i)
+  pub->publish(generateMapCloud());
+  rclcpp::Rate rate(10.0);
+  for (int i = 0; i < 50 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh);
     if (maps)
       break;
   }
@@ -192,7 +192,7 @@ TEST(PointcloudToMaps, Convert)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_pointcloud_to_maps");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
