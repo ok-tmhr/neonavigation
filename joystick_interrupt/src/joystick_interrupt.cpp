@@ -138,7 +138,7 @@ private:
     last_input_twist_ = *msg;
     std_msgs::msg::Bool status;
     if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
-        (rclcpp::Time::isSimTime() && last_joy_msg_ == rclcpp::Time(0LL, RCL_ROS_TIME)))
+        (this->get_parameter("use_sim_time").as_bool() && last_joy_msg_ == rclcpp::Time(0LL, RCL_ROS_TIME)))
     {
       pub_twist_->publish(last_input_twist_);
       status.data = true;
