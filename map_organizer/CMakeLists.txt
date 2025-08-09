@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(map_organizer)
 
-set(CATKIN_DEPENDS
-  roscpp
+set(AMENT_CMAKE_DEPENDS
+  rclcpp
 
   geometry_msgs
-  map_server
+  nav2_map_server
   nav_msgs
   pcl_conversions
   sensor_msgs
@@ -14,10 +14,13 @@ set(CATKIN_DEPENDS
   tf2_ros
 
   map_organizer_msgs
-  neonavigation_common
 )
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
+find_package(ament_cmake REQUIRED)
+foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
+  find_package(${DEPEND} REQUIRED)
+endforeach()
+
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
@@ -26,15 +29,11 @@ if(NEW_YAMLCPP_FOUND)
   add_definitions(-DHAVE_NEW_YAMLCPP)
 endif()
 
-catkin_package(
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
-)
-
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
+include_directories(include ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 
@@ -58,33 +57,32 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 
 add_executable(pointcloud_to_maps src/pointcloud_to_maps.cpp)
-target_link_libraries(pointcloud_to_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(pointcloud_to_maps ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pointcloud_to_maps ${PCL_LIBRARIES})
+ament_target_dependencies(pointcloud_to_maps ${AMENT_CMAKE_DEPENDS})
 
 add_executable(tie_maps src/tie_maps.cpp)
-target_link_libraries(tie_maps yaml-cpp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(tie_maps ${catkin_EXPORTED_TARGETS})
+target_link_libraries(tie_maps yaml-cpp ${PCL_LIBRARIES})
+ament_target_dependencies(tie_maps ${AMENT_CMAKE_DEPENDS})
 
 add_executable(save_maps src/save_maps.cpp)
-target_link_libraries(save_maps ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(save_maps ${catkin_EXPORTED_TARGETS})
+target_link_libraries(save_maps ${PCL_LIBRARIES})
+ament_target_dependencies(save_maps ${AMENT_CMAKE_DEPENDS})
 
 add_executable(select_map src/select_map.cpp)
-target_link_libraries(select_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(select_map ${catkin_EXPORTED_TARGETS})
+target_link_libraries(select_map ${PCL_LIBRARIES})
+ament_target_dependencies(select_map ${AMENT_CMAKE_DEPENDS})
 
 add_executable(pose_transform src/pose_transform.cpp)
-target_link_libraries(pose_transform ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(pose_transform ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pose_transform ${PCL_LIBRARIES})
+ament_target_dependencies(pose_transform ${AMENT_CMAKE_DEPENDS})
 
 
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
   add_subdirectory(test)
 
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
 endif()
 
 
@@ -94,7 +92,9 @@ install(TARGETS
     save_maps
     select_map
     tie_maps
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+ament_package()
