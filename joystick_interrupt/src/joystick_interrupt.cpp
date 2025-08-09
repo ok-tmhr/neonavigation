@@ -30,23 +30,20 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/Joy.h>
-#include <std_msgs/Bool.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/joy.hpp>
+#include <std_msgs/msg/bool.hpp>
 
-#include <neonavigation_common/compatibility.h>
 
-class JoystickInterrupt
+class JoystickInterrupt : public rclcpp::Node
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Subscriber sub_twist_;
-  ros::Subscriber sub_joy_;
-  ros::Publisher pub_twist_;
-  ros::Publisher pub_int_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_int_;
   double linear_vel_;
   double angular_vel_;
   double linear_y_vel_;
@@ -61,10 +58,10 @@ private:
   int linear_y_axis2_;
   int interrupt_button_;
   int high_speed_button_;
-  ros::Time last_joy_msg_;
-  geometry_msgs::Twist last_input_twist_;
+  rclcpp::Time last_joy_msg_;
+  geometry_msgs::msg::Twist last_input_twist_;
 
-  float getAxisValue(const sensor_msgs::Joy::Ptr& msg, const int axis, const std::string& axis_name) const
+  float getAxisValue(const sensor_msgs::msg::Joy::Ptr& msg, const int axis, const std::string& axis_name) const
   {
     if (axis < 0)
     {
@@ -72,14 +69,14 @@ private:
     }
     if (static_cast<size_t>(axis) >= msg->axes.size())
     {
-      ROS_ERROR("Out of range: number of axis (%lu) must be greater than %s (%d).",
+      RCLCPP_ERROR(this->get_logger(), "Out of range: number of axis (%lu) must be greater than %s (%d).",
                 msg->axes.size(), axis_name.c_str(), axis);
       return 0.0;
     }
     return msg->axes[axis];
   }
 
-  float getJoyValue(const sensor_msgs::Joy::Ptr& msg, const int axis, const int axis2,
+  float getJoyValue(const sensor_msgs::msg::Joy::Ptr& msg, const int axis, const int axis2,
                     const std::string& axis_name) const
   {
     const float value = getAxisValue(msg, axis, axis_name);
@@ -87,26 +84,26 @@ private:
     return (std::abs(value2) > std::abs(value)) ? value2 : value;
   }
 
-  void cbJoy(const sensor_msgs::Joy::Ptr msg)
+  void cbJoy(const sensor_msgs::msg::Joy::Ptr msg)
   {
     if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
     {
-      ROS_ERROR("Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
+      RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
                 msg->buttons.size(), interrupt_button_);
-      last_joy_msg_ = ros::Time(0);
+      last_joy_msg_ = rclcpp::Time(0LL, RCL_ROS_TIME);
       return;
     }
     if (!msg->buttons[interrupt_button_])
     {
-      if (last_joy_msg_ != ros::Time(0))
+      if (last_joy_msg_ != rclcpp::Time(0LL, RCL_ROS_TIME))
       {
-        pub_twist_.publish(last_input_twist_);
+        pub_twist_->publish(last_input_twist_);
       }
-      last_joy_msg_ = ros::Time(0);
+      last_joy_msg_ = rclcpp::Time(0LL, RCL_ROS_TIME);
       return;
     }
 
-    last_joy_msg_ = ros::Time::now();
+    last_joy_msg_ = this->now();
 
     float lin_x = getJoyValue(msg, linear_axis_, linear_axis2_, "linear_axis");
     float lin_y = getJoyValue(msg, linear_y_axis_, linear_y_axis2_, "linear_y_axis");
@@ -124,83 +121,83 @@ private:
         }
       }
       else
-        ROS_ERROR("Out of range: number of buttons (%lu) must be greater than high_speed_button (%d).",
+        RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than high_speed_button (%d).",
                   msg->buttons.size(), high_speed_button_);
     }
 
-    geometry_msgs::Twist cmd_vel;
+    geometry_msgs::msg::Twist cmd_vel;
     cmd_vel.linear.x = lin_x * linear_vel_;
     cmd_vel.linear.y = lin_y * linear_y_vel_;
     cmd_vel.linear.z = 0.0;
     cmd_vel.angular.z = ang * angular_vel_;
     cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
-    pub_twist_.publish(cmd_vel);
+    pub_twist_->publish(cmd_vel);
   };
-  void cbTwist(const geometry_msgs::Twist::Ptr msg)
+  void cbTwist(const geometry_msgs::msg::Twist::Ptr msg)
   {
     last_input_twist_ = *msg;
-    std_msgs::Bool status;
-    if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_) ||
-        (ros::Time::isSimTime() && last_joy_msg_ == ros::Time(0)))
+    std_msgs::msg::Bool status;
+    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
+        (this->get_parameter("use_sim_time").as_bool() && last_joy_msg_ == rclcpp::Time(0LL, RCL_ROS_TIME)))
     {
-      pub_twist_.publish(last_input_twist_);
+      pub_twist_->publish(last_input_twist_);
       status.data = true;
     }
     else
     {
       status.data = false;
     }
-    pub_int_.publish(status);
+    pub_int_->publish(status);
   };
 
 public:
   JoystickInterrupt()
-    : nh_("")
-    , pnh_("~")
+    : Node("joystick_interrupt")
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_joy_ = nh_.subscribe("joy", 1, &JoystickInterrupt::cbJoy, this);
-    sub_twist_ = neonavigation_common::compat::subscribe(
-        nh_, "cmd_vel_input",
-        pnh_, "cmd_vel_input", 1, &JoystickInterrupt::cbTwist, this);
-    pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::Twist>(
-        nh_, "cmd_vel",
-        pnh_, "cmd_vel", 2);
-    pub_int_ = pnh_.advertise<std_msgs::Bool>("interrupt_status", 2);
 
-    pnh_.param("linear_vel", linear_vel_, 0.5);
-    pnh_.param("angular_vel", angular_vel_, 0.8);
-    pnh_.param("linear_axis", linear_axis_, 1);
-    pnh_.param("angular_axis", angular_axis_, 0);
-    pnh_.param("linear_axis2", linear_axis2_, -1);
-    pnh_.param("angular_axis2", angular_axis2_, -1);
-    pnh_.param("interrupt_button", interrupt_button_, 6);
-    pnh_.param("high_speed_button", high_speed_button_, -1);
-    pnh_.param("linear_high_speed_ratio", linear_high_speed_ratio_, 1.3);
-    pnh_.param("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
-    pnh_.param("timeout", timeout_, 0.5);
-    pnh_.param("linear_y_vel", linear_y_vel_, 0.0);
-    pnh_.param("linear_y_axis", linear_y_axis_, -1);
-    pnh_.param("linear_y_axis2", linear_y_axis2_, -1);
+    using std::placeholders::_1;
+    sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickInterrupt::cbJoy, this, _1));
+    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
+        "cmd_vel_input",
+        1, std::bind(&JoystickInterrupt::cbTwist, this, _1));
+    pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
+        "cmd_vel",
+        2);
+    pub_int_ = this->create_publisher<std_msgs::msg::Bool>("~/interrupt_status", 2);
 
-    last_joy_msg_ = ros::Time(0);
+    linear_vel_ = this->declare_parameter("linear_vel", 0.5);
+    angular_vel_ = this->declare_parameter("angular_vel", 0.8);
+    linear_axis_ = this->declare_parameter("linear_axis", 1);
+    angular_axis_ = this->declare_parameter("angular_axis", 0);
+    linear_axis2_ = this->declare_parameter("linear_axis2", -1);
+    angular_axis2_ = this->declare_parameter("angular_axis2", -1);
+    interrupt_button_ = this->declare_parameter("interrupt_button", 6);
+    high_speed_button_ = this->declare_parameter("high_speed_button", -1);
+    linear_high_speed_ratio_ = this->declare_parameter("linear_high_speed_ratio", 1.3);
+    angular_high_speed_ratio_ = this->declare_parameter("angular_high_speed_ratio", 1.1);
+    timeout_ = this->declare_parameter("timeout", 0.5);
+    linear_y_vel_ = this->declare_parameter("linear_y_vel", 0.0);
+    linear_y_axis_ = this->declare_parameter("linear_y_axis", -1);
+    linear_y_axis2_ = this->declare_parameter("linear_y_axis2", -1);
+
+    last_joy_msg_ = rclcpp::Time(0LL, RCL_ROS_TIME);
 
     if (interrupt_button_ < 0)
     {
-      ROS_ERROR("interrupt_button must be grater than -1.");
-      ros::shutdown();
+      RCLCPP_ERROR(this->get_logger(), "interrupt_button must be grater than -1.");
+      rclcpp::shutdown();
       return;
     }
     if (linear_axis_ < 0)
     {
-      ROS_ERROR("linear_axis must be grater than -1.");
-      ros::shutdown();
+      RCLCPP_ERROR(this->get_logger(), "linear_axis must be grater than -1.");
+      rclcpp::shutdown();
       return;
     }
     if (angular_axis_ < 0)
     {
-      ROS_ERROR("angular_axis must be grater than -1.");
-      ros::shutdown();
+      RCLCPP_ERROR(this->get_logger(), "angular_axis must be grater than -1.");
+      rclcpp::shutdown();
       return;
     }
   }
@@ -208,10 +205,10 @@ public:
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "joystick_interrupt");
+  rclcpp::init(argc, argv);
 
-  JoystickInterrupt jy;
-  ros::spin();
+  auto jy = std::make_shared<JoystickInterrupt>();
+  rclcpp::spin(jy);
 
   return 0;
 }
