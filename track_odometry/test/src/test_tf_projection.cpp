@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -29,7 +29,7 @@
 
 #include <cmath>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/transform_datatypes.h>
@@ -61,39 +61,39 @@ TEST(TfProjection, ProjectionTransform)
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2.0),
                          tf2::Vector3(1.0, 3.0, 10.0)),
-          ros::Time(0),
+          tf2::TimePointZero,
           "map"),
       // projected: t(1.0, 3.0, 0.0), r((0.0, 0.0, 1.0), M_PI/2.0)
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI / 2.0),
                          tf2::Vector3(1.0, 0.0, 0.5)),
-          ros::Time(0),
+          tf2::TimePointZero,
           "odom"),
       // rotate 90deg: (-3.0, 1.0, 0.0), r((0.0, 0.0, 1.0), M_PI)
       // offset x+1.0, z+0.5: t(-2.0, 1.0, 0.5), r((0.0, 0.0, 1.0), M_PI)
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), M_PI),
                          tf2::Vector3(-2.0, 1.0, 0.5)),
-          ros::Time(0),
+          tf2::TimePointZero,
           "odom"));
 
   testTransform(
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0),
                          tf2::Vector3(1.0, 1.0, 100.0)),
-          ros::Time(0),
+          tf2::TimePointZero,
           "map"),
       // projected: t(1.0, 1.0, 0.0), r((0.0, 0.0, 1.0), 0.0)
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), M_PI / 6.0),
                          tf2::Vector3(0.0, -std::sqrt(3.0) / 2.0, 3.0 / 2.0)),
-          ros::Time(0),
+          tf2::TimePointZero,
           "odom"),
       // rotate 30deg and offset to make it on z axis
       tf2::Stamped<tf2::Transform>(
           tf2::Transform(tf2::Quaternion(tf2::Vector3(1.0, 0.0, 0.0), M_PI / 6.0),
                          tf2::Vector3(1.0, 0.0, 2.0)),
-          ros::Time(0),
+          tf2::TimePointZero,
           "odom"));
 }
 
