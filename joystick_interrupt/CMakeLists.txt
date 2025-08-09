@@ -39,7 +39,7 @@ endif()
 
 install(TARGETS
     joystick_interrupt
-    joystick_mux
+    # joystick_mux
   ARCHIVE DESTINATION lib/${PROJECT_NAME}
   LIBRARY DESTINATION lib/${PROJECT_NAME}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
