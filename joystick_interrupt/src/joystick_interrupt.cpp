@@ -90,16 +90,16 @@ private:
     {
       RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
                 msg->buttons.size(), interrupt_button_);
-      last_joy_msg_ = rclcpp::Time(0);
+      last_joy_msg_ = rclcpp::Time(0LL, RCL_ROS_TIME);
       return;
     }
     if (!msg->buttons[interrupt_button_])
     {
-      if (last_joy_msg_ != rclcpp::Time(0))
+      if (last_joy_msg_ != rclcpp::Time(0LL, RCL_ROS_TIME))
       {
         pub_twist_->publish(last_input_twist_);
       }
-      last_joy_msg_ = rclcpp::Time(0);
+      last_joy_msg_ = rclcpp::Time(0LL, RCL_ROS_TIME);
       return;
     }
 
