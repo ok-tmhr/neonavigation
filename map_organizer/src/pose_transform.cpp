@@ -56,7 +56,7 @@ private:
       geometry_msgs::msg::PoseStamped out;
       geometry_msgs::msg::PoseWithCovarianceStamped out_msg;
       in.header = msg->header;
-      in.header.stamp = rclcpp::Time(0);
+      in.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
       in.pose = msg->pose.pose;
       geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
           to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
