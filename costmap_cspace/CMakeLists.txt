@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(costmap_cspace)
 
-set(CATKIN_DEPENDS
-  roscpp
-
+set(COLCON_DEPENDS
   geometry_msgs
   laser_geometry
   nav_msgs
@@ -13,52 +11,81 @@ set(CATKIN_DEPENDS
   tf2_sensor_msgs
 
   costmap_cspace_msgs
-  neonavigation_common
 )
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
-find_package(xmlrpcpp REQUIRED)
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES costmap_3d_layers
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
-)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+foreach(PKG ${COLCON_DEPENDS})
+  find_package(${PKG} REQUIRED)
+endforeach()
 
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/include/costmap_cspace)
-
 add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
-target_link_libraries(costmap_3d_layers ${catkin_LIBRARIES})
-add_dependencies(costmap_3d_layers ${catkin_EXPORTED_TARGETS})
+target_link_libraries(costmap_3d_layers rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(costmap_3d_layers ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(costmap_3d_layers PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(costmap_3d_layers rclcpp ${COLCON_DEPENDS})
 
 add_executable(costmap_3d src/costmap_3d.cpp)
-target_link_libraries(costmap_3d costmap_3d_layers ${catkin_LIBRARIES})
-add_dependencies(costmap_3d ${catkin_EXPORTED_TARGETS})
+target_link_libraries(costmap_3d costmap_3d_layers rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(costmap_3d ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(costmap_3d PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(costmap_3d rclcpp ${COLCON_DEPENDS})
 
 add_executable(laserscan_to_map src/laserscan_to_map.cpp)
-target_link_libraries(laserscan_to_map ${catkin_LIBRARIES})
-add_dependencies(laserscan_to_map ${catkin_EXPORTED_TARGETS})
+target_link_libraries(laserscan_to_map rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(laserscan_to_map ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(laserscan_to_map PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(laserscan_to_map rclcpp ${COLCON_DEPENDS})
 
 add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
-target_link_libraries(pointcloud2_to_map ${catkin_LIBRARIES})
-add_dependencies(pointcloud2_to_map ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pointcloud2_to_map rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(pointcloud2_to_map ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(pointcloud2_to_map PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(pointcloud2_to_map rclcpp ${COLCON_DEPENDS})
 
 add_executable(largemap_to_map src/largemap_to_map.cpp)
-target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
-add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
+target_link_libraries(largemap_to_map rclcpp::rclcpp)
+foreach(PKG ${COLCON_DEPENDS})
+  target_link_libraries(largemap_to_map ${${PKG}_TARGETS})
+endforeach()
+target_include_directories(largemap_to_map PUBLIC
+$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+ament_target_dependencies(largemap_to_map rclcpp ${COLCON_DEPENDS})
 
 
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
   add_subdirectory(test)
 
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
 endif()
 
 
@@ -68,11 +95,11 @@ install(TARGETS
     laserscan_to_map
     pointcloud2_to_map
     costmap_3d_layers
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+install(DIRECTORY include/
+  DESTINATION include
 )
+
+ament_package()
