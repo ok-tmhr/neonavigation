@@ -366,7 +366,6 @@ protected:
   }
   void cbParameter()
   {
-    RCLCPP_INFO(this->get_logger(), "call cbParameter");
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
     {
