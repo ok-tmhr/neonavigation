@@ -68,7 +68,7 @@ public:
     robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-        "~/map", rclcpp::QoS(1).transient_local());
+        "map_local", rclcpp::QoS(1).transient_local());
     sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 2, std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
 
     width_ = this->declare_parameter("width", 30);
