@@ -330,7 +330,7 @@ public:
 
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
     if (this->has_parameter("z_filter"))
     {
