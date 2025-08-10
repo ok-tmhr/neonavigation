@@ -13,8 +13,4 @@ target_link_libraries(test_track_odometry rclcpp::rclcpp tf2::tf2 ${nav_msgs_TAR
 ament_add_gtest(test_tf_projection_node
   src/test_tf_projection_node.cpp
 )
-# add_rostest_gtest(test_tf_projection_node
-#   test/tf_projection_rostest.test
-#   src/test_tf_projection_node.cpp
-# )
 target_link_libraries(test_tf_projection_node rclcpp::rclcpp tf2::tf2 tf2_ros::tf2_ros ${geometry_msgs_TARGETS})
