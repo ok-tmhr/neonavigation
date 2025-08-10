@@ -179,9 +179,9 @@ public:
     : Node("costmap_3d")
   {
     pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
-        "~/costmap", rclcpp::QoS(1).transient_local());
+        "costmap", rclcpp::QoS(1).transient_local());
     pub_costmap_update_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>(
-        "~/costmap_update", rclcpp::QoS(1).transient_local());
+        "costmap_update", rclcpp::QoS(1).transient_local());
     pub_footprint_ = this->create_publisher<geometry_msgs::msg::PolygonStamped>("~/footprint", rclcpp::QoS(2).transient_local());
     pub_debug_ = this->create_publisher<sensor_msgs::msg::PointCloud>("~/debug", rclcpp::QoS(1).transient_local());
 
