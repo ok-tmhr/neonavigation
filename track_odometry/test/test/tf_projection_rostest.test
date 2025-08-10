@@ -1,10 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-  <param name="neonavigation_compatible" value="1" />
+  <executable name="test_tf_projection_node" cmd="./build/track_odometry/test/test_tf_projection_node" output="screen" />
 
-  <test test-name="test_tf_projection_node" pkg="track_odometry" type="test_tf_projection_node" />
-
-  <node pkg="track_odometry" type="tf_projection" name="tf_projection">
+  <node pkg="track_odometry" exec="tf_projection" name="tf_projection">
     <param name="base_link_frame" value="base_link" />
     <param name="projection_frame" value="map" />
     <param name="target_frame" value="map" />
@@ -12,7 +10,7 @@
     <param name="project_posture" value="false" />
   </node>
 
-  <node pkg="track_odometry" type="tf_projection" name="tf_projection_new_param">
+  <node pkg="track_odometry" exec="tf_projection" name="tf_projection_new_param">
     <param name="source_frame" value="base_link" />
     <param name="projection_surface_frame" value="map" />
     <param name="parent_frame" value="map" />
@@ -20,7 +18,7 @@
     <param name="project_posture" value="false" />
   </node>
 
-  <node pkg="track_odometry" type="tf_projection" name="tf_projection_project_posture">
+  <node pkg="track_odometry" exec="tf_projection" name="tf_projection_project_posture">
     <param name="source_frame" value="base_link_tilt" />
     <param name="projection_surface_frame" value="map" />
     <param name="parent_frame" value="map" />
@@ -29,7 +27,7 @@
     <param name="align_all_posture_to_source" value="false" />
   </node>
 
-  <node pkg="track_odometry" type="tf_projection" name="tf_projection_project_posture_align_all_posture">
+  <node pkg="track_odometry" exec="tf_projection" name="tf_projection_project_posture_align_all_posture">
     <param name="source_frame" value="base_link_tilt" />
     <param name="projection_surface_frame" value="map" />
     <param name="parent_frame" value="map" />
@@ -38,6 +36,6 @@
     <param name="align_all_posture_to_source" value="true" />
   </node>
 
-  <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 map base_link" />
-  <node pkg="tf2_ros" type="static_transform_publisher" name="test_static_pub2" args="1 2 3 0.1830 0.1830 0.6830 0.6830 map base_link_tilt" />
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 map base_link" />
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="test_static_pub2" args="1 2 3 0.1830 0.1830 0.6830 0.6830 map base_link_tilt" />
 </launch>

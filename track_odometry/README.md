@@ -6,14 +6,14 @@ track_odometry node compensates translational slip based on angular slip estimat
 
 ### Subscribed topics
 
-* /odom_raw (new: odom_raw) [nav_msgs::Odometry]
-* /imu (new: imu/data) [sensor_msgs::Imu]
-* ~/reset_z (new: reset_odometry_z) [std_msgs::Float32]
+* odom_raw [nav_msgs::msg::Odometry]
+* imu/data [sensor_msgs::msg::Imu]
+* reset_odometry_z [std_msgs::msg::Float32]
 * /tf
 
 ### Published topics
 
-* /odom (new: odom) [nav_msgs::Odometry]
+* odom [nav_msgs::msg::Odometry]
 * /tf
 
 ### Services
