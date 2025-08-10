@@ -65,7 +65,6 @@ public:
     , tfbuf_(this->get_clock())
     , tfl_(tfbuf_)
   {
-    // neonavigation_common::compat::checkCompatMode();
     robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
