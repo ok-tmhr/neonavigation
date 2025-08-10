@@ -85,7 +85,7 @@ public:
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-        "~/map", rclcpp::QoS(1).transient_local());
+        "map_local", rclcpp::QoS(1).transient_local());
     sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud", 100,
         [&](const sensor_msgs::msg::PointCloud2::ConstPtr& cloud){return Pointcloud2ToMapNode::cbCloud(cloud, false);});
