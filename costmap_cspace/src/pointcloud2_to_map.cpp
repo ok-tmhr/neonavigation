@@ -72,6 +72,7 @@ public:
     , tfl_(tfbuf_)
     , publish_interval_(rclcpp::Duration::from_nanoseconds(0.))
     , accums_(2)
+    , published_(0LL, RCL_ROS_TIME)
   {
     // neonavigation_common::compat::checkCompatMode();
     z_min_ = this->declare_parameter("z_min", 0.1);
