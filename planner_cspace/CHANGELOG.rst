@@ -2,6 +2,33 @@
 Changelog for package planner_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.18.2 (2025-07-16)
+-------------------
+* planner_cspace: output corresponding error status during temporary escape (`#783 <https://github.com/at-wat/neonavigation/issues/783>`_)
+* planner_cspace: split pose status enum definition to header (`#782 <https://github.com/at-wat/neonavigation/issues/782>`_)
+* Contributors: Atsushi Watanabe
+
+0.18.1 (2025-06-06)
+-------------------
+* planner_cspace: fix crowd escape to use original goal if reachable (`#779 <https://github.com/at-wat/neonavigation/issues/779>`_)
+* planner_cspace: fix error status during crowd escape (`#776 <https://github.com/at-wat/neonavigation/issues/776>`_)
+* Contributors: Atsushi Watanabe
+
+0.18.0 (2025-05-13)
+-------------------
+* Ignore temporary escape trigger if map is not received (`#770 <https://github.com/at-wat/neonavigation/issues/770>`_)
+* planner_cspace: crowd escape mode (`#763 <https://github.com/at-wat/neonavigation/issues/763>`_)
+* planner_cspace: fix flaky navigation tests (`#768 <https://github.com/at-wat/neonavigation/issues/768>`_)
+* Contributors: Atsushi Watanabe
+
+0.17.7 (2025-04-16)
+-------------------
+
+0.17.6 (2025-03-18)
+-------------------
+* planner_cspace: fix flaky dynamic reconfigure test (`#756 <https://github.com/at-wat/neonavigation/issues/756>`_)
+* Contributors: Atsushi Watanabe
+
 0.17.5 (2025-02-21)
 -------------------
 * planner_cspace: reconstuct GridAstarModel3D only when necessary (`#751 <https://github.com/at-wat/neonavigation/issues/751>`_)

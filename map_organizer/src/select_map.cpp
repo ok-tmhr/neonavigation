@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,24 +27,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <map_organizer_msgs/OccupancyGridArray.h>
-#include <std_msgs/Int32.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
+#include <std_msgs/msg/int32.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <vector>
 
-#include <neonavigation_common/compatibility.h>
 
-map_organizer_msgs::OccupancyGridArray maps;
-std::vector<nav_msgs::MapMetaData> orig_mapinfos;
+rclcpp::Node::SharedPtr node;
+map_organizer_msgs::msg::OccupancyGridArray maps;
+std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
 
-void cbMaps(const map_organizer_msgs::OccupancyGridArray::Ptr& msg)
+void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr msg)
 {
-  ROS_INFO("Map array received");
+  RCLCPP_INFO(node->get_logger(), "Map array received");
   maps = *msg;
   orig_mapinfos.clear();
   for (auto& map : maps.maps)
@@ -53,40 +53,38 @@ void cbMaps(const map_organizer_msgs::OccupancyGridArray::Ptr& msg)
     map.info.origin.position.z = 0.0;
   }
 }
-void cbFloor(const std_msgs::Int32::Ptr& msg)
+void cbFloor(const std_msgs::msg::Int32::Ptr msg)
 {
   floor_cur = msg->data;
 }
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "select_map");
-  ros::NodeHandle pnh("~");
-  ros::NodeHandle nh("");
+  rclcpp::init(argc, argv);
+  node = rclcpp::Node::make_shared("select_map");
 
-  neonavigation_common::compat::checkCompatMode();
-  auto subMaps = neonavigation_common::compat::subscribe(
-      nh, "maps",
-      nh, "/maps", 1, cbMaps);
-  auto subFloor = neonavigation_common::compat::subscribe(
-      nh, "floor",
-      pnh, "floor", 1, cbFloor);
-  auto pubMap = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
-      nh, "map",
-      nh, "/map", 1, true);
+  auto subMaps = node->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
+      "maps",
+      1, cbMaps);
+  auto subFloor = node->create_subscription<std_msgs::msg::Int32>(
+      "floor",
+      1, cbFloor);
+  auto pubMap = node->create_publisher<nav_msgs::msg::OccupancyGrid>(
+      "map",
+      rclcpp::QoS(1).transient_local());
 
-  tf2_ros::TransformBroadcaster tfb;
-  geometry_msgs::TransformStamped trans;
+  auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(node);
+  geometry_msgs::msg::TransformStamped trans;
   trans.header.frame_id = "map_ground";
   trans.child_frame_id = "map";
   trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
 
-  ros::Rate wait(10);
+  rclcpp::Rate wait(10);
   int floor_prev = -1;
-  while (ros::ok())
+  while (rclcpp::ok())
   {
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(node);
 
     if (maps.maps.size() == 0)
       continue;
@@ -95,17 +93,17 @@ int main(int argc, char** argv)
     {
       if (floor_cur >= 0 && floor_cur < static_cast<int>(maps.maps.size()))
       {
-        pubMap.publish(maps.maps[floor_cur]);
+        pubMap->publish(maps.maps[floor_cur]);
         trans.transform.translation.z = orig_mapinfos[floor_cur].origin.position.z;
       }
       else
       {
-        ROS_INFO("Floor out of range");
+        RCLCPP_INFO(node->get_logger(), "Floor out of range");
       }
       floor_prev = floor_cur;
     }
-    trans.header.stamp = ros::Time::now() + ros::Duration(0.15);
-    tfb.sendTransform(trans);
+    trans.header.stamp = node->now() + rclcpp::Duration::from_seconds(0.15);
+    tfb->sendTransform(trans);
   }
 
   return 0;

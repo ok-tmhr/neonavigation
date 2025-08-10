@@ -2,6 +2,25 @@
 Changelog for package costmap_cspace
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.18.2 (2025-07-16)
+-------------------
+
+0.18.1 (2025-06-06)
+-------------------
+
+0.18.0 (2025-05-13)
+-------------------
+* planner_cspace: crowd escape mode (`#763 <https://github.com/at-wat/neonavigation/issues/763>`_)
+* Contributors: Atsushi Watanabe
+
+0.17.7 (2025-04-16)
+-------------------
+* costmap_cspace: prevent map update region out-of-bound (`#764 <https://github.com/at-wat/neonavigation/issues/764>`_)
+* Contributors: Atsushi Watanabe
+
+0.17.6 (2025-03-18)
+-------------------
+
 0.17.5 (2025-02-21)
 -------------------
 

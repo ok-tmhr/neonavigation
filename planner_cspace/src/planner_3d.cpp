@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2023, the neonavigation authors
+ * Copyright (c) 2014-2025, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,6 +26,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+// Make DEBUG flag taking precedence over NDEBUG flag for boundary test
+#ifdef DEBUG
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -77,8 +84,10 @@
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
+#include <planner_cspace/planner_3d/pose_status.h>
 #include <planner_cspace/planner_3d/rotation_cache.h>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
+#include <planner_cspace/planner_3d/temporary_escape.h>
 
 namespace planner_cspace
 {
@@ -98,6 +107,7 @@ protected:
   ros::Subscriber sub_map_;
   ros::Subscriber sub_map_update_;
   ros::Subscriber sub_goal_;
+  ros::Subscriber sub_temporary_escape_trigger_;
   ros::Publisher pub_path_;
   ros::Publisher pub_path_velocity_;
   ros::Publisher pub_path_poses_;
@@ -107,6 +117,7 @@ protected:
   ros::Publisher pub_remembered_map_;
   ros::Publisher pub_start_;
   ros::Publisher pub_end_;
+  ros::Publisher pub_goal_;
   ros::Publisher pub_status_;
   ros::Publisher pub_metrics_;
   ros::ServiceServer srs_forget_;
@@ -126,8 +137,11 @@ protected:
   Astar::Gridmap<char, 0x80> cm_rough_base_;
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<char, 0x80> cm_updates_;
-  CostmapBBF bbf_costmap_;
+  Astar::Gridmap<char, 0x80> cm_local_esc_;
+  CostmapBBF::Ptr bbf_costmap_;
   DistanceMap cost_estim_cache_;
+  DistanceMap cost_estim_cache_static_;
+  DistanceMap arrivable_map_;
 
   GridAstarModel3D::Ptr model_;
 
@@ -144,8 +158,10 @@ protected:
   double local_range_f_;
   double longcut_range_f_;
   int esc_range_;
+  int esc_range_min_;
   int esc_angle_;
   double esc_range_f_;
+  double esc_range_min_ratio_;
   int tolerance_range_;
   int tolerance_angle_;
   double tolerance_range_f_;
@@ -154,6 +170,7 @@ protected:
   double grid_enumeration_resolution_;
   int unknown_cost_;
   bool overwrite_cost_;
+  int relocation_acceptable_cost_;
   bool has_map_;
   bool has_goal_;
   bool has_start_;
@@ -176,6 +193,7 @@ protected:
   int num_cost_estim_task_;
   bool keep_a_part_of_previous_path_;
   bool trigger_plan_by_costmap_update_;
+  bool enable_crowd_mode_;
 
   JumpDetector jump_;
   std::string robot_frame_;
@@ -190,12 +208,17 @@ protected:
   geometry_msgs::PoseStamped start_;
   geometry_msgs::PoseStamped goal_;
   geometry_msgs::PoseStamped goal_raw_;
+  geometry_msgs::PoseStamped goal_original_;
   Astar::Vecf ec_;
   double goal_tolerance_lin_f_;
   double goal_tolerance_ang_f_;
   double goal_tolerance_ang_finish_;
   int goal_tolerance_lin_;
   int goal_tolerance_ang_;
+  double temporary_escape_tolerance_lin_f_;
+  double temporary_escape_tolerance_ang_f_;
+  int temporary_escape_tolerance_lin_;
+  int temporary_escape_tolerance_ang_;
 
   planner_cspace_msgs::PlannerStatus status_;
   neonavigation_metrics_msgs::Metrics metrics_;
@@ -209,7 +232,7 @@ protected:
 
   bool force_goal_orientation_;
 
-  bool escaping_;
+  TemporaryEscapeStatus escape_status_;
 
   int cnt_stuck_;
   bool is_start_occupied_;
@@ -231,17 +254,19 @@ protected:
   {
     ROS_WARN("Forgetting remembered costmap.");
     if (has_map_)
-      bbf_costmap_.clear();
+      bbf_costmap_->clear();
 
     return true;
   }
-  enum class DiscretePoseStatus
+  void cbTemporaryEscape(const std_msgs::Empty::ConstPtr&)
   {
-    OK,
-    RELOCATED,
-    IN_ROCK,
-    OUT_OF_MAP,
-  };
+    if (!has_map_)
+    {
+      // metric2Grid requires map_info_
+      return;
+    }
+    updateTemporaryEscapeGoal(metric2Grid(start_.pose), false);
+  }
   template <class T>
   DiscretePoseStatus relocateDiscretePoseIfNeededImpl(const T& cm,
                                                       const int tolerance_range,
@@ -277,6 +302,36 @@ protected:
     }
   }
 
+  Astar::Vec metric2Grid(const geometry_msgs::Pose& pose) const
+  {
+    Astar::Vec grid;
+    grid_metric_converter::metric2Grid(
+        map_info_, grid[0], grid[1], grid[2],
+        pose.position.x, pose.position.y,
+        tf2::getYaw(pose.orientation));
+    grid.cycleUnsigned(map_info_.angle);
+    return grid;
+  }
+  geometry_msgs::Pose grid2MetricPose(const Astar::Vec& grid) const
+  {
+    float x, y, yaw;
+    grid_metric_converter::grid2Metric(map_info_, grid[0], grid[1], grid[2], x, y, yaw);
+    geometry_msgs::Pose pose;
+    pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
+    pose.position.x = x;
+    pose.position.y = y;
+    return pose;
+  }
+  geometry_msgs::Point32 grid2MetricPoint(const Astar::Vec& grid) const
+  {
+    float x, y, yaw;
+    grid_metric_converter::grid2Metric(map_info_, grid[0], grid[1], grid[2], x, y, yaw);
+    geometry_msgs::Point32 point;
+    point.x = x;
+    point.y = y;
+    return point;
+  }
+
   bool cbMakePlan(nav_msgs::GetPlan::Request& req,
                   nav_msgs::GetPlan::Response& res)
   {
@@ -296,13 +351,8 @@ protected:
       return false;
     }
 
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        req.start.pose.position.x, req.start.pose.position.y, tf2::getYaw(req.start.pose.orientation));
-    grid_metric_converter::metric2Grid(
-        map_info_, e[0], e[1], e[2],
-        req.goal.pose.position.x, req.goal.pose.position.y, tf2::getYaw(req.goal.pose.orientation));
+    Astar::Vec s = metric2Grid(req.start.pose);
+    Astar::Vec e = metric2Grid(req.goal.pose);
     ROS_INFO("Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
 
     const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
@@ -397,6 +447,7 @@ protected:
       act_tolerant_->setPreempted(planner_cspace_msgs::MoveWithToleranceResult(), "Preempted.");
 
     has_goal_ = false;
+    escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
   }
 
@@ -409,7 +460,7 @@ protected:
       return false;
     }
 
-    goal_raw_ = goal_ = msg;
+    goal_original_ = goal_raw_ = goal_ = msg;
 
     const double len2 =
         goal_.pose.orientation.x * goal_.pose.orientation.x +
@@ -418,7 +469,7 @@ protected:
         goal_.pose.orientation.w * goal_.pose.orientation.w;
     if (std::abs(len2 - 1.0) < 0.1)
     {
-      escaping_ = false;
+      escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
       has_goal_ = true;
       cnt_stuck_ = 0;
       if (!createCostEstimCache())
@@ -444,8 +495,12 @@ protected:
 
   template <class T>
   bool searchAvailablePos(const T& cm, Astar::Vec& s, const int xy_range, const int angle_range,
-                          const int cost_acceptable = 50, const int min_xy_range = 0) const
+                          int cost_acceptable = -1, const int min_xy_range = 0) const
   {
+    if (cost_acceptable == -1)
+    {
+      cost_acceptable = relocation_acceptable_cost_;
+    }
     ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
 
     float range_min = std::numeric_limits<float>::max();
@@ -497,6 +552,7 @@ protected:
     ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
+
   bool createCostEstimCache(const bool goal_changed = true)
   {
     if (!has_goal_)
@@ -512,17 +568,8 @@ protected:
     cost_estim_cache_created_ = false;
     is_start_occupied_ = false;
 
-    Astar::Vec s, e;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        start_.pose.position.x, start_.pose.position.y,
-        tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(map_info_.angle);
-    grid_metric_converter::metric2Grid(
-        map_info_, e[0], e[1], e[2],
-        goal_raw_.pose.position.x, goal_raw_.pose.position.y,
-        tf2::getYaw(goal_raw_.pose.orientation));
-    e.cycleUnsigned(map_info_.angle);
+    Astar::Vec s = metric2Grid(start_.pose);
+    Astar::Vec e = metric2Grid(goal_raw_.pose);
     if (goal_changed)
     {
       ROS_INFO("New goal received. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
@@ -552,23 +599,28 @@ protected:
         ROS_ERROR("Given goal is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
+        if (isEscaping(escape_status_))
+        {
+          ROS_WARN("Oops! Temporary goal is in Rock! Reverting the temporary goal.");
+          goal_raw_ = goal_ = goal_original_;
+          escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
+          return true;
+        }
         ROS_WARN("Oops! Goal is in Rock!");
         ++cnt_stuck_;
+        if (temporary_escape_ && enable_crowd_mode_)
+        {
+          updateTemporaryEscapeGoal(s);
+        }
         return true;
       case DiscretePoseStatus::RELOCATED:
-        float x, y, yaw;
-        grid_metric_converter::grid2Metric(map_info_, e[0], e[1], e[2], x, y, yaw);
-        goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-        goal_.pose.position.x = x;
-        goal_.pose.position.y = y;
-        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)", x, y, yaw, e[0], e[1], e[2]);
+        goal_.pose = grid2MetricPose(e);
+        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+                 goal_.pose.position.x, goal_.pose.position.y, tf2::getYaw(goal_.pose.orientation),
+                 e[0], e[1], e[2]);
         break;
       default:
-        Astar::Vec e_prev;
-        grid_metric_converter::metric2Grid(
-            map_info_, e_prev[0], e_prev[1], e_prev[2],
-            goal_.pose.position.x, goal_.pose.position.y,
-            tf2::getYaw(goal_.pose.orientation));
+        const Astar::Vec e_prev = metric2Grid(goal_.pose);
         if (e[0] != e_prev[0] || e[1] != e_prev[1] || e[2] != e_prev[2])
         {
           ROS_INFO("Goal reverted. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
@@ -578,19 +630,19 @@ protected:
         goal_ = goal_raw_;
         break;
     }
-    const auto ts = boost::chrono::high_resolution_clock::now();
-    cost_estim_cache_.create(s, e);
-    const auto tnow = boost::chrono::high_resolution_clock::now();
-    const float dur = boost::chrono::duration<float>(tnow - ts).count();
-    ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_init_dur",
-        dur,
-        "second"));
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_update_dur",
-        0.0,
-        "second"));
+
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_.create(s, e);
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
+
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_init_dur", dur, "second"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_update_dur", 0.0, "second"));
+    }
 
     publishDebug();
 
@@ -623,16 +675,14 @@ protected:
         for (p[0] = 0; p[0] < cost_estim_cache_.size()[0]; p[0]++)
         {
           p[2] = 0;
-          float x, y, yaw;
-          grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-          geometry_msgs::Point32 point;
-          point.x = x;
-          point.y = y;
-          if (cost_estim_cache_[p] == std::numeric_limits<float>::max())
+          const float cost = cost_estim_cache_[p];
+          if (cost == std::numeric_limits<float>::max())
             continue;
-          point.z = cost_estim_cache_[p] / 500;
+
+          geometry_msgs::Point32 point = grid2MetricPoint(p);
+          point.z = cost / 500;
           distance_map.points.push_back(point);
-          distance_map.channels[0].values.push_back(cost_estim_cache_[p] * k_dist);
+          distance_map.channels[0].values.push_back(cost * k_dist);
         }
       }
       pub_distance_map_.publish(distance_map);
@@ -683,7 +733,7 @@ protected:
         remembered_map.data[p[0] + p[1] * map_info_.width] =
             (bbf.getProbability() - bbf::MIN_PROBABILITY) * 100 / (bbf::MAX_PROBABILITY - bbf::MIN_PROBABILITY);
       };
-      bbf_costmap_.forEach(generate_pointcloud);
+      bbf_costmap_->forEach(generate_pointcloud);
       pub_remembered_map_.publish(remembered_map);
     }
   }
@@ -842,22 +892,17 @@ protected:
     if (!has_start_)
       return;
 
-    Astar::Vec s;
-    grid_metric_converter::metric2Grid(
-        map_info_, s[0], s[1], s[2],
-        start_.pose.position.x, start_.pose.position.y,
-        tf2::getYaw(start_.pose.orientation));
-    s.cycleUnsigned(map_info_.angle);
+    const Astar::Vec s = metric2Grid(start_.pose);
 
     if (remember_updates_)
     {
       const auto ts = boost::chrono::high_resolution_clock::now();
-      bbf_costmap_.remember(
+      bbf_costmap_->remember(
           &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
           hist_ignore_range_, hist_ignore_range_max_);
       publishRememberedMap();
-      bbf_costmap_.updateCostmap();
+      bbf_costmap_->updateCostmap();
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
       ROS_DEBUG("Remembered costmap updated (%0.4f sec.)", dur);
@@ -871,12 +916,7 @@ protected:
       return;
     }
 
-    Astar::Vec e;
-    grid_metric_converter::metric2Grid(
-        map_info_, e[0], e[1], e[2],
-        goal_.pose.position.x, goal_.pose.position.y,
-        tf2::getYaw(goal_.pose.orientation));
-    e.cycleUnsigned(map_info_.angle);
+    const Astar::Vec e = metric2Grid(goal_.pose);
 
     if (cm_[e] == 100)
     {
@@ -884,13 +924,22 @@ protected:
       return;
     }
 
-    const auto ts = boost::chrono::high_resolution_clock::now();
-    cost_estim_cache_.update(
-        s, e,
-        DistanceMap::Rect(
-            Astar::Vec(search_range_x_min, search_range_y_min, 0),
-            Astar::Vec(search_range_x_max, search_range_y_max, 0)));
-    const auto tnow = boost::chrono::high_resolution_clock::now();
+    {
+      const auto ts = boost::chrono::high_resolution_clock::now();
+      cost_estim_cache_.update(
+          s, e,
+          DistanceMap::Rect(
+              Astar::Vec(search_range_x_min, search_range_y_min, 0),
+              Astar::Vec(search_range_x_max, search_range_y_max, 0)));
+      const auto tnow = boost::chrono::high_resolution_clock::now();
+      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_update_dur", dur, "second"));
+      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+          "distance_map_init_dur", 0.0, "second"));
+    }
+
     const DistanceMap::DebugData dm_debug = cost_estim_cache_.getDebugData();
     if (dm_debug.has_negative_cost)
     {
@@ -898,16 +947,6 @@ protected:
     }
     ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu",
               dm_debug.search_queue_size, dm_debug.search_queue_cap);
-    const float dur = boost::chrono::duration<float>(tnow - ts).count();
-    ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_update_dur",
-        dur,
-        "second"));
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
-        "distance_map_init_dur",
-        0.0,
-        "second"));
     publishDebug();
     return;
   }
@@ -998,9 +1037,13 @@ protected:
             .resolution = map_info_.linear_resolution,
         };
     cost_estim_cache_.init(model_, dmp);
+    if (enable_crowd_mode_)
+    {
+      cost_estim_cache_static_.init(model_, dmp);
+    }
     cm_rough_.reset(size2d);
     cm_updates_.reset(size2d);
-    bbf_costmap_.reset(size2d);
+    bbf_costmap_->reset(size2d);
 
     Astar::Vec p;
     for (p[0] = 0; p[0] < static_cast<int>(map_info_.width); p[0]++)
@@ -1034,7 +1077,7 @@ protected:
 
     cm_rough_base_ = cm_rough_;
     cm_base_ = cm_;
-    bbf_costmap_.clear();
+    bbf_costmap_->clear();
 
     prev_map_update_x_min_ = map_info_.width;
     prev_map_update_x_max_ = 0;
@@ -1109,7 +1152,10 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
     , parameter_server_(pnh_)
+    , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
+    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
     neonavigation_common::compat::checkCompatMode();
@@ -1122,8 +1168,11 @@ public:
     sub_goal_ = neonavigation_common::compat::subscribe(
         nh_, "move_base_simple/goal",
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
+    sub_temporary_escape_trigger_ = pnh_.subscribe(
+        "temporary_escape", 1, &Planner3dNode::cbTemporaryEscape, this);
     pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
     pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
+    pub_goal_ = pnh_.advertise<geometry_msgs::PoseStamped>("current_goal", 1, true);
     pub_status_ = pnh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
     pub_metrics_ = pnh_.advertise<neonavigation_metrics_msgs::Metrics>("metrics", 1, false);
     srs_forget_ = neonavigation_common::compat::advertiseService(
@@ -1188,9 +1237,12 @@ public:
     pnh_.param("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
     pnh_.param("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
     pnh_.param("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
+    pnh_.param("temporary_escape_tolerance_lin", temporary_escape_tolerance_lin_f_, 0.1);
+    pnh_.param("temporary_escape_tolerance_ang", temporary_escape_tolerance_ang_f_, 1.57);
 
     pnh_.param("unknown_cost", unknown_cost_, 100);
     pnh_.param("overwrite_cost", overwrite_cost_, false);
+    pnh_.param("relocation_acceptable_cost", relocation_acceptable_cost_, 50);
 
     pnh_.param("hist_ignore_range", hist_ignore_range_f_, 0.6);
     pnh_.param("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
@@ -1204,6 +1256,7 @@ public:
     pnh_.param("local_range", local_range_f_, 2.5);
     pnh_.param("longcut_range", longcut_range_f_, 0.0);
     pnh_.param("esc_range", esc_range_f_, 0.25);
+    pnh_.param("esc_range_min_ratio", esc_range_min_ratio_, 0.5);
     pnh_.param("tolerance_range", tolerance_range_f_, 0.25);
     pnh_.param("tolerance_angle", tolerance_angle_f_, 0.0);
     pnh_.param("path_interpolation_resolution", path_interpolation_resolution_, 0.5);
@@ -1230,6 +1283,7 @@ public:
     pnh_.param("force_goal_orientation", force_goal_orientation_, true);
 
     pnh_.param("temporary_escape", temporary_escape_, true);
+    pnh_.param("enable_crowd_mode", enable_crowd_mode_, false);
 
     pnh_.param("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
@@ -1268,6 +1322,7 @@ public:
     as_.setSearchTaskNum(num_task);
     pnh_.param("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
     cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
+    cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
 
     pnh_.param("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1277,7 +1332,7 @@ public:
     has_start_ = false;
     cost_estim_cache_created_ = false;
 
-    escaping_ = false;
+    escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     cnt_stuck_ = 0;
     is_path_switchback_ = false;
 
@@ -1299,11 +1354,14 @@ public:
     hist_ignore_range_max_ = std::lround(hist_ignore_range_max_f_ / map_info_.linear_resolution);
     local_range_ = std::lround(local_range_f_ / map_info_.linear_resolution);
     esc_range_ = std::lround(esc_range_f_ / map_info_.linear_resolution);
+    esc_range_min_ = std::lround(esc_range_f_ * esc_range_min_ratio_ / map_info_.linear_resolution);
     esc_angle_ = map_info_.angle / 8;
     tolerance_range_ = std::lround(tolerance_range_f_ / map_info_.linear_resolution);
     tolerance_angle_ = std::lround(tolerance_angle_f_ / map_info_.angular_resolution);
     goal_tolerance_lin_ = std::lround(goal_tolerance_lin_f_ / map_info_.linear_resolution);
     goal_tolerance_ang_ = std::lround(goal_tolerance_ang_f_ / map_info_.angular_resolution);
+    temporary_escape_tolerance_lin_ = std::lround(temporary_escape_tolerance_lin_f_ / map_info_.linear_resolution);
+    temporary_escape_tolerance_ang_ = std::lround(temporary_escape_tolerance_ang_f_ / map_info_.angular_resolution);
     cc_.angle_resolution_aspect_ = 2.0 / tanf(map_info_.angular_resolution);
 
     const bool reset_required = force_reset || (previous_range != range_);
@@ -1351,8 +1409,11 @@ public:
     goal_tolerance_lin_f_ = config.goal_tolerance_lin;
     goal_tolerance_ang_f_ = config.goal_tolerance_ang;
     goal_tolerance_ang_finish_ = config.goal_tolerance_ang_finish;
+    temporary_escape_tolerance_lin_f_ = config.temporary_escape_tolerance_lin;
+    temporary_escape_tolerance_ang_f_ = config.temporary_escape_tolerance_ang;
 
     overwrite_cost_ = config.overwrite_cost;
+    relocation_acceptable_cost_ = config.relocation_acceptable_cost;
     hist_ignore_range_f_ = config.hist_ignore_range;
     hist_ignore_range_max_f_ = config.hist_ignore_range_max;
 
@@ -1363,6 +1424,7 @@ public:
     local_range_f_ = config.local_range;
     longcut_range_f_ = config.longcut_range;
     esc_range_f_ = config.esc_range;
+    esc_range_min_ratio_ = config.esc_range_min_ratio;
     tolerance_range_f_ = config.tolerance_range;
     tolerance_angle_f_ = config.tolerance_angle;
     find_best_ = config.find_best;
@@ -1373,6 +1435,7 @@ public:
     sw_wait_ = config.sw_wait;
 
     cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
+    cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
     ec_ = Astar::Vecf(
         1.0f / cc_.max_vel_,
         1.0f / cc_.max_vel_,
@@ -1392,6 +1455,10 @@ public:
               .resolution = map_info_.linear_resolution,
           };
       cost_estim_cache_.init(model_, dmp);
+      if (enable_crowd_mode_)
+      {
+        cost_estim_cache_static_.init(model_, dmp);
+      }
     }
 
     keep_a_part_of_previous_path_ = config.keep_a_part_of_previous_path;
@@ -1415,15 +1482,6 @@ public:
     no_map_update_timer_.stop();
   }
 
-  GridAstarModel3D::Vec pathPose2Grid(const geometry_msgs::PoseStamped& pose) const
-  {
-    GridAstarModel3D::Vec grid_vec;
-    grid_metric_converter::metric2Grid(map_info_, grid_vec[0], grid_vec[1], grid_vec[2],
-                                       pose.pose.position.x, pose.pose.position.y, tf2::getYaw(pose.pose.orientation));
-    grid_vec.cycleUnsigned(map_info_.angle);
-    return grid_vec;
-  }
-
   void waitUntil(const ros::Time& next_replan_time)
   {
     while (ros::ok())
@@ -1438,7 +1496,7 @@ public:
 
         if (jump_.detectJump())
         {
-          bbf_costmap_.clear();
+          bbf_costmap_->clear();
           // Robot pose jumped.
           return;
         }
@@ -1447,7 +1505,7 @@ public:
         {
           for (const auto& path_pose : previous_path_.poses)
           {
-            if (cm_[pathPose2Grid(path_pose)] == 100)
+            if (cm_[metric2Grid(path_pose.pose)] == 100)
             {
               // Obstacle on the path.
               return;
@@ -1566,12 +1624,9 @@ public:
       }
       else
       {
+        TemporaryEscapeStatus previous_escape_status = escape_status_;
         bool skip_path_planning = false;
-        if (escaping_)
-        {
-          status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-        }
-        else if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
+        if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
         {
           status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
           status_.status = planner_cspace_msgs::PlannerStatus::DONE;
@@ -1623,6 +1678,12 @@ public:
             if (is_path_switchback_)
               sw_pos_ = path.poses[sw_index];
           }
+          if (isEscaping(escape_status_) || isEscaping(previous_escape_status))
+          {
+            // Planner error status is obtained by escape_status_ during temporary escape.
+            // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
+            status_.error = temporaryEscapeStatus2PlannerErrorStatus(escape_status_ | previous_escape_status);
+          }
         }
       }
     }
@@ -1632,6 +1693,7 @@ public:
         status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
       publishEmptyPath();
     }
+    publishCurrentGoal();
     status_.header.stamp = now;
     pub_status_.publish(status_);
     diag_updater_.force_update();
@@ -1665,7 +1727,7 @@ public:
       {
         if (jump_.detectJump())
         {
-          bbf_costmap_.clear();
+          bbf_costmap_->clear();
         }
         ros::spinOnce();
         r.sleep();
@@ -1689,27 +1751,32 @@ public:
   }
 
 protected:
-  void publishStartAndGoalMarkers(const Astar::Vec& start_grid, Astar::Vec& end_grid)
+  void publishStartAndGoalMarkers(const Astar::Vec& start_grid, const Astar::Vec& end_grid)
   {
     geometry_msgs::PoseStamped p;
     p.header = map_header_;
-    float x, y, yaw;
-    grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
-    p.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-    p.pose.position.x = x;
-    p.pose.position.y = y;
+    p.pose = grid2MetricPose(end_grid);
     pub_end_.publish(p);
-    grid_metric_converter::grid2Metric(map_info_, start_grid[0], start_grid[1], start_grid[2], x, y, yaw);
-    p.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-    p.pose.position.x = x;
-    p.pose.position.y = y;
+    p.pose = grid2MetricPose(start_grid);
     pub_start_.publish(p);
+  }
+
+  void publishCurrentGoal()
+  {
+    geometry_msgs::PoseStamped p(goal_);
+    p.header = map_header_;
+    pub_goal_.publish(p);
   }
 
   bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
   {
     int g_tolerance_lin, g_tolerance_ang;
-    if (act_tolerant_->isActive())
+    if (isEscaping(escape_status_))
+    {
+      g_tolerance_lin = temporary_escape_tolerance_lin_;
+      g_tolerance_ang = temporary_escape_tolerance_ang_;
+    }
+    else if (act_tolerant_->isActive())
     {
       g_tolerance_lin = std::lround(goal_tolerant_->goal_tolerance_lin / map_info_.linear_resolution);
       g_tolerance_ang = std::lround(goal_tolerant_->goal_tolerance_ang / map_info_.angular_resolution);
@@ -1724,12 +1791,6 @@ protected:
     return (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin && std::abs(remain[2]) <= g_tolerance_ang);
   }
 
-  enum class StartPoseStatus
-  {
-    START_OCCUPIED,
-    FINISHING,
-    NORMAL,
-  };
   StartPoseStatus buildStartPoses(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
                                   std::vector<Astar::VecWithCost>& result_start_poses)
   {
@@ -1743,11 +1804,7 @@ protected:
     Astar::Vec start_grid(static_cast<int>(std::floor(sf[0])), static_cast<int>(std::floor(sf[1])), std::lround(sf[2]));
     start_grid.cycleUnsigned(map_info_.angle);
 
-    Astar::Vec end_grid;
-    grid_metric_converter::metric2Grid(
-        map_info_, end_grid[0], end_grid[1], end_grid[2],
-        end_metric.position.x, end_metric.position.y, tf2::getYaw(end_metric.orientation));
-    end_grid.cycleUnsigned(map_info_.angle);
+    const Astar::Vec end_grid = metric2Grid(end_metric);
 
     if (!cm_.validate(start_grid, range_))
     {
@@ -1827,16 +1884,8 @@ protected:
   bool makePlan(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
                 nav_msgs::Path& path, bool hyst)
   {
-    Astar::Vec start_grid;
-    grid_metric_converter::metric2Grid(
-        map_info_, start_grid[0], start_grid[1], start_grid[2],
-        start_metric.position.x, start_metric.position.y, tf2::getYaw(start_metric.orientation));
-    start_grid.cycleUnsigned(map_info_.angle);
-    Astar::Vec end_grid;
-    grid_metric_converter::metric2Grid(
-        map_info_, end_grid[0], end_grid[1], end_grid[2],
-        end_metric.position.x, end_metric.position.y, tf2::getYaw(end_metric.orientation));
-    end_grid.cycleUnsigned(map_info_.angle);
+    const Astar::Vec start_grid = metric2Grid(start_metric);
+    const Astar::Vec end_grid = metric2Grid(end_metric);
     publishStartAndGoalMarkers(start_grid, end_grid);
 
     std::vector<Astar::VecWithCost> starts;
@@ -1846,10 +1895,10 @@ protected:
         status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
         return false;
       case StartPoseStatus::FINISHING:
-        if (escaping_)
+        if (isEscaping(escape_status_))
         {
-          goal_ = goal_raw_;
-          escaping_ = false;
+          goal_ = goal_raw_ = goal_original_;
+          escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           createCostEstimCache();
           ROS_INFO("Escaped");
           return true;
@@ -1879,25 +1928,11 @@ protected:
     if (initial_2dof_cost == std::numeric_limits<float>::max() || cm_[end_grid] >= 100)
     {
       status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-      start_pose_predictor_.clear();
       ROS_WARN("Goal unreachable.");
-      if (!escaping_ && temporary_escape_)
+      start_pose_predictor_.clear();
+      if (temporary_escape_)
       {
-        end_grid = start_grid;
-        if (searchAvailablePos(cm_, end_grid, esc_range_, esc_angle_, 50, esc_range_ / 2))
-        {
-          escaping_ = true;
-          ROS_INFO("Temporary goal (%d, %d, %d)",
-                   end_grid[0], end_grid[1], end_grid[2]);
-          float x, y, yaw;
-          grid_metric_converter::grid2Metric(map_info_, end_grid[0], end_grid[1], end_grid[2], x, y, yaw);
-          goal_.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-          goal_.pose.position.x = x;
-          goal_.pose.position.y = y;
-
-          createCostEstimCache();
-          return false;
-        }
+        updateTemporaryEscapeGoal(start_grid);
       }
       return false;
     }
@@ -1965,14 +2000,7 @@ protected:
     poses.header = path.header;
     for (const auto& p : path_grid)
     {
-      geometry_msgs::Pose pose;
-      float x, y, yaw;
-      grid_metric_converter::grid2Metric(map_info_, p[0], p[1], p[2], x, y, yaw);
-      pose.position.x = x;
-      pose.position.y = y;
-      pose.orientation =
-          tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-      poses.poses.push_back(pose);
+      poses.poses.push_back(grid2MetricPose(p));
     }
     pub_path_poses_.publish(poses);
     if (!start_pose_predictor_.getPreservedPath().poses.empty())
@@ -2049,6 +2077,209 @@ protected:
     }
 
     return true;
+  }
+
+  void updateTemporaryEscapeGoal(const Astar::Vec& start_grid, const bool log_on_unready = true)
+  {
+    if (!has_map_ || !has_goal_ || !has_start_)
+    {
+      if (log_on_unready)
+      {
+        ROS_WARN("Not ready to update temporary escape goal");
+      }
+      return;
+    }
+    if (is_path_switchback_)
+    {
+      ROS_INFO("Skipping temporary goal update during switch back");
+      return;
+    }
+
+    if (!enable_crowd_mode_)
+    {
+      // Just find available (not occupied) pose
+      Astar::Vec te;
+      if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, relocation_acceptable_cost_, esc_range_min_))
+      {
+        ROS_WARN("No valid temporary escape goal");
+        return;
+      }
+      escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
+      goal_raw_.pose = grid2MetricPose(te);
+      goal_ = goal_raw_;
+
+      createCostEstimCache();
+      return;
+    }
+
+    // Find available pos with minumum cost on static distance map
+    {
+      const Astar::Vec s(start_grid[0], start_grid[1], 0);
+      if (!cm_.validate(s, esc_range_))
+      {
+        ROS_ERROR("Crowd escape is disabled on the edge of the world.");
+        return;
+      }
+      const Astar::Vec g_orig = metric2Grid(goal_original_.pose);
+
+      {
+        const auto ts = boost::chrono::high_resolution_clock::now();
+        // Update without region.
+        // Distance map will expand distance map using edges_buf if needed.
+        cost_estim_cache_static_.update(
+            s, g_orig,
+            DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
+        const auto tnow = boost::chrono::high_resolution_clock::now();
+        const float dur = boost::chrono::duration<float>(tnow - ts).count();
+        ROS_DEBUG("Cost estimation cache for static map updated (%0.4f sec.)", dur);
+        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+            "distance_map_static_update_dur", dur, "second"));
+        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+            "distance_map_static_init_dur", 0.0, "second"));
+      }
+
+      // Construct arraivability map
+      const int local_width = esc_range_ * 2 + 1;
+      const Astar::Vec local_origin = s - Astar::Vec(esc_range_, esc_range_, 0);
+      const Astar::Vec local_range(local_width, local_width, 0);
+      const Astar::Vec local_size(local_width + 1, local_width + 1, 1);
+      const Astar::Vec local_center(esc_range_, esc_range_, 0);
+      const DistanceMap::Params dmp =
+          {
+              .euclid_cost = ec_,
+              .range = 0,
+              .local_range = 0,
+              .longcut_range = esc_range_,
+              .size = local_size,
+              .resolution = map_info_.linear_resolution,
+          };
+
+      cm_local_esc_.reset(local_size);
+      arrivable_map_.setParams(cc_, num_cost_estim_task_);
+      arrivable_map_.init(model_, dmp);
+      cm_local_esc_.copy_partially(
+          Astar::Vec(0, 0, 0), cm_rough_, local_origin, local_origin + local_range);
+      arrivable_map_.create(local_center, local_center);
+
+      // Find temporary goal
+      float cost_min = std::numeric_limits<float>::max();
+      Astar::Vec te_out;
+      const int esc_range_sq = esc_range_ * esc_range_;
+      const int esc_range_min_sq = esc_range_min_ * esc_range_min_;
+      for (Astar::Vec d(0, -esc_range_, 0); d[1] <= esc_range_; d[1]++)
+      {
+        for (d[0] = -esc_range_; d[0] <= esc_range_; d[0]++)
+        {
+          const int sqlen = d.sqlen();
+          if ((d[0] == 0 && d[1] == 0) || sqlen > esc_range_sq || sqlen < esc_range_min_sq)
+          {
+            continue;
+          }
+
+          Astar::Vec te(start_grid[0] + d[0], start_grid[1] + d[1], 0);
+          if ((unsigned int)te[0] >= (unsigned int)map_info_.width ||
+              (unsigned int)te[1] >= (unsigned int)map_info_.height)
+          {
+            continue;
+          }
+          if (!cm_rough_.validate(te, range_))
+          {
+            continue;
+          }
+
+          // Check arrivability
+          if (arrivable_map_[te - local_origin] == std::numeric_limits<float>::max())
+          {
+            continue;
+          }
+
+          if (te[0] == g_orig[0] && te[1] == g_orig[1] && cm_[g_orig] < 100)
+          {
+            // Original goal is in the temporary escape range and reachable
+            ROS_INFO("Original goal is reachable. Back to the original goal.");
+            goal_ = goal_raw_ = goal_original_;
+            escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
+            createCostEstimCache();
+            return;
+          }
+
+          if (cm_rough_[te] >= relocation_acceptable_cost_)
+          {
+            continue;
+          }
+
+          const auto cost = cost_estim_cache_static_[te];
+          if (cost >= cost_min)
+          {
+            continue;
+          }
+
+          // Calculate distance map gradient
+          float grad[2] = {0, 0};
+          for (Astar::Vec d(0, -1, 0); d[1] <= 1; d[1]++)
+          {
+            for (d[0] = -1; d[0] <= 1; d[0]++)
+            {
+              if (d[0] == 0 && d[1] == 0)
+              {
+                continue;
+              }
+
+              const auto p = te + d;
+              const auto cost2 = cost_estim_cache_static_[p];
+              if (cost2 == std::numeric_limits<float>::max())
+              {
+                continue;
+              }
+              const float cost_diff = cost2 - cost;
+              grad[0] += -cost_diff * d[0];
+              grad[1] += -cost_diff * d[1];
+            }
+          }
+          if (grad[0] == 0 && grad[1] == 0)
+          {
+            continue;
+          }
+          const float yaw = std::atan2(grad[1], grad[0]);
+          te[2] = static_cast<int>(yaw / map_info_.angular_resolution);
+
+          te.cycleUnsigned(map_info_.angle);
+          if (cm_[te] >= relocation_acceptable_cost_)
+          {
+            continue;
+          }
+
+          if (cost < cost_min)
+          {
+            cost_min = cost;
+            te_out = te;
+          }
+        }
+      }
+      if (cost_min == std::numeric_limits<float>::max())
+      {
+        ROS_WARN("No valid temporary escape goal");
+        return;
+      }
+
+      escape_status_ =
+          cost_min < cost_estim_cache_static_[s] ?
+              TemporaryEscapeStatus::ESCAPING_WITH_IMPROVEMENT :
+              TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      if (isPathFinishing(start_grid, te_out))
+      {
+        // This temporary goal is too close and it will be immediately goes escaped state
+        escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
+      }
+
+      ROS_INFO("Temporary goal (%d, %d, %d)",
+               te_out[0], te_out[1], te_out[2]);
+      goal_raw_.pose = grid2MetricPose(te_out);
+      goal_ = goal_raw_;
+
+      createCostEstimCache();
+    }
   }
 
   int getSwitchIndex(const nav_msgs::Path& path) const

@@ -1,25 +1,22 @@
 # trajectory_tracker package
 
-The topic names will be migrated to ROS recommended namespace model.
-Set `/neonavigation_compatible` parameter to `1` to use new topic names.
-
 ## trajectory_tracker
 
 trajectory_tracker node controls vehicle velocity to follow given path.
 
 ### Subscribed topics
 
-* ~/path (new: path) [nav_msgs::Path]
-* ~/speed (new: speed) [std_msgs::Float32]
+* /path [nav_msgs::msg::Path]
+* /speed [std_msgs::msg::Float32]
 * /tf
-* /odom [nav_msgs::Odometry] (Optional: this topic is subscribed only when "use_odom" option is true)
+* /odom [nav_msgs::msg::Odometry] (Optional: this topic is subscribed only when "use_odom" option is true)
 
 
 ### Published topics
 
-* ~/cmd_vel (new: cmd_vel) [geometry_msgs::Twist]
-* ~/status [trajectory_tracker_msgs::TrajectoryTrackerStatus]
-* ~/tracking [geometry_msgs::PoseStamped]
+* /cmd_vel [geometry_msgs::msg::Twist]
+* ~/status [trajectory_tracker_msgs::msg::TrajectoryTrackerStatus]
+* ~/tracking [geometry_msgs::msg::PoseStamped]
 
 ### Services
 
@@ -70,7 +67,7 @@ trajectory_tracker node controls vehicle velocity to follow given path.
 * "use_time_optimal_control" (bool, default: True)
   > If true, time optimal control mode is used during turning in place. Otherwise, the same algorithm used for path tracking is used.
 * "time_optimal_control_future_gain" (double, default: 1.5)
-  > A gain to look ahead to robot's angle used in time optimal control. This parameter is valid when "use_time_optimal_control" is true. 
+  > A gain to look ahead to robot's angle used in time optimal control. This parameter is valid when "use_time_optimal_control" is true.
 * "k_ang_rotation" (double, default: 1.0)
   > "k_ang" value used during turning in place. This parameter is valid when "use_time_optimal_control" is false.
 * "k_avel_rotation" (double, default: 1.0)
@@ -88,7 +85,7 @@ trajectory_recorder node generates Path message from TF.
 
 ### Published topics
 
-* ~/recpath (new: path) [nav_msgs::Path]
+* /path [nav_msgs::msg::Path]
 
 ### Services
 
@@ -112,7 +109,7 @@ trajectory_saver node saves Path message to file.
 
 ### Subscribed topics
 
-* ~/recpath (new: path) [nav_msgs::Path]
+* /path [nav_msgs::msg::Path]
 * /tf
 
 ### Published topics
@@ -141,12 +138,12 @@ trajectory_server node loads Path from file and publishes it.
 
 ### Published topics
 
-* ~/path (new: path) [nav_msgs::Path]
-* ~/status [trajectory_tracker_msgs::TrajectoryServerStatus]
+* /path [nav_msgs::msg::Path]
+* ~/status [trajectory_tracker_msgs::msg::TrajectoryServerStatus]
 
 ### Services
 
-* ~/ChangePath (new: change_path) [trajectory_tracker_msgs::ChangePath]
+* /change_path [trajectory_tracker_msgs::srv::ChangePath]
 
 ### Called services
 
@@ -167,5 +164,5 @@ This research was supported by a contract with the Ministry of Internal Affairs 
 
 
 This software was implemented to accomplish the above research.
-Original idea of the implemented control scheme was published on:  
+Original idea of the implemented control scheme was published on:
 S. Iida, S. Yuta, "Vehicle command system and trajectory control for autonomous mobile robots," in *Proceedings of the 1991 IEEE/RSJ International Workshop on Intelligent Robots and Systems (IROS)*, 1991, pp. 212-217.

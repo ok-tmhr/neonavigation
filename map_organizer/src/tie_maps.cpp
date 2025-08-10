@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,9 +27,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <map_organizer_msgs/OccupancyGridArray.h>
+#define HAVE_NEW_YAMLCPP
+
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/srv/get_map.hpp>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +42,7 @@
 #include <string>
 #include <vector>
 
-#include <map_server/image_loader.h>
+#include <nav2_map_server/map_io.hpp>
 #include <yaml-cpp/yaml.h>
 
 #ifdef HAVE_NEW_YAMLCPP
@@ -52,22 +55,19 @@ void operator>>(const YAML::Node& node, T& i)
 }
 #endif
 
-class TieMapNode
+class TieMapNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle pnh_;
-  ros::NodeHandle nh_;
-  ros::Publisher pub_map_array_;
-  std::vector<ros::Publisher> pub_map_;
+  rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
+  std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
 
 public:
   TieMapNode()
-    : pnh_("~")
-    , nh_()
+    : Node("tie_maps")
   {
-    pub_map_array_ = nh_.advertise<map_organizer_msgs::OccupancyGridArray>("maps", 1, true);
+    pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 
-    map_organizer_msgs::OccupancyGridArray maps;
+    map_organizer_msgs::msg::OccupancyGridArray maps;
 
     std::string files_str;
     std::string mapfname;
@@ -75,10 +75,10 @@ public:
     double origin[3], height;
     int negate;
     double occ_th, free_th;
-    MapMode mode;
+    nav2_map_server::MapMode mode;
     std::string frame_id;
-    pnh_.param("map_files", files_str, std::string(""));
-    pnh_.param("frame_id", frame_id, std::string("map"));
+    files_str = this->declare_parameter("map_files", std::string(""));
+    frame_id = this->declare_parameter("frame_id", std::string("map"));
 
     int i = 0;
     std::string file;
@@ -88,8 +88,8 @@ public:
       std::ifstream fin(file);
       if (fin.fail())
       {
-        ROS_ERROR("Map_server could not open %s.", file.c_str());
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "Map_server could not open %s.", file.c_str());
+        rclcpp::shutdown();
         return;
       }
 #ifdef HAVE_NEW_YAMLCPP
@@ -106,8 +106,8 @@ public:
       }
       catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain a resolution tag or it is invalid: %s", e.what());
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "The map does not contain a resolution tag or it is invalid: %s", e.what());
+        rclcpp::shutdown();
         return;
       }
       try
@@ -116,8 +116,8 @@ public:
       }
       catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain a negate tag or it is invalid: %s", e.what());
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "The map does not contain a negate tag or it is invalid: %s", e.what());
+        rclcpp::shutdown();
         return;
       }
       try
@@ -126,8 +126,8 @@ public:
       }
       catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain an occupied_thresh tag or it is invalid: %s", e.what());
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "The map does not contain an occupied_thresh tag or it is invalid: %s", e.what());
+        rclcpp::shutdown();
         return;
       }
       try
@@ -136,8 +136,8 @@ public:
       }
       catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain a free_thresh tag or it is invalid: %s", e.what());
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "The map does not contain a free_thresh tag or it is invalid: %s", e.what());
+        rclcpp::shutdown();
         return;
       }
       try
@@ -146,21 +146,21 @@ public:
         doc["mode"] >> modeS;
 
         if (modeS == "trinary")
-          mode = TRINARY;
+          mode = nav2_map_server::MapMode::Trinary;
         else if (modeS == "scale")
-          mode = SCALE;
+          mode = nav2_map_server::MapMode::Scale;
         else if (modeS == "raw")
-          mode = RAW;
+          mode = nav2_map_server::MapMode::Raw;
         else
         {
-          ROS_ERROR("Invalid mode tag \"%s\".", modeS.c_str());
+          RCLCPP_ERROR(this->get_logger(), "Invalid mode tag \"%s\".", modeS.c_str());
           exit(-1);
         }
       }
       catch (YAML::Exception& e)
       {
-        ROS_DEBUG("The map does not contain a mode tag or it is invalid... assuming trinary: %s", e.what());
-        mode = TRINARY;
+        RCLCPP_DEBUG(this->get_logger(), "The map does not contain a mode tag or it is invalid... assuming trinary: %s", e.what());
+        mode = nav2_map_server::MapMode::Trinary;
       }
       try
       {
@@ -170,8 +170,8 @@ public:
       }
       catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain an origin tag or it is invalid: %s", e.what());
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "The map does not contain an origin tag or it is invalid: %s", e.what());
+        rclcpp::shutdown();
         return;
       }
       try
@@ -188,8 +188,8 @@ public:
         // TODO(at-wat): make this path-handling more robust
         if (mapfname.size() == 0)
         {
-          ROS_ERROR("The image tag cannot be an empty string.");
-          ros::shutdown();
+          RCLCPP_ERROR(this->get_logger(), "The image tag cannot be an empty string.");
+          rclcpp::shutdown();
           return;
         }
         if (mapfname[0] != '/')
@@ -202,40 +202,48 @@ public:
       }
       catch (YAML::InvalidScalar& e)
       {
-        ROS_ERROR("The map does not contain an image tag or it is invalid: e.what()");
-        ros::shutdown();
+        RCLCPP_ERROR(this->get_logger(), "The map does not contain an image tag or it is invalid: e.what()");
+        rclcpp::shutdown();
         return;
       }
 
-      ROS_INFO("Loading map from image \"%s\"", mapfname.c_str());
+      RCLCPP_INFO(this->get_logger(), "Loading map from image \"%s\"", mapfname.c_str());
 
-      nav_msgs::GetMap::Response map_resp;
-      map_server::loadMapFromFile(&map_resp,
-                                  mapfname.c_str(), res, negate, occ_th, free_th, origin, mode);
-      map_resp.map.info.origin.position.z = height;
-      map_resp.map.info.map_load_time = ros::Time::now();
-      map_resp.map.header.frame_id = frame_id;
-      map_resp.map.header.stamp = ros::Time::now();
-      ROS_INFO("Read a %d X %d map @ %.3lf m/cell",
-               map_resp.map.info.width,
-               map_resp.map.info.height,
-               map_resp.map.info.resolution);
-      maps.maps.push_back(map_resp.map);
-      pub_map_.push_back(nh_.advertise<nav_msgs::OccupancyGrid>(
-          "map" + std::to_string(i), 1, true));
-      pub_map_.back().publish(map_resp.map);
+      nav_msgs::msg::OccupancyGrid map_resp;
+      nav2_map_server::LoadParameters load_parameters{
+        .image_file_name = mapfname,
+        .resolution = res,
+        .origin = std::vector<double>(origin, origin + 3),
+        .free_thresh = free_th,
+        .occupied_thresh = occ_th,
+        .mode = mode,
+        .negate = negate
+      };
+      nav2_map_server::loadMapFromFile(load_parameters, map_resp);
+      map_resp.info.origin.position.z = height;
+      map_resp.info.map_load_time = this->now();
+      map_resp.header.frame_id = frame_id;
+      map_resp.header.stamp = this->now();
+      RCLCPP_INFO(this->get_logger(), "Read a %d X %d map @ %.3lf m/cell",
+               map_resp.info.width,
+               map_resp.info.height,
+               map_resp.info.resolution);
+      maps.maps.push_back(map_resp);
+      pub_map_.push_back(this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+          "map" + std::to_string(i), rclcpp::QoS(1).transient_local()));
+      pub_map_.back()->publish(map_resp);
       i++;
     }
-    pub_map_array_.publish(maps);
+    pub_map_array_->publish(maps);
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "tie_maps");
+  rclcpp::init(argc, argv);
 
-  TieMapNode tmn;
-  ros::spin();
+  auto tmn = std::make_shared<TieMapNode>();
+  rclcpp::spin(tmn);
 
   return 0;
 }

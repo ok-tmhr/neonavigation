@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -34,9 +34,9 @@
 #include <string>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/vtk_lib_io.h>
@@ -44,7 +44,6 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-#include <neonavigation_common/compatibility.h>
 
 pcl::PointXYZ operator-(const pcl::PointXYZ& a, const pcl::PointXYZ& b)
 {
@@ -84,42 +83,39 @@ std::vector<std::string> split(const std::string& input, char delimiter)
   return result;
 }
 
-class ObjToPointcloudNode
+class ObjToPointcloudNode : public rclcpp::Node
 {
 public:
   ObjToPointcloudNode()
-    : nh_()
-    , pnh_("~")
+    : Node("obj_to_pointcloud")
     , engine_(seed_gen_())
   {
-    neonavigation_common::compat::checkCompatMode();
-    pub_cloud_ = neonavigation_common::compat::advertise<sensor_msgs::PointCloud2>(
-        nh_, "mapcloud",
-        pnh_, "cloud", 1, true);
 
-    pnh_.param("frame_id", frame_id_, std::string("map"));
-    pnh_.param("objs", file_, std::string(""));
+    pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        "mapcloud",
+        rclcpp::QoS(1).transient_local());
+
+    frame_id_ = this->declare_parameter("frame_id", std::string("map"));
+    file_ = this->declare_parameter("objs", std::string(""));
     if (file_.compare("") == 0)
     {
-      ROS_ERROR("OBJ file not specified");
-      ros::shutdown();
+      RCLCPP_ERROR(this->get_logger(), "OBJ file not specified");
+      rclcpp::shutdown();
       return;
     }
-    pnh_.param("points_per_meter_sq", ppmsq_, 600.0);
-    pnh_.param("downsample_grid", downsample_grid_, 0.05);
-    pnh_.param("offset_x", offset_x_, 0.0);
-    pnh_.param("offset_y", offset_y_, 0.0);
-    pnh_.param("offset_z", offset_z_, 0.0);
-    pnh_.param("scale", scale_, 1.0);
+    ppmsq_ = this->declare_parameter("points_per_meter_sq", 600.0);
+    downsample_grid_ = this->declare_parameter("downsample_grid", 0.05);
+    offset_x_ = this->declare_parameter("offset_x", 0.0);
+    offset_y_ = this->declare_parameter("offset_y", 0.0);
+    offset_z_ = this->declare_parameter("offset_z", 0.0);
+    scale_ = this->declare_parameter("scale", 1.0);
 
     auto pc = convertObj(split(file_, ','));
-    pub_cloud_.publish(pc);
+    pub_cloud_->publish(pc);
   }
 
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Publisher pub_cloud_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cloud_;
 
   std::string file_;
   std::string frame_id_;
@@ -133,9 +129,9 @@ private:
   std::random_device seed_gen_;
   std::default_random_engine engine_;
 
-  sensor_msgs::PointCloud2 convertObj(const std::vector<std::string>& files)
+  sensor_msgs::msg::PointCloud2 convertObj(const std::vector<std::string>& files)
   {
-    sensor_msgs::PointCloud2 pc_msg;
+    sensor_msgs::msg::PointCloud2 pc_msg;
     pcl::PolygonMesh::Ptr mesh(new pcl::PolygonMesh());
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc_rs(new pcl::PointCloud<pcl::PointXYZ>());
@@ -151,8 +147,8 @@ private:
       {
         if (pcl::io::loadPCDFile(file, *pc) == -1)
         {
-          ROS_ERROR("Failed to load PCD file");
-          ros::shutdown();
+          RCLCPP_ERROR(this->get_logger(), "Failed to load PCD file");
+          rclcpp::shutdown();
           return pc_msg;
         }
         for (auto& p : pc->points)
@@ -168,8 +164,8 @@ private:
       {
         if (pcl::io::loadPolygonFileOBJ(file, *mesh) == -1)
         {
-          ROS_ERROR("Failed to load OBJ file");
-          ros::shutdown();
+          RCLCPP_ERROR(this->get_logger(), "Failed to load OBJ file");
+          rclcpp::shutdown();
           return pc_msg;
         }
 
@@ -187,8 +183,8 @@ private:
         {
           if (poly.vertices.size() != 3)
           {
-            ROS_ERROR("Input mesh mush be triangle");
-            ros::shutdown();
+            RCLCPP_ERROR(this->get_logger(), "Input mesh mush be triangle");
+            rclcpp::shutdown();
             return pc_msg;
           }
           auto& p0 = pc->points[poly.vertices[0]];
@@ -235,8 +231,8 @@ private:
 
     pcl::toROSMsg(*pc_ds, pc_msg);
     pc_msg.header.frame_id = frame_id_;
-    pc_msg.header.stamp = ros::Time::now();
-    ROS_INFO("pointcloud (%d points) has been generated from %d verticles",
+    pc_msg.header.stamp = this->now();
+    RCLCPP_INFO(this->get_logger(), "pointcloud (%d points) has been generated from %d verticles",
              (int)pc_ds->size(),
              (int)pc->size());
     return pc_msg;
@@ -245,10 +241,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "obj_to_pointcloud");
+  rclcpp::init(argc, argv);
 
-  ObjToPointcloudNode m2p;
-  ros::spin();
+  auto m2p = std::make_shared<ObjToPointcloudNode>();
+  rclcpp::spin(m2p);
 
   return 0;
 }

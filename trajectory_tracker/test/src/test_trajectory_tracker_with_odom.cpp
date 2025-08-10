@@ -41,16 +41,16 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
-  const ros::Time start = ros::Time::now();
-  while (ros::ok())
+  rclcpp::Rate rate(50);
+  const rclcpp::Time start = node_->now();
+  while (rclcpp::ok())
   {
-    ASSERT_LT(ros::Time::now() - start, ros::Duration(10.0));
+    ASSERT_LT(node_->now() - start, rclcpp::Duration(10, 0));
 
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   const double frame_rate = getCmdVelFrameRate();
@@ -58,11 +58,11 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(node_);
   }
-  ASSERT_NEAR(yaw_, 0.0, 1e-2);
-  ASSERT_NEAR(pos_[0], 0.5, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_NEAR(getYaw(), 0.0, 1e-2);
+  ASSERT_NEAR(getPos()[0], 0.5, 1e-2);
+  ASSERT_NEAR(getPos()[1], 0.0, 1e-2);
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
   // Parameter "hz" is set to 30.0, but the actual frame rate is around 50.0 as it is syncronized with the odometry.
   ASSERT_NEAR(50.0, frame_rate, 10.0);
@@ -78,47 +78,47 @@ TEST_F(TrajectoryTrackerTest, Timeout)
   poses.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  ros::Rate rate(50);
+  rclcpp::Rate rate(50);
   for (int i = 0; i < 50; ++i)
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(node_);
   }
   // Wait until odometry timeout
-  ros::Duration(0.2).sleep();
-  ros::spinOnce();
+  rclcpp::sleep_for(std::chrono::milliseconds(200));
+  rclcpp::spin_some(node_);
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);
   ASSERT_FLOAT_EQ(cmd_vel_->angular.z, 0.0);
-  ASSERT_GT(pos_[0], 0.0);
-  ASSERT_LT(pos_[0], 2.0);
-  ASSERT_EQ(status_->status, trajectory_tracker_msgs::TrajectoryTrackerStatus::NO_PATH);
+  ASSERT_GT(getPos()[0], 0.0);
+  ASSERT_LT(getPos()[0], 2.0);
+  ASSERT_EQ(status_->status, trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::NO_PATH);
 
-  while (ros::ok())
+  while (rclcpp::ok())
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
-    if (status_->status == trajectory_tracker_msgs::TrajectoryTrackerStatus::GOAL)
+    rclcpp::spin_some(node_);
+    if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
   for (int i = 0; i < 25; ++i)
   {
     publishTransform();
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(node_);
   }
-  ASSERT_NEAR(yaw_, 0.0, 1e-2);
-  ASSERT_NEAR(pos_[0], 2.0, 1e-2);
-  ASSERT_NEAR(pos_[1], 0.0, 1e-2);
+  ASSERT_NEAR(getYaw(), 0.0, 1e-2);
+  ASSERT_NEAR(getPos()[0], 2.0, 1e-2);
+  ASSERT_NEAR(getPos()[1], 0.0, 1e-2);
   ASSERT_EQ(last_path_header_.stamp, status_->path_header.stamp);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_trajectory_tracker_frame_rate");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

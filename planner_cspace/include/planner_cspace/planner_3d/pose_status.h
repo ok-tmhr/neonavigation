@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2014-2025, the neonavigation authors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,54 +27,28 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRACK_ODOMETRY_KALMAN_FILTER1_H
-#define TRACK_ODOMETRY_KALMAN_FILTER1_H
+#ifndef PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
+#define PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
 
-#include <limits>
-#include <cmath>
-
-namespace track_odometry
+namespace planner_cspace
 {
-class KalmanFilter1
+namespace planner_3d
 {
-public:
-  double x_;
-  double sigma_;
-
-  void set(const double x0 = 0.0,
-           const double sigma0 = std::numeric_limits<double>::infinity())
-  {
-    x_ = x0;
-    sigma_ = sigma0;
-  }
-  KalmanFilter1(const double x0 = 0.0,
-                const double sigma0 = std::numeric_limits<double>::infinity())
-  {
-    set(x0, sigma0);
-  }
-  void predict(const double x_plus, const double sigma_plus)
-  {
-    x_ += x_plus;
-    sigma_ += sigma_plus;
-  }
-  void measure(const double x_in, const double sigma_in)
-  {
-    if (std::isinf(sigma_in))
-      return;
-    if (std::isinf(sigma_))
-    {
-      if (std::isinf(x_in))
-        x_ = 0;
-      else
-        x_ = x_in;
-      sigma_ = sigma_in;
-      return;
-    }
-    double kt = sigma_ * sigma_ / (sigma_ * sigma_ + sigma_in * sigma_in);
-    x_ = x_ + kt * (x_in - x_);
-    sigma_ = (1.0 - kt) * sigma_;
-  }
+enum class DiscretePoseStatus
+{
+  OK,
+  RELOCATED,
+  IN_ROCK,
+  OUT_OF_MAP,
 };
-}  // namespace track_odometry
 
-#endif  // TRACK_ODOMETRY_KALMAN_FILTER1_H
+enum class StartPoseStatus
+{
+  START_OCCUPIED,
+  FINISHING,
+  NORMAL,
+};
+}  // namespace planner_3d
+}  // namespace planner_cspace
+
+#endif  // PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
