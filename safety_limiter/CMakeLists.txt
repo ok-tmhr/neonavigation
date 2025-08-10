@@ -55,15 +55,15 @@ add_executable(safety_limiter src/safety_limiter.cpp)
 target_link_libraries(safety_limiter rclcpp::rclcpp ${PCL_LIBRARIES})
 ament_target_dependencies(safety_limiter ${AMENT_CMAKE_DEPENDS})
 
-# if(BUILD_TESTING)
-#   find_package(ament_cmake_gtest REQUIRED)
-#   find_package(nav_msgs REQUIRED)
-#   find_package(tf2_geometry_msgs REQUIRED)
-#   add_subdirectory(test)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  find_package(nav_msgs REQUIRED)
+  find_package(tf2_geometry_msgs REQUIRED)
+  add_subdirectory(test)
 
-#   find_package(ament_lint_auto REQUIRED)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 
 install(TARGETS

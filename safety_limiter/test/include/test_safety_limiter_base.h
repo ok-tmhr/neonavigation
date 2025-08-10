@@ -89,7 +89,7 @@ protected:
   rclcpp::Subscription<safety_limiter_msgs::msg::SafetyLimiterStatus>::SharedPtr sub_status_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
 
-  tf2_ros::TransformBroadcaster tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
 
   inline void cbDiag(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg)
   {
@@ -112,9 +112,9 @@ public:
   geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
 
   inline SafetyLimiterTest()
-    : nh_()
-    , tfb_(nh_)
   {
+    nh_ = rclcpp::Node::make_shared("test_safety_limiter");
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
     pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_in", 1);
     pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 1);
     pub_watchdog_ = nh_->create_publisher<std_msgs::msg::Empty>("watchdog_reset", 1);
@@ -189,7 +189,7 @@ public:
         tf2::Transform(tf2::Quaternion(tf2::Vector3(0, 0, 1), ang), tf2::Vector3(lin, 0, 0)));
     trans.header.frame_id = parent_frame_id;
     trans.child_frame_id = child_frame_id;
-    tfb_.sendTransform(trans);
+    tfb_->sendTransform(trans);
   }
   inline bool hasDiag() const
   {
