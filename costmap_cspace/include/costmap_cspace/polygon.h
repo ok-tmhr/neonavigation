@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -37,6 +37,7 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
 
 namespace costmap_cspace
 {
@@ -104,10 +105,10 @@ public:
     for (auto it = begin; it != end; it++)
     {
       Vec p;
-      
+
       p[0] = std::stof((*it)[1].str());
       p[1] = std::stof((*it)[2].str());
-      
+
       if (it->length() == 0 || (*it)[1].str().empty() || (*it)[2].str().empty())
       {
         throw std::runtime_error("Invalid footprint.");

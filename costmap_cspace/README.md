@@ -1,8 +1,5 @@
 # costmap_cspace package
 
-The topic names will be migrated to ROS recommended namespace model.
-Set `/neonavigation_compatible` parameter to `1` to use new topic names.
-
 ## costmap_3d
 
 costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) configuration space based on given footprint.
@@ -16,8 +13,8 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 
 #### Published topics
 
-* ~/costmap (new: costmap) [costmap_cspace_msgs::msg::CSpace3D]
-* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::msg::CSpace3DUpdate]
+* costmap [costmap_cspace_msgs::msg::CSpace3D]
+* costmap_update [costmap_cspace_msgs::msg::CSpace3DUpdate]
 * ~/footprint [geometry_msgs::msg::PolygonStamped]
 * ~/debug [sensor_msgs::msg::PointCloud]
 
@@ -41,8 +38,8 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 
 #### Published topics
 
-* ~/costmap (new: costmap) [costmap_cspace_msgs::msg::CSpace3D]
-* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::msg::CSpace3DUpdate]
+* costmap [costmap_cspace_msgs::msg::CSpace3D]
+* costmap_update [costmap_cspace_msgs::msg::CSpace3DUpdate]
 * ~/footprint [geometry_msgs::msg::PolygonStamped]
 * ~/debug [sensor_msgs::msg::PointCloud]
 

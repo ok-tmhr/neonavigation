@@ -40,8 +40,6 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-// #include <neonavigation_common/compatibility.h>
-
 class LargeMapToMapNode : public rclcpp::Node
 {
 private:

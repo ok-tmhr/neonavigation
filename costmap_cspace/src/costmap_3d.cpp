@@ -40,7 +40,6 @@
 #include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
 #include <costmap_cspace/costmap_3d.h>
-// #include <neonavigation_common/compatibility.h>
 
 class Costmap3DOFNode : public rclcpp::Node
 {
@@ -266,7 +265,7 @@ public:
     if (layers.size() > 0)
       {
       costmap_cspace::Costmap3dLayerBase::LayerConfig layer_config;
-      
+
       for (int i = 0; i < layers.size(); ++i)
       {
         layer_config.name = this->declare_parameter(layers[i] + ".name", layers[i]);

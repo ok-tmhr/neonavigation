@@ -30,6 +30,7 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
 
+#include <assert.h>
 #include <memory>
 
 #include <costmap_cspace_msgs/msg/c_space3_d.hpp>
@@ -129,7 +130,7 @@ protected:
     update_msg->yaw = region_merged.yaw_;
     update_msg->angle = region_merged.angle_;
 
-    ROS_ASSERT(
+    assert(
         (update_msg->x + update_msg->width) *
             (update_msg->y + update_msg->height) <=
         map_->info.width * map_->info.height);
