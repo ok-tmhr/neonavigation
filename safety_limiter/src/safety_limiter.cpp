@@ -407,7 +407,7 @@ protected:
         base_frame_id_, cloud_accum_->header.frame_id,
         pcl_conversions::fromPCL(cloud_accum_->header.stamp));
     const rclcpp::Time stamp =
-        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0);
+        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0LL, RCL_ROS_TIME);
 
     geometry_msgs::msg::TransformStamped fixed_to_base;
     try
@@ -550,13 +550,13 @@ protected:
 
     if (has_collision_at_now_)
     {
-      if (stuck_started_since_ == rclcpp::Time(0))
+      if (stuck_started_since_ == rclcpp::Time(0LL, RCL_ROS_TIME))
         stuck_started_since_ = this->now();
     }
     else
     {
-      if (stuck_started_since_ != rclcpp::Time(0))
-        stuck_started_since_ = rclcpp::Time(0);
+      if (stuck_started_since_ != rclcpp::Time(0LL, RCL_ROS_TIME))
+        stuck_started_since_ = rclcpp::Time(0LL, RCL_ROS_TIME);
     }
 
     if (!has_collision)
