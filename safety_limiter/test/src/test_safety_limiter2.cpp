@@ -70,7 +70,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
         stopped = true;
       }
     };
-    auto sub_cmd_vel = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, cb_cmd_vel);
+    auto sub_cmd_vel = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", rclcpp::QoS(1).transient_local(), cb_cmd_vel);
 
     int count_after_stop = 10;
     for (float t = 0; t < 10.0 && rclcpp::ok() && count_after_stop > 0; t += dt)
