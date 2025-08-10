@@ -10,7 +10,7 @@ This node can be used to load CAD based map for 3-D localization.
 
 ### Published topics
 
-* /cloud [sensor_msgs::msg::PointCloud2]
+* cloud [sensor_msgs::msg::PointCloud2]
 
 ### Services
 
