@@ -31,11 +31,11 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <diagnostic_msgs/DiagnosticStatus.h>
-#include <geometry_msgs/Twist.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <test_safety_limiter_base.h>
 
@@ -43,7 +43,7 @@
 
 TEST_F(SafetyLimiterTest, Timeouts)
 {
-  ros::Rate wait(10.0);
+  rclcpp::Rate wait(10.0);
 
   for (int with_cloud = 0; with_cloud < 3; ++with_cloud)
   {
@@ -52,12 +52,12 @@ TEST_F(SafetyLimiterTest, Timeouts)
       const std::string test_condition =
           "with_watchdog_reset: " + std::to_string(with_watchdog_reset) +
           ", with_cloud: " + std::to_string(with_cloud);
-      ros::Duration(0.3).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(300));
 
       cmd_vel_.reset();
       for (int i = 0; i < 20; ++i)
       {
-        ASSERT_TRUE(ros::ok());
+        ASSERT_TRUE(rclcpp::ok());
 
         if (with_watchdog_reset > 0)
           publishWatchdogReset();
@@ -66,9 +66,9 @@ TEST_F(SafetyLimiterTest, Timeouts)
         {
           // cloud must have timestamp, otherwise the robot stops
           if (with_cloud > 1)
-            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time::now());
+            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
           else
-            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time());
+            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", rclcpp::Time(0LL, RCL_ROS_TIME));
         }
 
         const float vel = 0.1;
@@ -77,7 +77,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
         broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(nh_);
 
         if (i > 5 && cmd_vel_)
         {
@@ -104,12 +104,12 @@ TEST_F(SafetyLimiterTest, Timeouts)
 
       ASSERT_TRUE(hasStatus()) << test_condition;
       EXPECT_EQ(with_cloud > 1, status_->is_cloud_available) << test_condition;
-      EXPECT_EQ(status_->stuck_started_since, ros::Time(0)) << test_condition;
+      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME)) << test_condition;
 
       if (with_watchdog_reset > 0 && with_cloud > 1)
       {
         ASSERT_TRUE(hasDiag()) << test_condition;
-        EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+        EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
             << test_condition << ", "
             << "message: " << diag_->status[0].message;
 
@@ -118,7 +118,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
       else
       {
         ASSERT_TRUE(hasDiag()) << test_condition;
-        EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::ERROR, diag_->status[0].level)
+        EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::ERROR, diag_->status[0].level)
             << test_condition << ", "
             << "message: " << diag_->status[0].message;
         if (with_watchdog_reset == 0)
@@ -132,23 +132,23 @@ TEST_F(SafetyLimiterTest, Timeouts)
 
 TEST_F(SafetyLimiterTest, CloudBuffering)
 {
-  ros::Rate wait(60.0);
+  rclcpp::Rate wait(60.0);
 
   // Skip initial state
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  for (int i = 0; i < 30 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
+    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
   }
 
   bool received = false;
   bool en = false;
   // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s (t_margin: 0)
 
-  for (int i = 0; i < 60 * 6 && ros::ok(); ++i)
+  for (int i = 0; i < 60 * 6 && rclcpp::ok(); ++i)
   {
     // enable check after two cycles of safety_limiter
     if (i > 8)
@@ -157,16 +157,16 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
     // safety_limiter must check 4 buffered clouds
     // 3/4 of pointclouds have collision point
     if ((i % 4) == 0)
-      publishSinglePointPointcloud2(10, 0, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(10, 0, 0, "base_link", nh_->now());
     else
-      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
 
     publishWatchdogReset();
     publishTwist(2.0, 0);
     broadcastTF("odom", "base_link", 0.0, 0.0);
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
     if (en && cmd_vel_)
     {
       received = true;
@@ -178,16 +178,16 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinear)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
 
   // Skip initial state
-  for (int i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
+    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
   }
 
   for (float vel = 0.0; vel < 2.0; vel += 0.4)
@@ -196,17 +196,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
     bool received = false;
     bool en = false;
 
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, ((i % 5) - 2.0) * 0.01);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -215,13 +215,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
       }
     }
     ASSERT_TRUE(hasDiag());
-    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+    EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -229,16 +229,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
 
   // Skip initial state
-  for (int i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
+    publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
   }
 
   for (float vel = 0.0; vel > -2.0; vel -= 0.4)
@@ -247,17 +247,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
     bool received = false;
     bool en = false;
 
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, ((i % 5) - 2.0) * 0.01);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -266,13 +266,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
       }
     }
     ASSERT_TRUE(hasDiag());
-    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+    EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -280,16 +280,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
 
 TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
 
   // Skip initial state
-  for (int i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", ros::Time::now());
+    publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
   }
 
   const float vel_ref[] = {-0.2, -0.4, 0.2, 0.4};
@@ -299,17 +299,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     bool received = false;
     bool en = false;
 
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -328,20 +328,20 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     if (vel < 0)
     {
       ASSERT_TRUE(hasDiag());
-      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+      EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
           << "message: " << diag_->status[0].message;
     }
     else
     {
       ASSERT_TRUE(hasDiag());
-      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::WARN, diag_->status[0].level)
+      EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::WARN, diag_->status[0].level)
           << "message: " << diag_->status[0].message;
     }
 
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_NE(status_->stuck_started_since, ros::Time(0));
+    EXPECT_NE(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -349,16 +349,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
 
 TEST_F(SafetyLimiterTest, SafetyLimitAngular)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
 
   // Skip initial state
-  for (int i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-1, -1, 0, "base_link", ros::Time::now());
+    publishSinglePointPointcloud2(-1, -1, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
   }
 
   for (float vel = 0.0; vel < M_PI; vel += M_PI / 10)
@@ -367,17 +367,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
     bool received = false;
     bool en = false;
 
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-1, -1.1, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(-1, -1.1, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist((i % 3) * 0.01, vel);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -386,13 +386,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
       }
     }
     ASSERT_TRUE(hasDiag());
-    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+    EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -400,16 +400,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
 
 TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
 
   // Skip initial state
-  for (int i = 0; i < 10 && ros::ok(); ++i)
+  for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", ros::Time::now());
+    publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
   }
 
   const float vel_ref[] = {-0.2, -0.4, 0.2, 0.4};
@@ -419,17 +419,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     bool received = false;
     bool en = false;
 
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(0.0, vel);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -448,20 +448,20 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     if (vel < 0)
     {
       ASSERT_TRUE(hasDiag());
-      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+      EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
           << "message: " << diag_->status[0].message;
     }
     else
     {
       ASSERT_TRUE(hasDiag());
-      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::WARN, diag_->status[0].level)
+      EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::WARN, diag_->status[0].level)
           << "message: " << diag_->status[0].message;
     }
 
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_NE(status_->stuck_started_since, ros::Time(0));
+    EXPECT_NE(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -469,7 +469,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
 
 TEST_F(SafetyLimiterTest, NoCollision)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
 
   for (float vel = 0.0; vel < 1.0; vel += 0.2)
   {
@@ -478,17 +478,17 @@ TEST_F(SafetyLimiterTest, NoCollision)
       bool received = false;
       bool en = false;
 
-      for (int i = 0; i < 10 && ros::ok(); ++i)
+      for (int i = 0; i < 10 && rclcpp::ok(); ++i)
       {
         if (i > 5)
           en = true;
-        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
         publishWatchdogReset();
         publishTwist(vel, ang_vel);
         broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(nh_);
         if (en && cmd_vel_)
         {
           received = true;
@@ -499,14 +499,14 @@ TEST_F(SafetyLimiterTest, NoCollision)
       ASSERT_TRUE(received);
 
       ASSERT_TRUE(hasDiag());
-      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+      EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
           << "message: " << diag_->status[0].message;
 
       ASSERT_TRUE(hasStatus());
       EXPECT_EQ(1.0, status_->limit_ratio);
       EXPECT_TRUE(status_->is_cloud_available);
       EXPECT_FALSE(status_->has_watchdog_timed_out);
-      EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
     }
   }
 }
@@ -514,7 +514,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
 TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
 {
   const float dt = 0.02;
-  ros::Rate wait(1.0 / dt);
+  rclcpp::Rate wait(1.0 / dt);
 
   const float velocities[] = {-0.8, -0.5, 0.5, 0.8};
   for (const float vel : velocities)
@@ -523,19 +523,19 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     bool stopped = false;
 
     int count_after_stop = 10;
-    for (float t = 0; t < 10.0 && ros::ok() && count_after_stop > 0; t += dt)
+    for (float t = 0; t < 10.0 && rclcpp::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
-        publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", nh_->now());
       else
-        publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", nh_->now());
 
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", x, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (cmd_vel_)
       {
         if (std::abs(cmd_vel_->linear.x) < 1e-4 && x > 0.5)
@@ -564,7 +564,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
 
 TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
 {
-  ros::Rate wait(20);
+  rclcpp::Rate wait(20);
 
   const float linear_velocities[] =
       {-1.7, -1.5, 0.0, 1.5, 1.7};
@@ -582,17 +582,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
       bool received = false;
       bool en = false;
 
-      for (int i = 0; i < 10 && ros::ok(); ++i)
+      for (int i = 0; i < 10 && rclcpp::ok(); ++i)
       {
         if (i > 5)
           en = true;
-        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
         publishWatchdogReset();
         publishTwist(linear_velocities[linear_index], angular_velocities[angular_index]);
         broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(nh_);
         if (en && cmd_vel_)
         {
           received = true;
@@ -603,32 +603,32 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
       ASSERT_TRUE(received);
 
       ASSERT_TRUE(hasDiag());
-      EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+      EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
           << "message: " << diag_->status[0].message;
 
       ASSERT_TRUE(hasStatus());
       EXPECT_EQ(1.0, status_->limit_ratio);
       EXPECT_TRUE(status_->is_cloud_available);
       EXPECT_FALSE(status_->has_watchdog_timed_out);
-      EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
     }
   }
 }
 
 TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
 {
-  ros::Rate wait(20.0);
+  rclcpp::Rate wait(20.0);
   const double vel = 1.5;
   const double threshold_angle = std::atan2(1.0, 0.1);
   for (double angle = -M_PI; angle < M_PI; angle += M_PI / 8)
   {
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
-      publishSinglePointPointcloud2(2.0, 0, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(2.0, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(0, 0);
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
     }
 
     double obstacle_x;
@@ -661,17 +661,17 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
     // 1.0 m/ss, obstacle at 0.5 m: limited to 1.0 m/s
     bool received = false;
     bool en = false;
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(obstacle_x, obstacle_y, 0, "base_link", ros::Time::now());
+      publishSinglePointPointcloud2(obstacle_x, obstacle_y, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel * std::cos(angle), 0, vel * std::sin(angle));
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -685,13 +685,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
       }
     }
     ASSERT_TRUE(hasDiag());
-    EXPECT_EQ(diagnostic_msgs::DiagnosticStatus::OK, diag_->status[0].level)
+    EXPECT_EQ(diagnostic_msgs::msg::DiagnosticStatus::OK, diag_->status[0].level)
         << "message: " << diag_->status[0].message;
 
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, ros::Time(0));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0LL, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -700,7 +700,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_safety_limiter");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

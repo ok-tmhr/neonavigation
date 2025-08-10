@@ -1,24 +1,21 @@
 # safety_limiter package
 
-The topic names will be migrated to ROS recommended namespace model.
-Set `/neonavigation_compatible` parameter to `1` to use new topic names.
-
 ## safety_limiter
 
 safety_limiter node limits vehicle velocity to avoid collisions based on the linear prediction of the motion.
 
 ### Subscribed topics
 
-* ~/cmd_vel_in (new: cmd_vel_in) [geometry_msgs::Twist]
-* ~/cloud (new: cloud) [sensor_msgs::PointCloud2]
-* ~/disable (new: disable_safety) [std_msgs::Bool]
-* ~/watchdog_reset (new: watchdog_reset) [std_msgs::Empty]
+* cmd_vel_in [geometry_msgs::msg::Twist]
+* cloud [sensor_msgs::msg::PointCloud2]
+* disable_safety [std_msgs::msg::Bool]
+* watchdog_reset [std_msgs::msg::Empty]
 * /tf
 
 ### Published topics
 
-* ~/cmd_vel_out (new: cmd_vel) [geometry_msgs::Twist]
-* ~/collision (new: collision) [sensor_msgs::PointCloud]
+* cmd_vel [geometry_msgs::msg::Twist]
+* collision [sensor_msgs::msg::PointCloud]
 
 ### Services
 
@@ -42,4 +39,4 @@ safety_limiter node limits vehicle velocity to avoid collisions based on the lin
 * "yaw_margin" (double, default: 0.2)
 * "downsample_grid" (double, default: 0.05)
 * "frame_id" (string, default: std::string("base_link"))
-* "footprint" (?, default: footprint_xml)
+* "footprint" (string, default: "")
