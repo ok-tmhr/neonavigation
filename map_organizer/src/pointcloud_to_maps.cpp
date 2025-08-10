@@ -64,6 +64,13 @@ public:
         "mapcloud",
         1, std::bind(&PointcloudToMapsNode::cbPoints, this, _1));
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
+    this->declare_parameter("grid", 0.05);
+    this->declare_parameter("points_thresh_rate", 0.5);
+    this->declare_parameter("robot_height", 1.0);
+    this->declare_parameter("floor_height", 0.1);
+    this->declare_parameter("floor_tolerance", 0.2);
+    this->declare_parameter("min_floor_area", 100.0);
+    this->declare_parameter("floor_area_thresh_rate", 0.8);
   }
   void cbPoints(const sensor_msgs::msg::PointCloud2::Ptr msg)
   {
@@ -82,13 +89,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    this->get_parameter_or("grid", grid, 0.05);
-    this->get_parameter_or("points_thresh_rate", points_thresh_rate, 0.5);
-    this->get_parameter_or("robot_height", robot_height_f, 1.0);
-    this->get_parameter_or("floor_height", floor_height_f, 0.1);
-    this->get_parameter_or("floor_tolerance", floor_tolerance_f, 0.2);
-    this->get_parameter_or("min_floor_area", min_floor_area, 100.0);
-    this->get_parameter_or("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
+    this->get_parameter("grid", grid);
+    this->get_parameter("points_thresh_rate", points_thresh_rate);
+    this->get_parameter("robot_height", robot_height_f);
+    this->get_parameter("floor_height", floor_height_f);
+    this->get_parameter("floor_tolerance", floor_tolerance_f);
+    this->get_parameter("min_floor_area", min_floor_area);
+    this->get_parameter("floor_area_thresh_rate", floor_area_thresh_rate);
     robot_height = std::lround(robot_height_f / grid);
     floor_height = std::lround(floor_height_f / grid);
     floor_tolerance = std::lround(floor_tolerance_f / grid);

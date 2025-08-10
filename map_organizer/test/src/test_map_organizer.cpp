@@ -83,7 +83,7 @@ TEST(MapOrganizer, MapArray)
   {
     maps = msg;
   };
-  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, cb);
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(), cb);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
@@ -113,9 +113,9 @@ TEST(MapOrganizer, Maps)
   };
   using std::placeholders::_1;
   auto sub0 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", 1, std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>(std::bind(cb, _1, 0)));
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", rclcpp::QoS(1).transient_local(), std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>(std::bind(cb, _1, 0)));
   auto sub1 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", 1, std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>(std::bind(cb, _1, 1)));
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", rclcpp::QoS(1).transient_local(), std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>(std::bind(cb, _1, 1)));
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
@@ -144,7 +144,7 @@ TEST(MapOrganizer, SelectMap)
     map = msg;
   };
   auto sub =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, cb);
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map", rclcpp::QoS(1).transient_local(), cb);
   auto pub = nh->create_publisher<std_msgs::msg::Int32>("floor", 1);
 
   rclcpp::Rate rate(10.0);
@@ -198,7 +198,7 @@ TEST(MapOrganizer, SavedMapArray)
   {
     maps = msg;
   };
-  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("saved/maps", 1, cb);
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("saved/maps", rclcpp::QoS(1).transient_local(), cb);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
