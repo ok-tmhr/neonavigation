@@ -85,7 +85,7 @@ public:
     accum_.reset(std::chrono::duration<double>(accum_duration));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-        "~/map", rclcpp::QoS(1).transient_local());
+        "map_local", rclcpp::QoS(1).transient_local());
     sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan", 2, std::bind(&LaserscanToMapNode::cbScan, this, std::placeholders::_1));
 
     int width_param;
