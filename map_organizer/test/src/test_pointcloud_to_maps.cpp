@@ -125,7 +125,7 @@ TEST(PointcloudToMaps, Convert)
   {
     maps = msg;
   };
-  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, cb);
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(), cb);
   auto pub = nh->create_publisher<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local());
 
   pub->publish(generateMapCloud());
