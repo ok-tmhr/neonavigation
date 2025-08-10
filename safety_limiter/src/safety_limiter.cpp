@@ -45,7 +45,6 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_updater/diagnostic_updater.hpp>
-// #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/msg/twist.hpp>
 #include <safety_limiter_msgs/msg/safety_limiter_status.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
@@ -62,10 +61,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-// #include <pcl_ros/transforms.h>
-
-
-// #include <safety_limiter/SafetyLimiterConfig.h>
 
 namespace safety_limiter
 {
@@ -93,12 +88,6 @@ pcl::PointXYZ operator*(const pcl::PointXYZ& a, const float& b)
   c.z *= b;
   return c;
 }
-// bool XmlRpc_isNumber(XmlRpc::XmlRpcValue& value)
-// {
-//   return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
-//          value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
-// }
-
 class SafetyLimiterNode : public rclcpp::Node
 {
 protected:
@@ -112,8 +101,6 @@ protected:
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  // boost::recursive_mutex parameter_server_mutex_;
-  // std::unique_ptr<dynamic_reconfigure::Server<SafetyLimiterConfig>> parameter_server_;
   std::shared_ptr<rclcpp::ParameterEventHandler> event_handler_;
   std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> callback_handles_;
 
