@@ -156,13 +156,13 @@ private:
 
       geometry_msgs::msg::Vector3Stamped vin, vout;
       vin.header = imu_.header;
-      vin.header.stamp = rclcpp::Time(0);
+      vin.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
       vin.vector = msg->linear_acceleration;
       tf2::doTransform(vin, vout, trans);
       imu_.linear_acceleration = vout.vector;
 
       vin.header = imu_.header;
-      vin.header.stamp = rclcpp::Time(0);
+      vin.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
       vin.vector = msg->angular_velocity;
       tf2::doTransform(vin, vout, trans);
       imu_.angular_velocity = vout.vector;
@@ -178,7 +178,7 @@ private:
       geometry_msgs::msg::Vector3Stamped axis2;
       geometry_msgs::msg::Vector3Stamped axis1;
       axis1.vector = tf2::toMsg(axis);
-      axis1.header.stamp = rclcpp::Time(0);
+      axis1.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
       axis1.header.frame_id = qin.frame_id_;
       tf2::doTransform(axis1, axis2, trans);
 
