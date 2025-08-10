@@ -674,15 +674,17 @@ int main(int argc, char* argv[])
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
   int n;
-  n = node->get_parameter_or("num_groups", 1);
+  n = node->declare_parameter("num_groups", 1);
   for (int i = 0; i < n; i++)
   {
     std::string name;
-    node->get_parameter_or("group" + std::to_string(i) + "_name",
-              name, std::string("group") + std::to_string(i));
-    jys.emplace_back(name);
+    name = node->declare_parameter("group" + std::to_string(i) + "_name",
+              std::string("group") + std::to_string(i));
+    auto jy = std::make_shared<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode>(name);
+    jys.push_back(jy);
   }
 
+  executor.add_node(node);
   for (auto &&jy : jys)
   {
     executor.add_node(jy);

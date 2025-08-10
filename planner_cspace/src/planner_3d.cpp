@@ -256,8 +256,8 @@ protected:
 
   double dist_stop_to_previous_path_;
 
-  bool cbForget(std_srvs::srv::Empty_Request& req,
-                std_srvs::srv::Empty_Response& res)
+  bool cbForget(std_srvs::srv::Empty_Request::SharedPtr req,
+                std_srvs::srv::Empty_Response::SharedPtr res)
   {
     RCLCPP_WARN(this->get_logger(), "Forgetting remembered costmap.");
     if (has_map_)
@@ -339,8 +339,8 @@ protected:
     return point;
   }
 
-  bool cbMakePlan(nav_msgs::srv::GetPlan::Request& req,
-                  nav_msgs::srv::GetPlan::Response& res)
+  bool cbMakePlan(nav_msgs::srv::GetPlan::Request::SharedPtr req,
+                  nav_msgs::srv::GetPlan::Response::SharedPtr res)
   {
     if (!has_map_)
     {
@@ -348,21 +348,21 @@ protected:
       return false;
     }
 
-    if (req.start.header.frame_id != map_header_.frame_id ||
-        req.goal.header.frame_id != map_header_.frame_id)
+    if (req->start.header.frame_id != map_header_.frame_id ||
+        req->goal.header.frame_id != map_header_.frame_id)
     {
       RCLCPP_ERROR(this->get_logger(), "Start [%s] and Goal [%s] poses must be in the map frame [%s].",
-                req.start.header.frame_id.c_str(),
-                req.goal.header.frame_id.c_str(),
+                req->start.header.frame_id.c_str(),
+                req->goal.header.frame_id.c_str(),
                 map_header_.frame_id.c_str());
       return false;
     }
 
-    Astar::Vec s = metric2Grid(req.start.pose);
-    Astar::Vec e = metric2Grid(req.goal.pose);
+    Astar::Vec s = metric2Grid(req->start.pose);
+    Astar::Vec e = metric2Grid(req->goal.pose);
     RCLCPP_INFO(this->get_logger(), "Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
 
-    const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
+    const int tolerance_range = std::lround(req->tolerance / map_info_.linear_resolution);
     const DiscretePoseStatus start_status = relocateDiscretePoseIfNeeded(s, tolerance_range, tolerance_angle_, true);
     const DiscretePoseStatus goal_status = relocateDiscretePoseIfNeeded(e, tolerance_range, tolerance_angle_, true);
     switch (start_status)
@@ -426,11 +426,11 @@ protected:
     const std::list<Astar::Vecf> path_interpolated = model_->interpolatePath(path_grid);
     grid_metric_converter::appendGridPath2MetricPath(map_info_, path_interpolated, path);
 
-    res.plan.header = map_header_;
-    res.plan.poses.resize(path.poses.size());
+    res->plan.header = map_header_;
+    res->plan.poses.resize(path.poses.size());
     for (size_t i = 0; i < path.poses.size(); ++i)
     {
-      res.plan.poses[i] = path.poses[i];
+      res->plan.poses[i] = path.poses[i];
     }
     return true;
   }

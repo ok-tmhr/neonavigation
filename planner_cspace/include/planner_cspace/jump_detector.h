@@ -86,9 +86,9 @@ public:
     try
     {
       geometry_msgs::msg::TransformStamped base_trans_tmp =
-          tfbuf_->lookupTransform(jump_detect_frame_, "base_link", rclcpp::Time());
+          tfbuf_.lookupTransform(jump_detect_frame_, "base_link", rclcpp::Time());
       geometry_msgs::msg::TransformStamped map_trans_tmp =
-          tfbuf_->lookupTransform(map_frame_, "base_link", rclcpp::Time());
+          tfbuf_.lookupTransform(map_frame_, "base_link", rclcpp::Time());
       tf2::fromMsg(base_trans_tmp, base_trans);
       tf2::fromMsg(map_trans_tmp, map_trans);
     }
@@ -112,7 +112,7 @@ public:
 
     if (pos_diff > pos_jump_ || std::abs(yaw_diff) > yaw_jump_)
     {
-      RCLCPP_ERROR(this->get_logger(), "Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
+      RCLCPP_ERROR(rclcpp::get_logger("planner_cspace"), "Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
                 pos_diff, pos_jump_, yaw_diff, yaw_jump_);
       return true;
     }

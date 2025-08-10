@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_CYCLIC_VEC_H
 
 #define _USE_MATH_DEFINES
+#include <cassert>
 #include <cfloat>
 #include <cmath>
 #include <initializer_list>
