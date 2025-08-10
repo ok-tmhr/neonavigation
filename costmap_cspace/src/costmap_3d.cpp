@@ -217,7 +217,6 @@ public:
     root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
-    RCLCPP_DEBUG(this->get_logger(), "static_layers");
     auto static_layers = this->declare_parameter("static_layers", std::vector<std::string>{});
     for (int i = 0; i < static_layers.size(); ++i)
       {
