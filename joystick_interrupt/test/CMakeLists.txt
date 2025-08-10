@@ -1,6 +1,4 @@
-add_rostest_gtest(test_joystick_interrupt
-  test/joystick_interrupt_rostest.test
+ament_add_gtest(test_joystick_interrupt
   src/test_joystick_interrupt.cpp
 )
-target_link_libraries(test_joystick_interrupt ${catkin_LIBRARIES})
-add_dependencies(test_joystick_interrupt joystick_interrupt joystick_mux)
+target_link_libraries(test_joystick_interrupt rclcpp::rclcpp ${sensor_msgs_TARGETS})
