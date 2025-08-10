@@ -64,7 +64,7 @@ Available layer types and parameters are:
   - "linear_expand" (double)
   - "linear_spread" (double)
   - "linear_spread_min_cost" (int, default: 0)
-  - "footprint" (string array, default: root layer's footprint)
+  - "footprint" (string, default: root layer's footprint)
 - **Costmap3dLayerPlain**: Costmap layer without considering footpring.
   - "linear_expand" (double)
   - "linear_spread" (double)
