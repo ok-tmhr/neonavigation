@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -37,39 +37,42 @@
 #include <utility>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <sensor_msgs/PointCloud2.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <map_organizer_msgs/OccupancyGridArray.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-#include <neonavigation_common/compatibility.h>
 
-class PointcloudToMapsNode
+class PointcloudToMapsNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle pnh_;
-  ros::NodeHandle nh_;
-  std::map<std::string, ros::Publisher> pub_maps_;
-  ros::Publisher pub_map_array_;
-  ros::Subscriber sub_points_;
+  std::map<std::string, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_maps_;
+  rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
 
 public:
   PointcloudToMapsNode()
-    : pnh_("~")
-    , nh_()
+    : Node("pointcloud_to_maps")
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_points_ = neonavigation_common::compat::subscribe(
-        nh_, "mapcloud",
-        pnh_, "map_cloud", 1, &PointcloudToMapsNode::cbPoints, this);
-    pub_map_array_ = nh_.advertise<map_organizer_msgs::OccupancyGridArray>("maps", 1, true);
+    using std::placeholders::_1;
+    sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+        "mapcloud",
+        rclcpp::QoS(1).transient_local(), std::bind(&PointcloudToMapsNode::cbPoints, this, _1));
+    pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
+    this->declare_parameter("grid", 0.05);
+    this->declare_parameter("points_thresh_rate", 0.5);
+    this->declare_parameter("robot_height", 1.0);
+    this->declare_parameter("floor_height", 0.1);
+    this->declare_parameter("floor_tolerance", 0.2);
+    this->declare_parameter("min_floor_area", 100.0);
+    this->declare_parameter("floor_area_thresh_rate", 0.8);
   }
-  void cbPoints(const sensor_msgs::PointCloud2::Ptr& msg)
+  void cbPoints(const sensor_msgs::msg::PointCloud2::Ptr msg)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::fromROSMsg(*msg, *pc);
@@ -86,13 +89,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    pnh_.param("grid", grid, 0.05);
-    pnh_.param("points_thresh_rate", points_thresh_rate, 0.5);
-    pnh_.param("robot_height", robot_height_f, 1.0);
-    pnh_.param("floor_height", floor_height_f, 0.1);
-    pnh_.param("floor_tolerance", floor_tolerance_f, 0.2);
-    pnh_.param("min_floor_area", min_floor_area, 100.0);
-    pnh_.param("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
+    this->get_parameter("grid", grid);
+    this->get_parameter("points_thresh_rate", points_thresh_rate);
+    this->get_parameter("robot_height", robot_height_f);
+    this->get_parameter("floor_height", floor_height_f);
+    this->get_parameter("floor_tolerance", floor_tolerance_f);
+    this->get_parameter("min_floor_area", min_floor_area);
+    this->get_parameter("floor_area_thresh_rate", floor_area_thresh_rate);
     robot_height = std::lround(robot_height_f / grid);
     floor_height = std::lround(floor_height_f / grid);
     floor_tolerance = std::lround(floor_tolerance_f / grid);
@@ -130,15 +133,15 @@ public:
     for (int i = min_height; i <= max_height; i++)
       floor_area[i] = 0;
 
-    nav_msgs::MapMetaData mmd;
+    nav_msgs::msg::MapMetaData mmd;
     mmd.resolution = grid;
     mmd.origin.position.x = x_min * grid;
     mmd.origin.position.y = y_min * grid;
     mmd.origin.orientation.w = 1.0;
     mmd.width = x_max - x_min + 1;
     mmd.height = y_max - y_min + 1;
-    ROS_INFO("width %d, height %d", mmd.width, mmd.height);
-    std::vector<nav_msgs::OccupancyGrid> maps;
+    RCLCPP_INFO(this->get_logger(), "width %d, height %d", mmd.width, mmd.height);
+    std::vector<nav_msgs::msg::OccupancyGrid> maps;
 
     int hist_max = std::numeric_limits<int>::lowest();
     for (const auto& h : hist)
@@ -202,7 +205,7 @@ public:
       {
         if (floor_runnable_area[i] > floor_area_filter)
         {
-          nav_msgs::OccupancyGrid map;
+          nav_msgs::msg::OccupancyGrid map;
           map.info = mmd;
           map.info.origin.position.z = i * grid;
           map.header = msg->header;
@@ -225,7 +228,7 @@ public:
         }
       }
     }
-    ROS_INFO("Floor candidates: %d", map_num);
+    RCLCPP_INFO(this->get_logger(), "Floor candidates: %d", map_num);
     auto it_prev = maps.rbegin();
     for (auto it = maps.rbegin() + 1; it != maps.rend() && it_prev != maps.rend(); it++)
     {
@@ -276,14 +279,14 @@ public:
     }
     int num = -1;
     int floor_num = 0;
-    map_organizer_msgs::OccupancyGridArray map_array;
+    map_organizer_msgs::msg::OccupancyGridArray map_array;
     for (auto& map : maps)
     {
       num++;
       int h = map.info.origin.position.z / grid;
       if (floor_runnable_area[h] < min_floor_area)
       {
-        ROS_WARN("floor %d (%5.2fm^2), h = %0.2fm skipped",
+        RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm skipped",
                  floor_num, floor_runnable_area[num], map.info.origin.position.z);
         continue;
       }
@@ -337,24 +340,24 @@ public:
         }
       }
 
-      std::string name = "map" + std::to_string(floor_num);
-      pub_maps_[name] = pnh_.advertise<nav_msgs::OccupancyGrid>(name, 1, true);
-      pub_maps_[name].publish(map);
+      std::string name = "~/map" + std::to_string(floor_num);
+      pub_maps_[name] = this->create_publisher<nav_msgs::msg::OccupancyGrid>(name, rclcpp::QoS(1).transient_local());
+      pub_maps_[name]->publish(map);
       map_array.maps.push_back(map);
-      ROS_WARN("floor %d (%5.2fm^2), h = %0.2fm",
+      RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm",
                floor_num, floor_runnable_area[h], map.info.origin.position.z);
       floor_num++;
     }
-    pub_map_array_.publish(map_array);
+    pub_map_array_->publish(map_array);
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "pointcloud_to_maps");
+  rclcpp::init(argc, argv);
 
-  PointcloudToMapsNode p2m;
-  ros::spin();
+  auto p2m = std::make_shared<PointcloudToMapsNode>();
+  rclcpp::spin(p2m);
 
   return 0;
 }

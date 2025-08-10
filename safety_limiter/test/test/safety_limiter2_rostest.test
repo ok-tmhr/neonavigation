@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <launch>
-  <env name="GCOV_PREFIX" value="/tmp/gcov/safety_limiter_safert_limiter2" />
-  <param name="neonavigation_compatible" value="1" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/safety_limiter_safert_limiter2" />
 
-  <test test-name="test_safety_limiter2" pkg="safety_limiter" type="test_safety_limiter2" time-limit="30.0" />
+  <!-- TODO: time-limit="30.0" -->
+  <executable name="test_safety_limiter2" cmd="./build/safety_limiter/test/test_safety_limiter2" output="screen" />
 
-  <node pkg="safety_limiter" type="safety_limiter" name="safety_limiter" output="screen">
-    <rosparam param="footprint">[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]</rosparam>
+  <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" output="screen">
+    <param name="footprint" value="'[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]'" />
     <param name="allow_empty_cloud" value="false" />
     <param name="watchdog_interval" value="0.2" />
     <param name="cloud_timeout" value="0.2" />
@@ -18,7 +18,7 @@
     <param name="ang_vel" value="3.14" />
     <param name="d_margin" value="0.1" />
     <param name="yaw_margin" value="0.0" />
-    <param name="z_range_min" value="-100.0" />
-    <param name="z_range_max" value="100.0" />
+    <param name="z_range_min" value="-3.0" />
+    <param name="z_range_max" value="3.0" />
   </node>
 </launch>
