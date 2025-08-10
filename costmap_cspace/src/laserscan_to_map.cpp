@@ -74,7 +74,6 @@ public:
     , publish_interval_(rclcpp::Duration::from_seconds(0.))
     , published_(0LL, RCL_ROS_TIME)
   {
-    // neonavigation_common::compat::checkCompatMode();
     z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
     z_max_ = this->declare_parameter("z_max", std::numeric_limits<double>::max());
     global_frame_ = this->declare_parameter("global_frame", std::string("map"));
