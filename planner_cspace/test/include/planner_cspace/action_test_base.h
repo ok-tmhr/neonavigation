@@ -37,11 +37,12 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <nav_msgs/GetPlan.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <nav_msgs/srv/get_plan.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <tf2/utils.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 constexpr const char ACTION_TOPIC_MOVE_BASE[] = "/move_base";
@@ -52,49 +53,51 @@ class ActionTestBase : public ::testing::Test
 {
 public:
   ActionTestBase()
-    : tfl_(tfbuf_)
+    : node_(rclcpp::Node::make_shared("test_preempt"))
+    , tfbuf_(node_->get_clock())
+    , tfl_(tfbuf_)
     , map_ready_(false)
   {
-    move_base_ = std::make_shared<ActionClient>(TOPIC);
-    sub_status_ = node_.subscribe(
-        "/planner_3d/status", 10, &ActionTestBase::cbStatus, this);
+    move_base_ = rclcpp_action::create_client<ACTION>(node_, TOPIC);
+    sub_status_ = node_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
+        "/planner_3d/status", 10, std::bind(&ActionTestBase::cbStatus, this, std::placeholders::_1));
   }
   void SetUp()
   {
-    if (!move_base_->waitForServer(rclcpp::Duration(30.0)))
+    if (!move_base_->wait_for_action_server(std::chrono::seconds(30)))
     {
       FAIL() << "Failed to connect move_base action";
     }
 
-    ros::ServiceClient srv_plan =
-        node_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
+    auto srv_plan =
+        node_->create_client<nav_msgs::srv::GetPlan>(
             "/planner_3d/make_plan");
 
-    const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10.0);
+    const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10.0);
     while (rclcpp::ok())
     {
-      nav_msgs::GetPlanRequest req;
-      nav_msgs::GetPlanResponse res;
-      req.tolerance = 10.0;
-      req.start.header.frame_id = "map";
-      req.start.pose.position.x = 1.24;
-      req.start.pose.position.y = 0.65;
-      req.start.pose.orientation.w = 1;
-      req.goal.header.frame_id = "map";
-      req.goal.pose.position.x = 1.25;
-      req.goal.pose.position.y = 0.75;
-      req.goal.pose.orientation.w = 1;
-      if (srv_plan.call(req, res))
+      nav_msgs::srv::GetPlan_Request::SharedPtr req;
+      nav_msgs::srv::GetPlan_Response::SharedPtr res;
+      req->tolerance = 10.0;
+      req->start.header.frame_id = "map";
+      req->start.pose.position.x = 1.24;
+      req->start.pose.position.y = 0.65;
+      req->start.pose.orientation.w = 1;
+      req->goal.header.frame_id = "map";
+      req->goal.pose.position.x = 1.25;
+      req->goal.pose.position.y = 0.75;
+      req->goal.pose.orientation.w = 1;
+      if (rclcpp::spin_until_future_complete(node_, srv_plan->async_send_request(req), std::chrono::seconds(1)) == rclcpp::FutureReturnCode::SUCCESS)
       {
         // Planner is ready.
         break;
       }
-      if (rclcpp::Time::now() > deadline)
+      if (node_->now() > deadline)
       {
         FAIL() << "planner_3d didn't receive map";
       }
-      rclcpp::Duration(1).sleep();
-      rclcpp::spin_some();
+      rclcpp::sleep_for(std::chrono::seconds(1));
+      rclcpp::spin_some(node_);
     }
   }
   ~ActionTestBase()
@@ -102,7 +105,7 @@ public:
   }
 
 protected:
-  using ActionClient = actionlib::SimpleActionClient<ACTION>;
+  using ActionClient = rclcpp_action::Client<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
   void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
@@ -120,8 +123,8 @@ protected:
            ", error: " + std::to_string(planner_status_->error) + ")";
   }
 
-  ros::NodeHandle node_;
-  ros::Subscriber sub_status_;
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   tf2_ros::Buffer tfbuf_;

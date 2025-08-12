@@ -31,11 +31,11 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <diagnostic_msgs/DiagnosticArray.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
 
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
 
 #include <gtest/gtest.h>
@@ -45,31 +45,31 @@ TEST(Planner3D, CostmapWatchdog)
   int cnt = 0;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   nav_msgs::msg::Path::ConstPtr path;
-  diagnostic_msgs::DiagnosticArray::ConstPtr diag;
+  diagnostic_msgs::msg::DiagnosticArray::ConstPtr diag;
 
-  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
+  const std::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
       [&status, &cnt](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg) -> void
   {
     status = msg;
     cnt++;
   };
-  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
+  const std::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
       [&path](const nav_msgs::msg::Path::ConstPtr& msg) -> void
   {
     path = msg;
   };
-  const boost::function<void(const diagnostic_msgs::DiagnosticArray::ConstPtr&)> cb_diag =
-      [&diag](const diagnostic_msgs::DiagnosticArray::ConstPtr& msg) -> void
+  const std::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr&)> cb_diag =
+      [&diag](const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg) -> void
   {
     diag = msg;
   };
 
-  ros::NodeHandle nh("");
-  ros::Publisher pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", 1, true);
-  ros::Publisher pub_cost_update = nh.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1);
-  ros::Subscriber sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
-  ros::Subscriber sub_path = nh.subscribe("path", 1, cb_path);
-  ros::Subscriber sub_diag = nh.subscribe("diagnostics", 1, cb_diag);
+  auto nh = rclcpp::Node::make_shared("test_navigate");
+  auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
+  auto sub_diag = nh->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, cb_diag);
 
   geometry_msgs::msg::PoseStamped goal;
   goal.header.frame_id = "map";
@@ -77,7 +77,7 @@ TEST(Planner3D, CostmapWatchdog)
   goal.pose.position.y = 2.8;
   goal.pose.orientation.w = 1.0;
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   pub_goal->publish(goal);
 
   rclcpp::Rate rate(10);
@@ -86,14 +86,14 @@ TEST(Planner3D, CostmapWatchdog)
     // cnt increments in 5 Hz at maximum
     if (cnt == 0 || cnt > 8)
     {
-      costmap_cspace_msgs::CSpace3DUpdate update;
-      update.header.stamp = rclcpp::Time::now();
+      costmap_cspace_msgs::msg::CSpace3DUpdate update;
+      update.header.stamp = nh->now();
       update.header.frame_id = "map";
       update.width = update.height = update.angle = 0;
       pub_cost_update->publish(update);
     }
 
-    rclcpp::spin_some();
+    rclcpp::spin_some(nh);
     rate.sleep();
 
     if (!status)
@@ -133,22 +133,22 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   nav_msgs::msg::Path::ConstPtr path;
 
-  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
+  const std::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
       [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg) -> void
   {
     status = msg;
   };
-  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
+  const std::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
       [&path](const nav_msgs::msg::Path::ConstPtr& msg) -> void
   {
     path = msg;
   };
 
-  ros::NodeHandle nh("");
-  ros::Publisher pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", 1, true);
-  ros::Publisher pub_cost_update = nh.advertise<costmap_cspace_msgs::CSpace3DUpdate>("costmap_update", 1);
-  ros::Subscriber sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
-  ros::Subscriber sub_path = nh.subscribe("path", 1, cb_path);
+  auto nh = rclcpp::Node::make_shared("test_navigate");
+  auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
 
   geometry_msgs::msg::PoseStamped goal;
   goal.header.frame_id = "map";
@@ -157,56 +157,56 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   goal.pose.orientation.w = std::sin(0.09);
   goal.pose.orientation.z = std::cos(0.09);
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   pub_goal->publish(goal);
 
-  costmap_cspace_msgs::CSpace3DUpdate update;
+  costmap_cspace_msgs::msg::CSpace3DUpdate update;
   update.header.frame_id = "map";
   update.width = update.height = update.angle = 0;
 
-  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(2.0);
+  const rclcpp::Time deadline = nh->now() + rclcpp::Duration::from_seconds(2.0);
   rclcpp::Rate rate(10);
   while (rclcpp::ok())
   {
-    update.header.stamp = rclcpp::Time::now();
+    update.header.stamp = nh->now();
     pub_cost_update->publish(update);
 
-    rclcpp::spin_some();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (status && status->status == planner_cspace_msgs::msg::PlannerStatus::FINISHING)
       break;
 
-    ASSERT_LT(update.header.stamp, deadline)
+    ASSERT_LT(rclcpp::Time(update.header.stamp), deadline)
         << "Planner didn't enter FINISHING state: "
         << (status ? status->status : -1);
   }
   while (rclcpp::ok())
   {
-    rclcpp::spin_some();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (status->error == planner_cspace_msgs::msg::PlannerStatus::DATA_MISSING)
       break;
 
     ASSERT_EQ(status->status, planner_cspace_msgs::msg::PlannerStatus::FINISHING)
         << "Wrong test condition";
-    ASSERT_LT(update.header.stamp, deadline)
+    ASSERT_LT(rclcpp::Time(update.header.stamp), deadline)
         << "Planner didn't enter DATA_MISSING state"
         << status->error;
   }
   path = nullptr;
   while (rclcpp::ok())
   {
-    update.header.stamp = rclcpp::Time::now();
+    update.header.stamp = nh->now();
     pub_cost_update->publish(update);
 
-    rclcpp::spin_some();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (path)
       break;
 
     ASSERT_EQ(status->status, planner_cspace_msgs::msg::PlannerStatus::FINISHING)
         << "Wrong test condition";
-    ASSERT_LT(update.header.stamp, deadline)
+    ASSERT_LT(rclcpp::Time(update.header.stamp), deadline)
         << "No path was published";
   }
   ASSERT_TRUE(rclcpp::ok());
@@ -215,7 +215,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_navigate");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

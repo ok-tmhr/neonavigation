@@ -29,6 +29,7 @@ foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
   find_package(${DEPEND} REQUIRED)
 endforeach()
 find_package(OpenMP REQUIRED)
+find_package(Boost REQUIRED COMPONENTS thread chrono system)
 
 
 set(CMAKE_CXX_STANDARD 17)
@@ -79,13 +80,12 @@ add_executable(patrol src/patrol.cpp)
 ament_target_dependencies(patrol ${AMENT_CMAKE_DEPENDS})
 
 
-# if(CATKIN_ENABLE_TESTING)
-#   find_package(rostest REQUIRED)
-#   add_subdirectory(test)
-#   find_package(roslint REQUIRED)
-#   roslint_cpp()
-#   roslint_add_test()
-# endif()
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  add_subdirectory(test)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 
 install(TARGETS

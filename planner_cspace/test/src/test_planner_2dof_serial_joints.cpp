@@ -36,23 +36,23 @@
 
 TEST(Planner2DOFSerialJoints, Plan)
 {
-  ros::NodeHandle nh;
-  ros::Publisher pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", 1, true);
-  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", 1, true);
+  auto nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
+  auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
+  auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
   trajectory_msgs::msg::JointTrajectory::ConstPtr planned;
   const auto cb_plan = [&planned](const trajectory_msgs::msg::JointTrajectory::ConstPtr& msg)
   {
     planned = msg;
   };
-  ros::Subscriber sub_plan = nh.subscribe<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", 1, cb_plan);
+  auto sub_plan = nh->create_subscription<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", 1, cb_plan);
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     status = msg;
   };
-  ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::msg::PlannerStatus>(
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
       "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
   sensor_msgs::msg::JointState s;
@@ -70,11 +70,11 @@ TEST(Planner2DOFSerialJoints, Plan)
   cmd.points.push_back(p);
 
   rclcpp::Rate rate(1);
-  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10);
+  const rclcpp::Time deadline = nh->now() + rclcpp::Duration::from_seconds(10);
   int cnt = 0;
   while (rclcpp::ok())
   {
-    if (rclcpp::Time::now() > deadline)
+    if (nh->now() > deadline)
     {
       FAIL() << "Timeout";
     }
@@ -82,7 +82,7 @@ TEST(Planner2DOFSerialJoints, Plan)
     pub_state->publish(s);
     pub_cmd->publish(cmd);
 
-    rclcpp::spin_some();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (planned && status)
     {
@@ -146,16 +146,16 @@ TEST(Planner2DOFSerialJoints, Plan)
 
 TEST(Planner2DOFSerialJoints, NoPath)
 {
-  ros::NodeHandle nh;
-  ros::Publisher pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", 1, true);
-  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", 1, true);
+  auto nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
+  auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
+  auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     status = msg;
   };
-  ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::msg::PlannerStatus>(
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
       "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
   sensor_msgs::msg::JointState s;
@@ -173,11 +173,11 @@ TEST(Planner2DOFSerialJoints, NoPath)
   cmd.points.push_back(p);
 
   rclcpp::Rate rate(1);
-  const rclcpp::Time deadline = rclcpp::Time::now() + rclcpp::Duration(10);
+  const rclcpp::Time deadline = nh->now() + rclcpp::Duration::from_seconds(10);
   int cnt = 0;
   while (rclcpp::ok())
   {
-    if (rclcpp::Time::now() > deadline)
+    if (nh->now() > deadline)
     {
       FAIL() << "Timeout";
     }
@@ -185,7 +185,7 @@ TEST(Planner2DOFSerialJoints, NoPath)
     pub_state->publish(s);
     pub_cmd->publish(cmd);
 
-    rclcpp::spin_some();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (status)
     {
@@ -205,7 +205,7 @@ TEST(Planner2DOFSerialJoints, NoPath)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_planner_2dof_serial_joints");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
