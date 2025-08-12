@@ -188,3 +188,11 @@ if(NEONAVIGATION_EXTRA_TESTS)
   set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
 
 endif()
+
+install(DIRECTORY data
+  DESTINATION share/${PROJECT_NAME}/test
+)
+
+install(DIRECTORY test
+  DESTINATION share/${PROJECT_NAME}/test
+)
