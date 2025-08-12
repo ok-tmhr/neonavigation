@@ -1343,8 +1343,6 @@ public:
     force_goal_orientation_ = this->declare_parameter("force_goal_orientation", true);
 
     temporary_escape_ = this->declare_parameter("temporary_escape", true);
-    temporary_escape_tolerance_lin_ = this->declare_parameter("temporary_escape_tolerance_lin", 0.1);
-    temporary_escape_tolerance_ang_ = this->declare_parameter("temporary_escape_tolerance_ang", 0.57);
     enable_crowd_mode_ = this->declare_parameter("enable_crowd_mode", false);
 
     fast_map_update_ = this->declare_parameter("fast_map_update", false);
@@ -1371,7 +1369,6 @@ public:
     keep_a_part_of_previous_path_ = this->declare_parameter("keep_a_part_of_previous_path", false);
     dist_stop_to_previous_path_ = this->declare_parameter("dist_stop_to_previous_path", 0.1);
     trigger_plan_by_costmap_update_ = this->declare_parameter("trigger_plan_by_costmap_update", false);
-    relocation_acceptable_cost_ = this->declare_parameter("relocation_acceptable_cost", 50);
 
     int queue_size_limit;
     queue_size_limit = this->declare_parameter("queue_size_limit", 0);
