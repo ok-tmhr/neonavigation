@@ -1170,7 +1170,7 @@ protected:
   {
     geometry_msgs::msg::PoseStamped start;
     start.header.frame_id = robot_frame_;
-    start.header.stamp = rclcpp::Time(0);
+    start.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
     start.pose.orientation.x = 0.0;
     start.pose.orientation.y = 0.0;
     start.pose.orientation.z = 0.0;
@@ -1201,6 +1201,7 @@ public:
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , costmap_watchdog_(rclcpp::Duration(0, 0))
+    , last_costmap_(0LL, RCL_ROS_TIME)
   {
 
     using std::placeholders::_1;
