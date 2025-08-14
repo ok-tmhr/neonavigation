@@ -33,16 +33,17 @@
 #include <unistd.h>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <nav_msgs/GetPlan.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <std_srvs/Empty.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <nav_msgs/srv/get_plan.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <std_srvs/srv/empty.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <planner_cspace/planner_status.h>
@@ -52,119 +53,123 @@
 class NavigateWithRememberUpdates : public ::testing::Test
 {
 protected:
-  ros::NodeHandle nh_;
+  rclcpp::Node::SharedPtr nh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
-  costmap_cspace_msgs::CSpace3D::ConstPtr costmap_;
-  nav_msgs::Path::ConstPtr path_;
-  ros::Subscriber sub_costmap_;
-  ros::Subscriber sub_status_;
-  ros::Subscriber sub_path_;
-  ros::ServiceClient srv_forget_;
-  ros::Publisher pub_initial_pose_;
-  ros::Publisher pub_patrol_nodes_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
+  costmap_cspace_msgs::msg::CSpace3D::ConstPtr costmap_;
+  nav_msgs::msg::Path::ConstPtr path_;
+  rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr sub_costmap_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr srv_forget_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_initial_pose_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_patrol_nodes_;
   std::vector<tf2::Stamped<tf2::Transform>> traj_;
   std::string test_scope_;
 
   NavigateWithRememberUpdates()
-    : tfl_(tfbuf_)
+    : nh_(rclcpp::Node::make_shared("test_navigate_remember"))
+    , tfbuf_(nh_->get_clock())
+    , tfl_(tfbuf_)
   {
-    sub_costmap_ = nh_.subscribe("costmap", 1, &NavigateWithRememberUpdates::cbCostmap, this);
-    sub_status_ = nh_.subscribe(
-        "/planner_3d/status", 10, &NavigateWithRememberUpdates::cbStatus, this);
-    sub_path_ = nh_.subscribe("path", 1, &NavigateWithRememberUpdates::cbPath, this);
+    using std::placeholders::_1;
+    sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", 1, std::bind(&NavigateWithRememberUpdates::cbCostmap, this, _1));
+    sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
+        "/planner_3d/status", 10, std::bind(&NavigateWithRememberUpdates::cbStatus, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&NavigateWithRememberUpdates::cbPath, this, _1));
     srv_forget_ =
-        nh_.serviceClient<std_srvs::EmptyRequest, std_srvs::EmptyResponse>(
+        nh_->create_client<std_srvs::srv::Empty>(
             "forget_planning_cost");
     pub_initial_pose_ =
-        nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1, true);
-    pub_patrol_nodes_ = nh_.advertise<nav_msgs::Path>("patrol_nodes", 1, true);
+        nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
+    pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
   }
 
   virtual void SetUp()
   {
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
-    srv_forget_.waitForExistence(ros::Duration(10.0));
-    ros::Rate rate(10.0);
+    srv_forget_->wait_for_service(std::chrono::duration<double>(10.0));
+    rclcpp::Rate rate(10.0);
 
-    geometry_msgs::PoseWithCovarianceStamped pose;
+    geometry_msgs::msg::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
     pose.pose.pose.position.x = 2.1;
     pose.pose.pose.position.y = 3.0;
     pose.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-    pub_initial_pose_.publish(pose);
+    pub_initial_pose_->publish(pose);
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(15);
+    const rclcpp::Time deadline = nh_->now() + rclcpp::Duration::from_seconds(15);
 
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       rate.sleep();
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = nh_->now();
       if (now > deadline)
       {
-        FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
+        FAIL() << test_scope_ << now.seconds() << " SetUp: transform timeout" << std::endl;
       }
-      if (tfbuf_.canTransform("map", "base_link", now, ros::Duration(0.5)))
+      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }
     }
 
-    while (ros::ok() && !costmap_)
+    while (rclcpp::ok() && !costmap_)
     {
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       rate.sleep();
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = nh_->now();
       if (now > deadline)
       {
-        FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
+        FAIL() << test_scope_ << now.seconds() << " SetUp: costmap timeout" << std::endl;
       }
     }
 
-    std_srvs::EmptyRequest req;
-    std_srvs::EmptyResponse res;
-    srv_forget_.call(req, res);
+    std_srvs::srv::Empty_Request::SharedPtr req;
+    std_srvs::srv::Empty_Response::SharedPtr res;
+    auto future = srv_forget_->async_send_request(req);
+    res = future.get();
 
-    ros::Duration(1.0).sleep();
+    rclcpp::sleep_for(std::chrono::seconds(1));
   }
-  void cbCostmap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
+  void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
     costmap_ = msg;
-    std::cerr << test_scope_ << msg->header.stamp << " Costmap received." << std::endl;
+    std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Costmap received." << std::endl;
   }
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
-      std::cerr << test_scope_ << msg->header.stamp << " Status updated." << msg << std::endl;
+      std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
   }
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     if (!path_ || path_->poses.size() != msg->poses.size())
     {
       if (msg->poses.size() == 0)
       {
-        std::cerr << test_scope_ << msg->header.stamp << " Path updated. (empty)" << std::endl;
+        std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Path updated. (empty)" << std::endl;
       }
       else
       {
         std::cerr
-            << test_scope_ << msg->header.stamp << " Path updated." << std::endl
+            << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Path updated." << std::endl
             << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
       path_ = msg;
     }
   }
-  tf2::Stamped<tf2::Transform> lookupRobotTrans(const ros::Time& now)
+  tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
-    geometry_msgs::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, ros::Duration(0.5));
+    geometry_msgs::msg::TransformStamped trans_tmp =
+        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);
@@ -188,31 +193,31 @@ protected:
         x_prev = x;
         y_prev = y;
         rot_prev = rot;
-        std::cerr << t.stamp_ << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
+        std::cerr << tf2::timeToSec(t.stamp_) << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
       }
     }
   }
 
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
-    ros::spinOnce();
-    ros::Duration(0.2).sleep();
+    rclcpp::spin_some(nh_);
+    rclcpp::sleep_for(std::chrono::milliseconds(200));
 
-    ros::Rate wait(10);
-    ros::Time deadline = ros::Time::now() + ros::Duration(10);
-    while (ros::ok())
+    rclcpp::Rate wait(10);
+    rclcpp::Time deadline = nh_->now() + rclcpp::Duration::from_seconds(10);
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some(nh_);
       wait.sleep();
 
-      const ros::Time now = ros::Time::now();
+      const rclcpp::Time now = nh_->now();
 
       if (now > deadline)
       {
         dumpRobotTrajectory();
         FAIL()
             << test_scope_ << "/" << name << ": Navigation timeout." << std::endl
-            << "now: " << now << std::endl
+            << "now: " << now.seconds() << std::endl
             << "status: " << planner_status_ << " (expected: " << expected_error << ")";
       }
 
@@ -226,36 +231,36 @@ protected:
 
 TEST_F(NavigateWithRememberUpdates, Navigate)
 {
-  ros::spinOnce();
-  ros::Duration(0.2).sleep();
+  rclcpp::spin_some(nh_);
+  rclcpp::sleep_for(std::chrono::milliseconds(200));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   path.poses.resize(1);
   path.header.frame_id = "map";
   path.poses[0].header.frame_id = path.header.frame_id;
   path.poses[0].pose.position.x = 1.5;
   path.poses[0].pose.position.y = 5.6;
   path.poses[0].pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
-  pub_patrol_nodes_.publish(path);
+  pub_patrol_nodes_->publish(path);
 
   tf2::Transform goal;
   tf2::fromMsg(path.poses.back().pose, goal);
 
-  ros::Rate wait(10);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(120);
-  while (ros::ok())
+  rclcpp::Rate wait(10);
+  const rclcpp::Time deadline = nh_->now() + rclcpp::Duration::from_seconds(120);
+  while (rclcpp::ok())
   {
-    ros::spinOnce();
+    rclcpp::spin_some(nh_);
     wait.sleep();
 
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = nh_->now();
 
     if (now > deadline)
     {
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now << std::endl
+          << "now: " << now.seconds() << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -276,7 +281,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      ros::Duration(2.0).sleep();
+      rclcpp::sleep_for(std::chrono::seconds(2));
       return;
     }
   }
@@ -286,7 +291,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_navigate_remember");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

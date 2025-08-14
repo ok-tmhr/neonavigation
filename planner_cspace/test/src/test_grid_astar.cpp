@@ -28,10 +28,12 @@
  */
 
 #include <list>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
 #include <boost/thread.hpp>
+#include <boost/chrono.hpp>
 
 #include <omp.h>
 

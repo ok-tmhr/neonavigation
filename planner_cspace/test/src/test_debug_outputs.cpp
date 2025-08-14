@@ -27,13 +27,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
-#include <neonavigation_metrics_msgs/Metrics.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <sensor_msgs/PointCloud.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <neonavigation_metrics_msgs/msg/metrics.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <sensor_msgs/msg/point_cloud.hpp>
 
 #include <gtest/gtest.h>
 
@@ -46,18 +46,20 @@ public:
     , cnt_hysteresis_(0)
     , cnt_remembered_(0)
   {
-    sub_status_ = nh_.subscribe("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
-    sub_metrics_ = nh_.subscribe("/planner_3d/metrics", 1, &DebugOutputsTest::cbMetrics, this);
-    sub_path_ = nh_.subscribe("path", 1, &DebugOutputsTest::cbPath, this);
-    sub_hysteresis_ = nh_.subscribe("/planner_3d/hysteresis_map", 1, &DebugOutputsTest::cbHysteresis, this);
-    sub_remembered_ = nh_.subscribe("/planner_3d/remembered_map", 1, &DebugOutputsTest::cbRemembered, this);
-    sub_distance_ = nh_.subscribe("/planner_3d/distance_map", 1, &DebugOutputsTest::cbDistance, this);
+    nh_ = rclcpp::Node::make_shared("test_debug_outputs");
+    using std::placeholders::_1;
+    sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("/planner_3d/status", 1, std::bind(&DebugOutputsTest::cbStatus, this, _1));
+    sub_metrics_ = nh_->create_subscription<neonavigation_metrics_msgs::msg::Metrics>("/planner_3d/metrics", 1, std::bind(&DebugOutputsTest::cbMetrics, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&DebugOutputsTest::cbPath, this, _1));
+    sub_hysteresis_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/hysteresis_map", 1, std::bind(&DebugOutputsTest::cbHysteresis, this, _1));
+    sub_remembered_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/remembered_map", 1, std::bind(&DebugOutputsTest::cbRemembered, this, _1));
+    sub_distance_ = nh_->create_subscription<sensor_msgs::msg::PointCloud>("/planner_3d/distance_map", 1, std::bind(&DebugOutputsTest::cbDistance, this, _1));
 
     // Wait planner
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::Duration(0.1).sleep();
-      ros::spinOnce();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      rclcpp::spin_some(nh_);
       if (cnt_planner_ready_ > 5 && cnt_path_ > 5)
         break;
     }
@@ -69,16 +71,16 @@ public:
     cnt_distance_ = 0;
 
     // Wait receiving the messages
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::Duration(0.1).sleep();
-      ros::spinOnce();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      rclcpp::spin_some(nh_);
       // First hysteresis map doesn't have previous path information.
       if (cnt_hysteresis_ > 2 && cnt_remembered_ > 2)
         break;
     }
   }
-  void showMap(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  void showMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     std::cerr << std::hex;
     for (size_t y = 0; y < msg->info.height; ++y)
@@ -101,32 +103,32 @@ public:
   }
 
 protected:
-  void cbHysteresis(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  void cbHysteresis(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     cnt_hysteresis_++;
     map_hysteresis_ = msg;
   }
-  void cbRemembered(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+  void cbRemembered(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     cnt_remembered_++;
     map_remembered_ = msg;
   }
-  void cbDistance(const sensor_msgs::PointCloud::ConstPtr& msg)
+  void cbDistance(const sensor_msgs::msg::PointCloud::ConstPtr& msg)
   {
     cnt_distance_++;
     map_distance_ = msg;
   }
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
-    if (msg->error == planner_cspace_msgs::PlannerStatus::GOING_WELL &&
-        msg->status == planner_cspace_msgs::PlannerStatus::DOING)
+    if (msg->error == planner_cspace_msgs::msg::PlannerStatus::GOING_WELL &&
+        msg->status == planner_cspace_msgs::msg::PlannerStatus::DOING)
       ++cnt_planner_ready_;
   }
-  void cbMetrics(const neonavigation_metrics_msgs::Metrics::ConstPtr& msg)
+  void cbMetrics(const neonavigation_metrics_msgs::msg::Metrics::ConstPtr& msg)
   {
     metrics_ = msg;
   }
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     if (msg->poses.size() > 0)
     {
@@ -135,18 +137,18 @@ protected:
     }
   }
 
-  ros::NodeHandle nh_;
-  nav_msgs::OccupancyGrid::ConstPtr map_hysteresis_;
-  nav_msgs::OccupancyGrid::ConstPtr map_remembered_;
-  sensor_msgs::PointCloud::ConstPtr map_distance_;
-  nav_msgs::Path::ConstPtr path_;
-  neonavigation_metrics_msgs::Metrics::ConstPtr metrics_;
-  ros::Subscriber sub_status_;
-  ros::Subscriber sub_path_;
-  ros::Subscriber sub_hysteresis_;
-  ros::Subscriber sub_remembered_;
-  ros::Subscriber sub_distance_;
-  ros::Subscriber sub_metrics_;
+  rclcpp::Node::SharedPtr nh_;
+  nav_msgs::msg::OccupancyGrid::ConstPtr map_hysteresis_;
+  nav_msgs::msg::OccupancyGrid::ConstPtr map_remembered_;
+  sensor_msgs::msg::PointCloud::ConstPtr map_distance_;
+  nav_msgs::msg::Path::ConstPtr path_;
+  neonavigation_metrics_msgs::msg::Metrics::ConstPtr metrics_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_hysteresis_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_remembered_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud>::SharedPtr sub_distance_;
+  rclcpp::Subscription<neonavigation_metrics_msgs::msg::Metrics>::SharedPtr sub_metrics_;
   int cnt_planner_ready_;
   int cnt_path_;
   int cnt_hysteresis_;
@@ -240,8 +242,8 @@ TEST_F(DebugOutputsTest, Distance)
 TEST_F(DebugOutputsTest, Metrics)
 {
   metrics_ = nullptr;
-  ros::Duration(0.5).sleep();
-  ros::spinOnce();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
+  rclcpp::spin_some(nh_);
   ASSERT_TRUE(metrics_);
   ASSERT_NE(0u, metrics_->data.size());
 }
@@ -249,7 +251,7 @@ TEST_F(DebugOutputsTest, Metrics)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_debug_outputs");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

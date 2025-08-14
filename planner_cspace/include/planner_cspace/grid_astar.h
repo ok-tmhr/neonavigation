@@ -41,7 +41,7 @@
 #include <utility>
 #include <vector>
 
-#include <boost/chrono.hpp>
+#include <chrono>
 
 #include <planner_cspace/reservable_priority_queue.h>
 #include <planner_cspace/cyclic_vec.h>
@@ -195,7 +195,7 @@ protected:
     if (sts.size() == 0)
       return false;
 
-    auto ts = boost::chrono::high_resolution_clock::now();
+    auto ts = std::chrono::high_resolution_clock::now();
 
     Vec e = en;
     e.cycleUnsigned(g.size());
@@ -270,8 +270,8 @@ protected:
             centers.emplace_back(std::move(center));
             ++i;
           }
-          const auto tnow = boost::chrono::high_resolution_clock::now();
-          if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
+          const auto tnow = std::chrono::high_resolution_clock::now();
+          if (std::chrono::duration<float>(tnow - ts).count() >= progress_interval)
           {
             std::list<Vec> path_tmp;
             ts = tnow;

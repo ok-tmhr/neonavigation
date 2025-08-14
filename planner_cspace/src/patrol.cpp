@@ -29,47 +29,43 @@
 
 #include <memory>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/MoveWithToleranceAction.h>
-#include <nav_msgs/Path.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <planner_cspace_msgs/action/move_with_tolerance.hpp>
+#include <nav_msgs/msg/path.hpp>
 
-#include <neonavigation_common/compatibility.h>
 
-class PatrolActionNode
+class PatrolActionNode : public rclcpp::Node
 {
 protected:
-  using MoveBaseClient = actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>;
-  using MoveWithToleranceClient = actionlib::SimpleActionClient<planner_cspace_msgs::MoveWithToleranceAction>;
+  using MoveBaseClient = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>;
+  using MoveWithToleranceClient = rclcpp_action::Client<planner_cspace_msgs::action::MoveWithTolerance>;
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-
-  ros::Subscriber sub_path_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   std::shared_ptr<MoveBaseClient> act_cli_;
   std::shared_ptr<MoveWithToleranceClient> act_cli_tolerant_;
 
-  nav_msgs::Path path_;
+  nav_msgs::msg::Path path_;
   size_t pos_;
   bool with_tolerance_;
   double tolerance_lin_;
   double tolerance_ang_;
   double tolerance_ang_finish_;
 
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     if (path_.poses.size() > 0)
     {
       // Cancel previous patrol if stored
       if (with_tolerance_)
       {
-        act_cli_tolerant_->cancelAllGoals();
+        act_cli_tolerant_->async_cancel_all_goals();
       }
       else
       {
-        act_cli_->cancelAllGoals();
+        act_cli_->async_cancel_all_goals();
       }
     }
     path_ = *msg;
@@ -77,63 +73,104 @@ protected:
   }
 
 public:
+  using GoalHandleMoveBase = rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>;
+  using GoalHandleMoveWithTolerance = rclcpp_action::ClientGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>;
   PatrolActionNode()
-    : nh_()
-    , pnh_("~")
+    : rclcpp::Node("patrol")
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_path_ = neonavigation_common::compat::subscribe(
-        nh_, "patrol_nodes",
-        pnh_, "path", 1, &PatrolActionNode::cbPath, this);
 
-    pnh_.param("with_tolerance", with_tolerance_, false);
-    pnh_.param("tolerance_lin", tolerance_lin_, 0.1);
-    pnh_.param("tolerance_ang", tolerance_ang_, 0.1);
-    pnh_.param("tolerance_ang_finish", tolerance_ang_finish_, 0.05);
+    using std::placeholders::_1;
+    sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
+        "patrol_nodes",
+        1, std::bind(&PatrolActionNode::cbPath, this, _1));
+
+    with_tolerance_ = this->declare_parameter("with_tolerance", false);
+    tolerance_lin_ = this->declare_parameter("tolerance_lin", 0.1);
+    tolerance_ang_ = this->declare_parameter("tolerance_ang", 0.1);
+    tolerance_ang_finish_ = this->declare_parameter("tolerance_ang_finish", 0.05);
 
     if (with_tolerance_)
     {
-      act_cli_tolerant_.reset(new MoveWithToleranceClient("tolerant_move", false));
+      act_cli_tolerant_ = rclcpp_action::create_client<planner_cspace_msgs::action::MoveWithTolerance>(
+        this, "tolerant_move");
     }
     else
     {
-      act_cli_.reset(new MoveBaseClient("move_base", false));
+      act_cli_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(
+        this, "move_base");
     }
 
     pos_ = 0;
+  }
+  void on_move_with_tolerance_result(const GoalHandleMoveWithTolerance::WrappedResult& result){
+    if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
+    {
+      RCLCPP_INFO(this->get_logger(), "Action has been finished.");
+      sendNextGoal();
+    }
+    else if (result.code == rclcpp_action::ResultCode::ABORTED)
+    {
+      RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
+      sendNextGoal();
+    }
+    else if (result.code == rclcpp_action::ResultCode::UNKNOWN)
+    {
+      RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
+    }
+  }
+  void on_move_base_result(const GoalHandleMoveBase::WrappedResult& result){
+    if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
+    {
+      RCLCPP_INFO(this->get_logger(), "Action has been finished.");
+      sendNextGoal();
+    }
+    else if (result.code == rclcpp_action::ResultCode::ABORTED)
+    {
+      RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
+      sendNextGoal();
+    }
+    else if (result.code == rclcpp_action::ResultCode::UNKNOWN)
+    {
+      RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
+    }
   }
   bool sendNextGoal()
   {
     if (path_.poses.size() <= pos_)
     {
-      ROS_WARN("Patrol finished. Waiting next path.");
+      RCLCPP_WARN(this->get_logger(), "Patrol finished. Waiting next path.");
       path_.poses.clear();
 
       return false;
     }
 
+    using std::placeholders::_1;
     if (with_tolerance_)
     {
-      planner_cspace_msgs::MoveWithToleranceGoal goal;
+      planner_cspace_msgs::action::MoveWithTolerance_Goal goal;
 
       goal.target_pose.header = path_.poses[pos_].header;
-      goal.target_pose.header.stamp = ros::Time::now();
+      goal.target_pose.header.stamp = now();
       goal.target_pose.pose = path_.poses[pos_].pose;
       goal.goal_tolerance_lin = tolerance_lin_;
       goal.goal_tolerance_ang = tolerance_ang_;
       goal.goal_tolerance_ang_finish = tolerance_ang_finish_;
 
-      act_cli_tolerant_->sendGoal(goal);
+      auto goal_options = rclcpp_action::Client<planner_cspace_msgs::action::MoveWithTolerance>::SendGoalOptions();
+      goal_options.result_callback = std::bind(&PatrolActionNode::on_move_with_tolerance_result, this, _1);
+      act_cli_tolerant_->async_send_goal(goal, goal_options);
     }
     else
     {
-      move_base_msgs::MoveBaseGoal goal;
+      nav2_msgs::action::NavigateToPose_Goal goal;
 
-      goal.target_pose.header = path_.poses[pos_].header;
-      goal.target_pose.header.stamp = ros::Time::now();
-      goal.target_pose.pose = path_.poses[pos_].pose;
+      goal.pose.header = path_.poses[pos_].header;
+      goal.pose.header.stamp = now();
+      goal.pose.pose = path_.poses[pos_].pose;
 
-      act_cli_->sendGoal(goal);
+      auto goal_options = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+      goal_options.result_callback = std::bind(&PatrolActionNode::on_move_base_result, this, _1);
+      act_cli_->async_send_goal(goal);
     }
     pos_++;
 
@@ -141,11 +178,11 @@ public:
   }
   void spin()
   {
-    ros::Rate rate(10.0);
+    rclcpp::Rate rate(10.0);
 
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      ros::spinOnce();
+      rclcpp::spin_some(shared_from_this());
       rate.sleep();
 
       if (path_.poses.size() == 0)
@@ -158,35 +195,16 @@ public:
         sendNextGoal();
         continue;
       }
-
-      actionlib::SimpleClientGoalState state =
-          with_tolerance_ ?
-              act_cli_tolerant_->getState() :
-              act_cli_->getState();
-      if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
-      {
-        ROS_INFO("Action has been finished.");
-        sendNextGoal();
-      }
-      else if (state == actionlib::SimpleClientGoalState::ABORTED)
-      {
-        ROS_ERROR("Action has been aborted. Skipping.");
-        sendNextGoal();
-      }
-      else if (state == actionlib::SimpleClientGoalState::LOST)
-      {
-        ROS_WARN_ONCE("Action server is not ready.");
-      }
     }
   }
 };
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "patrol");
+  rclcpp::init(argc, argv);
 
-  PatrolActionNode pa;
-  pa.spin();
+  auto pa = std::make_shared<PatrolActionNode>();
+  pa->spin();
 
   return 0;
 }

@@ -32,76 +32,81 @@
 
 #include <gtest/gtest.h>
 
-#include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <ros/ros.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <planner_cspace/action_test_base.h>
 
 class PreemptTest
-  : public ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>
+  : public ActionTestBase<nav2_msgs::action::NavigateToPose, ACTION_TOPIC_MOVE_BASE>
 {
 protected:
-  move_base_msgs::MoveBaseGoal CreateGoalInFree()
+  nav2_msgs::action::NavigateToPose_Goal CreateGoalInFree()
   {
-    move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.pose.position.x = 1.24;
-    goal.target_pose.pose.position.y = 0.65;
-    goal.target_pose.pose.position.z = 0.0;
-    goal.target_pose.pose.orientation.x = 0.0;
-    goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.0;
-    goal.target_pose.pose.orientation.w = 1.0;
+    nav2_msgs::action::NavigateToPose_Goal goal;
+    goal.pose.header.stamp = node_->now();
+    goal.pose.header.frame_id = "map";
+    goal.pose.pose.position.x = 1.24;
+    goal.pose.pose.position.y = 0.65;
+    goal.pose.pose.position.z = 0.0;
+    goal.pose.pose.orientation.x = 0.0;
+    goal.pose.pose.orientation.y = 0.0;
+    goal.pose.pose.orientation.z = 0.0;
+    goal.pose.pose.orientation.w = 1.0;
     return goal;
   }
 };
 
 TEST_F(PreemptTest, Preempt)
 {
-  const ros::Time deadline = ros::Time::now() + ros::Duration(5);
-  const ros::Duration wait(1.0);
+  const rclcpp::Time deadline = node_->now() + rclcpp::Duration(5, 0);
+  rclcpp::Rate wait(1.0);
 
-  move_base_->sendGoal(CreateGoalInFree());
-  while (move_base_->getState().state_ !=
-         actionlib::SimpleClientGoalState::ACTIVE)
+  auto future = move_base_->async_send_goal(CreateGoalInFree());
+
+  while (true)
   {
+    rclcpp::spin_some(node_);
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get active: " << move_base_->getState().toString()
+    if (future.get()->get_status() == rclcpp_action::GoalStatus::STATUS_EXECUTING)
+    {
+      break;
+    }
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get active: " << future.get()->get_status()
         << statusString();
   }
-  while (move_base_->getState().state_ ==
-         actionlib::SimpleClientGoalState::ACTIVE)
+  while (true)
   {
-    move_base_->cancelAllGoals();
+    rclcpp::spin_some(node_);
+    move_base_->async_cancel_all_goals();
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get inactive: " << move_base_->getState().toString()
+    if (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_EXECUTING)
+    {
+      break;
+    }
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get inactive: " << future.get()->get_status()
         << statusString();
   }
 
   ASSERT_TRUE(planner_status_);
 
-  ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
-            move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
+  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_CANCELED,
+            future.get()->get_status());
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DONE,
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::DONE,
             planner_status_->status);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_preempt");
+  rclcpp::init(argc, argv);
 
-  ros::AsyncSpinner spinner(1);
-  spinner.start();
   int ret = RUN_ALL_TESTS();
-  spinner.stop();
-  ros::shutdown();
   return ret;
 }

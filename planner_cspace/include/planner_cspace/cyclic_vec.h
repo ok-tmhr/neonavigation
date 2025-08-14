@@ -31,6 +31,7 @@
 #define PLANNER_CSPACE_CYCLIC_VEC_H
 
 #define _USE_MATH_DEFINES
+#include <cassert>
 #include <cfloat>
 #include <cmath>
 #include <initializer_list>
@@ -40,7 +41,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/chrono.hpp>
+#include <chrono>
 
 #include <planner_cspace/reservable_priority_queue.h>
 

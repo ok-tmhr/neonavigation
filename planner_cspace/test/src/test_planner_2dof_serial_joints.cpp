@@ -27,62 +27,62 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <sensor_msgs/JointState.h>
-#include <trajectory_msgs/JointTrajectory.h>
+#include <rclcpp/rclcpp.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <trajectory_msgs/msg/joint_trajectory.hpp>
 
 #include <gtest/gtest.h>
 
 TEST(Planner2DOFSerialJoints, Plan)
 {
-  ros::NodeHandle nh;
-  ros::Publisher pub_state = nh.advertise<sensor_msgs::JointState>("joint_states", 1, true);
-  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::JointTrajectory>("trajectory_in", 1, true);
+  auto nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
+  auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
+  auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
-  trajectory_msgs::JointTrajectory::ConstPtr planned;
-  const auto cb_plan = [&planned](const trajectory_msgs::JointTrajectory::ConstPtr& msg)
+  trajectory_msgs::msg::JointTrajectory::ConstPtr planned;
+  const auto cb_plan = [&planned](const trajectory_msgs::msg::JointTrajectory::ConstPtr& msg)
   {
     planned = msg;
   };
-  ros::Subscriber sub_plan = nh.subscribe<trajectory_msgs::JointTrajectory>("joint_trajectory", 1, cb_plan);
+  auto sub_plan = nh->create_subscription<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", 1, cb_plan);
 
-  planner_cspace_msgs::PlannerStatus::ConstPtr status;
-  const auto cb_status = [&status](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
+  const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     status = msg;
   };
-  ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::PlannerStatus>(
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
       "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
-  sensor_msgs::JointState s;
+  sensor_msgs::msg::JointState s;
   s.name.push_back("front");
   s.position.push_back(-1.57);
   s.name.push_back("rear");
   s.position.push_back(0.0);
 
-  trajectory_msgs::JointTrajectory cmd;
+  trajectory_msgs::msg::JointTrajectory cmd;
   cmd.joint_names.push_back("front");
   cmd.joint_names.push_back("rear");
-  trajectory_msgs::JointTrajectoryPoint p;
+  trajectory_msgs::msg::JointTrajectoryPoint p;
   p.positions.push_back(-4.71);
   p.positions.push_back(0.0);
   cmd.points.push_back(p);
 
-  ros::Rate rate(1);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
+  rclcpp::Rate rate(1);
+  const rclcpp::Time deadline = nh->now() + rclcpp::Duration::from_seconds(10);
   int cnt = 0;
-  while (ros::ok())
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > deadline)
+    if (nh->now() > deadline)
     {
       FAIL() << "Timeout";
     }
 
-    pub_state.publish(s);
-    pub_cmd.publish(cmd);
+    pub_state->publish(s);
+    pub_cmd->publish(cmd);
 
-    ros::spinOnce();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (planned && status)
     {
@@ -93,10 +93,10 @@ TEST(Planner2DOFSerialJoints, Plan)
       }
     }
   }
-  ASSERT_TRUE(ros::ok());
+  ASSERT_TRUE(rclcpp::ok());
 
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DOING, status->status);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL, status->error);
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::DOING, status->status);
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL, status->error);
 
   ASSERT_EQ(2u, planned->joint_names.size());
   ASSERT_EQ("front", planned->joint_names[0]);
@@ -107,8 +107,8 @@ TEST(Planner2DOFSerialJoints, Plan)
   const float rc = 0.0;
   for (int i = 1; i < static_cast<int>(planned->points.size()); ++i)
   {
-    const trajectory_msgs::JointTrajectoryPoint& p0 = planned->points[i - 1];
-    const trajectory_msgs::JointTrajectoryPoint& p1 = planned->points[i];
+    const trajectory_msgs::msg::JointTrajectoryPoint& p0 = planned->points[i - 1];
+    const trajectory_msgs::msg::JointTrajectoryPoint& p1 = planned->points[i];
     ASSERT_EQ(2u, p0.positions.size());
     ASSERT_EQ(2u, p1.positions.size());
 
@@ -139,53 +139,53 @@ TEST(Planner2DOFSerialJoints, Plan)
     // std::cerr << d << std::endl;
     ASSERT_GT(d, 0.15);
 
-    ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DOING, status->status);
-    ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL, status->error);
+    ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::DOING, status->status);
+    ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL, status->error);
   }
 }
 
 TEST(Planner2DOFSerialJoints, NoPath)
 {
-  ros::NodeHandle nh;
-  ros::Publisher pub_state = nh.advertise<sensor_msgs::JointState>("joint_states", 1, true);
-  ros::Publisher pub_cmd = nh.advertise<trajectory_msgs::JointTrajectory>("trajectory_in", 1, true);
+  auto nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
+  auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
+  auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
-  planner_cspace_msgs::PlannerStatus::ConstPtr status;
-  const auto cb_status = [&status](const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
+  const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     status = msg;
   };
-  ros::Subscriber sub_status = nh.subscribe<planner_cspace_msgs::PlannerStatus>(
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
       "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
-  sensor_msgs::JointState s;
+  sensor_msgs::msg::JointState s;
   s.name.push_back("front");
   s.position.push_back(-1.57);
   s.name.push_back("rear");
   s.position.push_back(0.0);
 
-  trajectory_msgs::JointTrajectory cmd;
+  trajectory_msgs::msg::JointTrajectory cmd;
   cmd.joint_names.push_back("front");
   cmd.joint_names.push_back("rear");
-  trajectory_msgs::JointTrajectoryPoint p;
+  trajectory_msgs::msg::JointTrajectoryPoint p;
   p.positions.push_back(3.14);
   p.positions.push_back(0.0);  // Collided state
   cmd.points.push_back(p);
 
-  ros::Rate rate(1);
-  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
+  rclcpp::Rate rate(1);
+  const rclcpp::Time deadline = nh->now() + rclcpp::Duration::from_seconds(10);
   int cnt = 0;
-  while (ros::ok())
+  while (rclcpp::ok())
   {
-    if (ros::Time::now() > deadline)
+    if (nh->now() > deadline)
     {
       FAIL() << "Timeout";
     }
 
-    pub_state.publish(s);
-    pub_cmd.publish(cmd);
+    pub_state->publish(s);
+    pub_cmd->publish(cmd);
 
-    ros::spinOnce();
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (status)
     {
@@ -196,16 +196,16 @@ TEST(Planner2DOFSerialJoints, NoPath)
       }
     }
   }
-  ASSERT_TRUE(ros::ok());
+  ASSERT_TRUE(rclcpp::ok());
 
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::DOING, status->status);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND, status->error);
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::DOING, status->status);
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND, status->error);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_planner_2dof_serial_joints");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

@@ -30,7 +30,7 @@
 #include <list>
 #include <vector>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 
 #include <gtest/gtest.h>
@@ -41,7 +41,7 @@ namespace planner_3d
 {
 TEST(GridAstarModel3D, Cost)
 {
-  costmap_cspace_msgs::MapMetaData3D map_info;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info;
   map_info.width = 100;
   map_info.height = 100;
   map_info.angle = 16;

@@ -32,72 +32,71 @@
 
 #include <gtest/gtest.h>
 
-#include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <ros/ros.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <planner_cspace/action_test_base.h>
 
 class AbortTest
-  : public ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>
+  : public ActionTestBase<nav2_msgs::action::NavigateToPose, ACTION_TOPIC_MOVE_BASE>
 {
 protected:
-  move_base_msgs::MoveBaseGoal createGoalInRock()
+  nav2_msgs::action::NavigateToPose_Goal createGoalInRock()
   {
-    move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.pose.position.x = 1.19;
-    goal.target_pose.pose.position.y = 1.90;
-    goal.target_pose.pose.position.z = 0.0;
-    goal.target_pose.pose.orientation.x = 0.0;
-    goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 0.0;
-    goal.target_pose.pose.orientation.w = 1.0;
+    nav2_msgs::action::NavigateToPose_Goal goal;
+    goal.pose.header.stamp = node_->now();
+    goal.pose.header.frame_id = "map";
+    goal.pose.pose.position.x = 1.19;
+    goal.pose.pose.position.y = 1.90;
+    goal.pose.pose.position.z = 0.0;
+    goal.pose.pose.orientation.x = 0.0;
+    goal.pose.pose.orientation.y = 0.0;
+    goal.pose.pose.orientation.z = 0.0;
+    goal.pose.pose.orientation.w = 1.0;
     return goal;
   }
-  move_base_msgs::MoveBaseGoal createGoalInFree()
+  nav2_msgs::action::NavigateToPose_Goal createGoalInFree()
   {
-    move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.pose.position.x = 2.1;
-    goal.target_pose.pose.position.y = 0.45;
-    goal.target_pose.pose.position.z = 0.0;
-    goal.target_pose.pose.orientation.x = 0.0;
-    goal.target_pose.pose.orientation.y = 0.0;
-    goal.target_pose.pose.orientation.z = 1.0;
-    goal.target_pose.pose.orientation.w = 0.0;
+    nav2_msgs::action::NavigateToPose_Goal goal;
+    goal.pose.header.stamp = node_->now();
+    goal.pose.header.frame_id = "map";
+    goal.pose.pose.position.x = 2.1;
+    goal.pose.pose.position.y = 0.45;
+    goal.pose.pose.position.z = 0.0;
+    goal.pose.pose.orientation.x = 0.0;
+    goal.pose.pose.orientation.y = 0.0;
+    goal.pose.pose.orientation.z = 1.0;
+    goal.pose.pose.orientation.w = 0.0;
     return goal;
   }
 };
 
 TEST_F(AbortTest, AbortByGoalInRock)
 {
-  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
-  const ros::Duration wait(1.0);
+  const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10);
+  rclcpp::Rate wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
-  ros::Duration(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   // Send a goal which is in Rock
-  move_base_->sendGoal(createGoalInRock());
-  while (move_base_->getState().state_ !=
-         actionlib::SimpleClientGoalState::ACTIVE)
+  auto future = move_base_->async_send_goal(createGoalInRock());
+  while (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_EXECUTING)
   {
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get active: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get active: " << future.get()->get_status()
         << " " << statusString();
   }
 
   // Try to replan
-  while (move_base_->getState().state_ ==
-         actionlib::SimpleClientGoalState::ACTIVE)
+  while (future.get()->get_status() ==
+         rclcpp_action::GoalStatus::STATUS_EXECUTING)
   {
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get inactive: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get inactive: " << future.get()->get_status()
         << " " << statusString();
   }
   wait.sleep();
@@ -105,47 +104,43 @@ TEST_F(AbortTest, AbortByGoalInRock)
   ASSERT_TRUE(planner_status_);
 
   // Abort after exceeding max_retry_num
-  ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
-            move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND,
+  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_ABORTED,
+            future.get()->get_status());
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND,
             planner_status_->error);
 
   // Send another goal which is not in Rock
-  move_base_->sendGoal(createGoalInFree());
-  while (move_base_->getState().state_ !=
-         actionlib::SimpleClientGoalState::ACTIVE)
+  future = move_base_->async_send_goal(createGoalInFree());
+  while (future.get()->get_status() !=
+         rclcpp_action::GoalStatus::STATUS_EXECUTING)
   {
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get active: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get active: " << future.get()->get_status()
         << " " << statusString();
   }
-  while (move_base_->getState().state_ ==
-         actionlib::SimpleClientGoalState::ACTIVE)
+  while (future.get()->get_status() ==
+         rclcpp_action::GoalStatus::STATUS_EXECUTING)
   {
     wait.sleep();
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get inactive: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get inactive: " << future.get()->get_status()
         << " " << statusString();
   }
   wait.sleep();
 
   // Succeed
-  ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,
-            move_base_->getState().state_);
-  ASSERT_EQ(planner_cspace_msgs::PlannerStatus::GOING_WELL,
+  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_SUCCEEDED,
+            future.get()->get_status());
+  ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_abort");
+  rclcpp::init(argc, argv);
 
-  ros::AsyncSpinner spinner(1);
-  spinner.start();
   int ret = RUN_ALL_TESTS();
-  spinner.stop();
-  ros::shutdown();
   return ret;
 }
