@@ -281,7 +281,7 @@ private:
 
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0);
+      out.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -347,7 +347,7 @@ private:
     {
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0);
+      out.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -398,7 +398,7 @@ public:
     double interval;
     interval = this->declare_parameter("replan_interval", 0.2);
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
-    replan_prev_ = rclcpp::Time(0);
+    replan_prev_ = rclcpp::Time(0LL, RCL_ROS_TIME);
 
     int queue_size_limit;
     queue_size_limit = this->declare_parameter("queue_size_limit", 0);
@@ -575,7 +575,7 @@ private:
       path.push_back(eg);
       if (s == e)
       {
-        replan_prev_ = rclcpp::Time(0);
+        replan_prev_ = rclcpp::Time(0LL, RCL_ROS_TIME);
       }
       return true;
     }
@@ -670,7 +670,7 @@ int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor executor;
-  auto node = rclcpp::Node::make_shared("planner_2dof_serial_joints");
+  auto node = rclcpp::Node::make_shared("planner_2dof_serial_joints", "core");
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
   int n;
