@@ -447,12 +447,12 @@ protected:
   rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<GoalHandlePlanner3DAction> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if ((goal_handle_act_ && goal_handle_act_->is_active()))
+    if ((goal_handle_act_ && goal_handle_act_->is_active() && goal_handle_act_->is_canceling()))
     {
       goal_handle_act_->canceled(std::make_shared<nav2_msgs::action::NavigateToPose_Result>());
       RCLCPP_INFO(this->get_logger(), "Preempted.");
     }
-    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_active()))
+    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_active() && goal_handle_act_tolerant_->is_canceling()))
     {
       goal_handle_act_tolerant_->canceled(std::make_shared<planner_cspace_msgs::action::MoveWithTolerance_Result>());
       RCLCPP_INFO(this->get_logger(), "Preempted.");
@@ -465,12 +465,12 @@ protected:
   rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<GoalHandlePlanner3DTolerantAction> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if ((goal_handle_act_ && goal_handle_act_->is_active()))
+    if ((goal_handle_act_ && goal_handle_act_->is_active()) && goal_handle_act_->is_canceling())
     {
       goal_handle_act_->canceled(std::make_shared<nav2_msgs::action::NavigateToPose_Result>());
       RCLCPP_INFO(this->get_logger(), "Preempted.");
     }
-    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_active()))
+    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_active() && goal_handle_act_tolerant_->is_canceling()))
     {
       goal_handle_act_tolerant_->canceled(std::make_shared<planner_cspace_msgs::action::MoveWithTolerance_Result>());
       RCLCPP_INFO(this->get_logger(), "Preempted.");
@@ -1451,54 +1451,54 @@ public:
     };
 
     std::vector<std::pair<std::string, std::function<void(const rclcpp::Parameter&)>>> callback_map = {
-      {"freq", [this, cc_update](const rclcpp::Parameter& p){ freq_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"freq_min", [this](const rclcpp::Parameter& p){ freq_min_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"search_timeout_abort", [this](const rclcpp::Parameter& p){ search_timeout_abort_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"search_range", [this](const rclcpp::Parameter& p){ search_range_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"antialias_start", [this](const rclcpp::Parameter& p){ antialias_start_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"costmap_watchdog", [this](const rclcpp::Parameter& p){ costmap_watchdog_ = rclcpp::Duration::from_seconds(p.as_double()); no_map_update_timer_->cancel(); }},
-      {"max_vel", [this, cc_update](const rclcpp::Parameter& p){ cc_.max_vel_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"max_ang_vel", [this, cc_update](const rclcpp::Parameter& p){ cc_.max_ang_vel_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"min_curve_radius", [this, cc_update](const rclcpp::Parameter& p){ cc_.min_curve_radius_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_decel", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_decel_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_backward", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_backward_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_ang_vel", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_ang_vel_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_costmap", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_costmap_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_costmap_turn", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_costmap_turn_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_remembered", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_remembered_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"cost_in_place_turn", [this, cc_update](const rclcpp::Parameter& p){ cc_.in_place_turn_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"hysteresis_max_dist", [this, cc_update](const rclcpp::Parameter& p){ cc_.hysteresis_max_dist_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"hysteresis_expand", [this, cc_update](const rclcpp::Parameter& p){ cc_.hysteresis_expand_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_hysteresis", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_hysteresis_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"weight_costmap_turn_heuristics", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_costmap_turn_heuristics_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"turn_penalty_cost_threshold", [this, cc_update](const rclcpp::Parameter& p){ cc_.turn_penalty_cost_threshold_ = p.as_int(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"goal_tolerance_lin", [this](const rclcpp::Parameter& p){ goal_tolerance_lin_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"goal_tolerance_ang", [this](const rclcpp::Parameter& p){ goal_tolerance_ang_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"goal_tolerance_ang_finish", [this](const rclcpp::Parameter& p){ goal_tolerance_ang_finish_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"temporary_escape_tolerance_lin", [this](const rclcpp::Parameter& p){ temporary_escape_tolerance_lin_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"temporary_escape_tolerance_ang", [this](const rclcpp::Parameter& p){ temporary_escape_tolerance_ang_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"overwrite_cost", [this](const rclcpp::Parameter& p){ overwrite_cost_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"relocation_acceptable_cost", [this](const rclcpp::Parameter& p){ relocation_acceptable_cost_ = p.as_int(); no_map_update_timer_->cancel(); }},
-      {"hist_ignore_range", [this](const rclcpp::Parameter& p){ hist_ignore_range_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"hist_ignore_range_max", [this](const rclcpp::Parameter& p){ hist_ignore_range_max_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"remember_updates", [this](const rclcpp::Parameter& p){ remember_updates_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"remember_hit_prob", [this](const rclcpp::Parameter& p){ remember_hit_odds_ = bbf::probabilityToOdds(p.as_double()); no_map_update_timer_->cancel(); }},
-      {"remember_miss_prob", [this](const rclcpp::Parameter& p){ remember_miss_odds_ = bbf::probabilityToOdds(p.as_double()); no_map_update_timer_->cancel(); }},
-      {"local_range", [this](const rclcpp::Parameter& p){ local_range_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"longcut_range", [this, cc_update](const rclcpp::Parameter& p){ longcut_range_f_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"esc_range", [this](const rclcpp::Parameter& p){ esc_range_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"esc_range_min_ratio", [this](const rclcpp::Parameter& p){ esc_range_min_ratio_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"tolerance_range", [this](const rclcpp::Parameter& p){ tolerance_range_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"tolerance_angle", [this](const rclcpp::Parameter& p){ tolerance_angle_f_ = p.as_double(); no_map_update_timer_->cancel(); }},
-      {"find_best", [this](const rclcpp::Parameter& p){ find_best_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"force_goal_orientation", [this](const rclcpp::Parameter& p){ force_goal_orientation_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"temporary_escape", [this](const rclcpp::Parameter& p){ temporary_escape_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"fast_map_update", [this](const rclcpp::Parameter& p){ fast_map_update_ = p.as_bool(); no_map_update_timer_->cancel(); }},
-      {"max_retry_num", [this](const rclcpp::Parameter& p){ max_retry_num_ = p.as_int(); no_map_update_timer_->cancel(); }},
-      {"sw_wait", [this, cc_update](const rclcpp::Parameter& p){ sw_wait_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"dist_stop_to_previous_path", [this, cc_update](const rclcpp::Parameter& p){ dist_stop_to_previous_path_ = p.as_double(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"keep_a_part_of_previous_path", [this, cc_update](const rclcpp::Parameter& p){ keep_a_part_of_previous_path_ = p.as_bool(); cc_update(); no_map_update_timer_->cancel(); }},
-      {"trigger_plan_by_costmap_update", [this](const rclcpp::Parameter& p){ trigger_plan_by_costmap_update_ = p.as_bool(); no_map_update_timer_->cancel(); }},
+      {"freq", [this, cc_update](const rclcpp::Parameter& p){ freq_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"freq_min", [this](const rclcpp::Parameter& p){ freq_min_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"search_timeout_abort", [this](const rclcpp::Parameter& p){ search_timeout_abort_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"search_range", [this](const rclcpp::Parameter& p){ search_range_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"antialias_start", [this](const rclcpp::Parameter& p){ antialias_start_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"costmap_watchdog", [this](const rclcpp::Parameter& p){ costmap_watchdog_ = rclcpp::Duration::from_seconds(p.as_double()); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"max_vel", [this, cc_update](const rclcpp::Parameter& p){ cc_.max_vel_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"max_ang_vel", [this, cc_update](const rclcpp::Parameter& p){ cc_.max_ang_vel_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"min_curve_radius", [this, cc_update](const rclcpp::Parameter& p){ cc_.min_curve_radius_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_decel", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_decel_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_backward", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_backward_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_ang_vel", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_ang_vel_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_costmap", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_costmap_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_costmap_turn", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_costmap_turn_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_remembered", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_remembered_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"cost_in_place_turn", [this, cc_update](const rclcpp::Parameter& p){ cc_.in_place_turn_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"hysteresis_max_dist", [this, cc_update](const rclcpp::Parameter& p){ cc_.hysteresis_max_dist_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"hysteresis_expand", [this, cc_update](const rclcpp::Parameter& p){ cc_.hysteresis_expand_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_hysteresis", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_hysteresis_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"weight_costmap_turn_heuristics", [this, cc_update](const rclcpp::Parameter& p){ cc_.weight_costmap_turn_heuristics_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"turn_penalty_cost_threshold", [this, cc_update](const rclcpp::Parameter& p){ cc_.turn_penalty_cost_threshold_ = p.as_int(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"goal_tolerance_lin", [this](const rclcpp::Parameter& p){ goal_tolerance_lin_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"goal_tolerance_ang", [this](const rclcpp::Parameter& p){ goal_tolerance_ang_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"goal_tolerance_ang_finish", [this](const rclcpp::Parameter& p){ goal_tolerance_ang_finish_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"temporary_escape_tolerance_lin", [this](const rclcpp::Parameter& p){ temporary_escape_tolerance_lin_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"temporary_escape_tolerance_ang", [this](const rclcpp::Parameter& p){ temporary_escape_tolerance_ang_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"overwrite_cost", [this](const rclcpp::Parameter& p){ overwrite_cost_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"relocation_acceptable_cost", [this](const rclcpp::Parameter& p){ relocation_acceptable_cost_ = p.as_int(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"hist_ignore_range", [this](const rclcpp::Parameter& p){ hist_ignore_range_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"hist_ignore_range_max", [this](const rclcpp::Parameter& p){ hist_ignore_range_max_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"remember_updates", [this](const rclcpp::Parameter& p){ remember_updates_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"remember_hit_prob", [this](const rclcpp::Parameter& p){ remember_hit_odds_ = bbf::probabilityToOdds(p.as_double()); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"remember_miss_prob", [this](const rclcpp::Parameter& p){ remember_miss_odds_ = bbf::probabilityToOdds(p.as_double()); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"local_range", [this](const rclcpp::Parameter& p){ local_range_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"longcut_range", [this, cc_update](const rclcpp::Parameter& p){ longcut_range_f_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"esc_range", [this](const rclcpp::Parameter& p){ esc_range_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"esc_range_min_ratio", [this](const rclcpp::Parameter& p){ esc_range_min_ratio_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"tolerance_range", [this](const rclcpp::Parameter& p){ tolerance_range_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"tolerance_angle", [this](const rclcpp::Parameter& p){ tolerance_angle_f_ = p.as_double(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"find_best", [this](const rclcpp::Parameter& p){ find_best_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"force_goal_orientation", [this](const rclcpp::Parameter& p){ force_goal_orientation_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"temporary_escape", [this](const rclcpp::Parameter& p){ temporary_escape_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"fast_map_update", [this](const rclcpp::Parameter& p){ fast_map_update_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"max_retry_num", [this](const rclcpp::Parameter& p){ max_retry_num_ = p.as_int(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"sw_wait", [this, cc_update](const rclcpp::Parameter& p){ sw_wait_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"dist_stop_to_previous_path", [this, cc_update](const rclcpp::Parameter& p){ dist_stop_to_previous_path_ = p.as_double(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"keep_a_part_of_previous_path", [this, cc_update](const rclcpp::Parameter& p){ keep_a_part_of_previous_path_ = p.as_bool(); cc_update(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
+      {"trigger_plan_by_costmap_update", [this](const rclcpp::Parameter& p){ trigger_plan_by_costmap_update_ = p.as_bool(); if (no_map_update_timer_) no_map_update_timer_->cancel(); }},
     };
 
     for (const auto & callback : callback_map)

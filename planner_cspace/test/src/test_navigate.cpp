@@ -185,6 +185,7 @@ protected:
     auto req = std::make_shared<std_srvs::srv::Empty_Request>();
     std_srvs::srv::Empty_Response::SharedPtr res;
     auto future = srv_forget_->async_send_request(req);
+    rclcpp::spin_until_future_complete(nh_, future);
     res = future.get();
 
     rclcpp::sleep_for(std::chrono::seconds(1));

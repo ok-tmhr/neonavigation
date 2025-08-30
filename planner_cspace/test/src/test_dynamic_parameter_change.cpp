@@ -78,7 +78,7 @@ public:
     publishMapAndRobot(0, 0, 0);
     ActionTestBase<nav2_msgs::action::NavigateToPose, ACTION_TOPIC_MOVE_BASE>::SetUp();
 
-    planner_3d_client_ = rclcpp::SyncParametersClient::make_unique(node_);
+    planner_3d_client_ = rclcpp::SyncParametersClient::make_unique(node_, "/planner_3d");
     auto results = planner_3d_client_->set_parameters(
       {
         rclcpp::Parameter("max_retry_num", 5),
