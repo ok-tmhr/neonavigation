@@ -69,7 +69,7 @@ public:
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map_local", rclcpp::QoS(1).transient_local());
-    sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 2, std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
+    sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", rclcpp::QoS(2).transient_local(), std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
 
     width_ = this->declare_parameter("width", 30);
     round_local_map_ = this->declare_parameter("round_local_map", false);

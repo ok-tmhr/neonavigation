@@ -257,7 +257,7 @@ public:
     static_output_layer->setHandler([&](const costmap_cspace::CSpace3DMsg::Ptr &map){return Costmap3DOFNode::cbUpdateStatic(map);});
 
     sub_map_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-        "map", 1,
+        "map", rclcpp::QoS(1).transient_local(),
         [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMap(msg, root_layer);});
 
     auto layers = this->declare_parameter("layers", std::vector<std::string>{});
