@@ -66,7 +66,7 @@ TEST(Planner3D, CostmapWatchdog)
 
   auto nh = rclcpp::Node::make_shared("test_navigate");
   auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
-  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", rclcpp::QoS(1).transient_local());
   auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
   auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
   auto sub_diag = nh->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, cb_diag);
@@ -146,7 +146,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
 
   auto nh = rclcpp::Node::make_shared("test_navigate");
   auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
-  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", rclcpp::QoS(1).transient_local());
   auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
   auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
 

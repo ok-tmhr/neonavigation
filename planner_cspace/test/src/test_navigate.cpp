@@ -87,9 +87,9 @@ protected:
     , local_map_apply_cnt_(0)
   {
     using std::placeholders::_1;
-    sub_map_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("map_global", 1, std::bind(&Navigate::cbMap, this, _1));
-    sub_map_local_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("map_local", 1, std::bind(&Navigate::cbMapLocal, this, _1));
-    sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", 1, std::bind(&Navigate::cbCostmap, this, _1));
+    sub_map_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("map_global", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbMap, this, _1));
+    sub_map_local_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("map_local", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbMapLocal, this, _1));
+    sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbCostmap, this, _1));
     sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
         "/planner_3d/status", 10, std::bind(&Navigate::cbStatus, this, _1));
     sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&Navigate::cbPath, this, _1));
