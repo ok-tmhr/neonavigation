@@ -71,7 +71,7 @@ SaverNode::SaverNode()
 
   using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
-    "path", 10, std::bind(&SaverNode::cbPath, this, _1));
+    "path", rclcpp::QoS(10).transient_local(), std::bind(&SaverNode::cbPath, this, _1));
 }
 SaverNode::~SaverNode()
 {
