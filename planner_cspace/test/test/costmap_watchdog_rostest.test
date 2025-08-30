@@ -1,17 +1,17 @@
 <?xml version="1.0"?>
 <launch>
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
-  <param name="neonavigation_compatible" value="1" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
 
-  <test test-name="test_costmap_watchdog" pkg="planner_cspace" type="test_costmap_watchdog" time-limit="30.0" />
+  <!-- TODO time-limit="30.0" -->
+  <executable name="test_costmap_watchdog" cmd="./build/planner_cspace/test/test_costmap_watchdog" output="screen" />
 
-  <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
-    <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
+  <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
+    <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.1"/>
   </node>
-  <node pkg="planner_cspace" type="planner_3d" name="planner_3d">
+  <node pkg="planner_cspace" exec="planner_3d" name="planner_3d">
     <remap from="move_base_simple/goal" to="goal" />
     <param name="max_vel" value="0.1" />
     <param name="max_ang_vel" value="0.3" />
@@ -20,13 +20,20 @@
     <param name="sw_wait" value="0.0" />
   </node>
 
-  <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml" />
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" >
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  </node>
 
-  <node pkg="planner_cspace" type="dummy_robot" name="dummy_robot">
+  <node pkg="planner_cspace" exec="dummy_robot" name="dummy_robot">
     <param name="initial_x" value="2.5" />
     <param name="initial_y" value="0.45" />
     <param name="initial_yaw" value="3.14" />
   </node>
-  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" >
+    <param name="autostart" value="true" />
+    <param name="node_names" value="[map_server_global]" />
+  </node>
 </launch>
