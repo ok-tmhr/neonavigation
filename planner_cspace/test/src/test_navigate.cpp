@@ -182,7 +182,7 @@ protected:
       ASSERT_LT(nh_->now(), deadline) << test_scope_ << "Initial costmap timeout";
     }
 
-    std_srvs::srv::Empty_Request::SharedPtr req;
+    auto req = std::make_shared<std_srvs::srv::Empty_Request>();
     std_srvs::srv::Empty_Response::SharedPtr res;
     auto future = srv_forget_->async_send_request(req);
     res = future.get();
@@ -516,7 +516,7 @@ TEST_F(Navigate, GlobalPlan)
   rclcpp::spin_some(nh_);
   ASSERT_TRUE(static_cast<bool>(map_));
 
-  nav_msgs::srv::GetPlan_Request::SharedPtr req;
+  auto req = std::make_shared<nav_msgs::srv::GetPlan_Request>();
   nav_msgs::srv::GetPlan_Response::SharedPtr res;
 
   req->tolerance = 0.0;
