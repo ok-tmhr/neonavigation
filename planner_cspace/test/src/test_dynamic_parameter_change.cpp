@@ -48,7 +48,7 @@ class DynamicParameterChangeTest
 public:
   void SetUp() final
   {
-    node_ = rclcpp::Node::make_shared("test_dynamic_parameter_change");
+    // node_ = rclcpp::Node::make_shared("test_dynamic_parameter_change");
     path_ = nullptr;
     sub_path_ = node_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&DynamicParameterChangeTest::cbPath, this, std::placeholders::_1));
     pub_map_overlay_ = node_->create_publisher<nav_msgs::msg::OccupancyGrid>("map_overlay", rclcpp::QoS(1).transient_local());
