@@ -83,7 +83,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   // Send a goal which is in Rock
   auto future = move_base_->async_send_goal(createGoalInRock());
   rclcpp::spin_until_future_complete(node_, future);
-  while (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_EXECUTING)
+  while (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_ACCEPTED)
   {
     wait.sleep();
     ASSERT_LT(node_->now(), deadline)
