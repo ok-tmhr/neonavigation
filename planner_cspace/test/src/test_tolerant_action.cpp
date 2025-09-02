@@ -92,8 +92,9 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
   rclcpp::sleep_for(std::chrono::milliseconds(500));
   const planner_cspace_msgs::action::MoveWithTolerance_Goal goal = createGoalInFree();
   auto future = move_base_->async_send_goal(goal);
+  rclcpp::spin_until_future_complete(node_, future);
 
-  while (rclcpp::ok() && future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_EXECUTING)
+  while (rclcpp::ok() && future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_ACCEPTED)
   {
     ASSERT_LT(node_->now(), deadline)
         << "Action didn't get active: " << future.get()->get_status()
