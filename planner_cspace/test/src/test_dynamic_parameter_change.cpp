@@ -50,7 +50,7 @@ public:
   {
     // node_ = rclcpp::Node::make_shared("test_dynamic_parameter_change");
     path_ = nullptr;
-    sub_path_ = node_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&DynamicParameterChangeTest::cbPath, this, std::placeholders::_1));
+    sub_path_ = node_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&DynamicParameterChangeTest::cbPath, this, std::placeholders::_1));
     pub_map_overlay_ = node_->create_publisher<nav_msgs::msg::OccupancyGrid>("map_overlay", rclcpp::QoS(1).transient_local());
     pub_odom_ = node_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());  // not actually used
 
@@ -224,7 +224,8 @@ protected:
     publishMapAndRobot(2.55, 0.45, M_PI);
     rclcpp::sleep_for(std::chrono::milliseconds(300));
     auto future = move_base_->async_send_goal(CreateGoalInFree());
-    while (rclcpp::ok() && (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_EXECUTING))
+    rclcpp::spin_until_future_complete(node_, future);
+    while (rclcpp::ok() && (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_ACCEPTED))
     {
       rclcpp::spin_some(node_);
     }

@@ -989,8 +989,7 @@ protected:
 
   void cbNoMapUpdateTimer()
   {
-    rclcpp::Clock clock;
-    planPath(clock.now());
+    planPath(this->now());
     no_map_update_timer_ =
         this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this));
   }
@@ -1001,7 +1000,10 @@ protected:
     RCLCPP_DEBUG(this->get_logger(), "Map updated");
     if (trigger_plan_by_costmap_update_)
     {
-      no_map_update_timer_->cancel();
+      if (no_map_update_timer_)
+      {
+        no_map_update_timer_->cancel();
+      }
       updateStart();
       applyCostmapUpdate(msg);
       planPath(last_costmap_);
