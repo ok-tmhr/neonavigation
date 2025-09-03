@@ -32,6 +32,7 @@
 
 #include <gtest/gtest.h>
 
+#include <action_msgs/srv/cancel_goal.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
@@ -65,12 +66,13 @@ TEST_F(PreemptTest, Preempt)
   rclcpp::Rate wait(1.0);
 
   auto future = move_base_->async_send_goal(CreateGoalInFree());
+  rclcpp::spin_until_future_complete(node_, future);
 
   while (true)
   {
     rclcpp::spin_some(node_);
     wait.sleep();
-    if (future.get()->get_status() == rclcpp_action::GoalStatus::STATUS_EXECUTING)
+    if (future.get()->get_status() == rclcpp_action::GoalStatus::STATUS_ACCEPTED)
     {
       break;
     }
@@ -81,20 +83,22 @@ TEST_F(PreemptTest, Preempt)
   while (true)
   {
     rclcpp::spin_some(node_);
-    move_base_->async_cancel_all_goals();
+    auto cancel_future = move_base_->async_cancel_goal(future.get());
+    rclcpp::spin_until_future_complete(node_, cancel_future);
+
     wait.sleep();
-    if (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_EXECUTING)
+    if ((cancel_future.get()->return_code == action_msgs::srv::CancelGoal_Response::ERROR_NONE))
     {
       break;
     }
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << future.get()->get_status()
+        << "Action didn't get inactive: " << cancel_future.get()->return_code
         << statusString();
   }
 
   ASSERT_TRUE(planner_status_);
 
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_CANCELED,
+  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_CANCELING,
             future.get()->get_status());
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
