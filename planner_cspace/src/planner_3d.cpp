@@ -447,16 +447,6 @@ protected:
   rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<GoalHandlePlanner3DAction> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if ((goal_handle_act_ && goal_handle_act_->is_active() && goal_handle_act_->is_canceling()))
-    {
-      goal_handle_act_->canceled(std::make_shared<nav2_msgs::action::NavigateToPose_Result>());
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
-    }
-    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_active() && goal_handle_act_tolerant_->is_canceling()))
-    {
-      goal_handle_act_tolerant_->canceled(std::make_shared<planner_cspace_msgs::action::MoveWithTolerance_Result>());
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
-    }
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
@@ -465,16 +455,6 @@ protected:
   rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<GoalHandlePlanner3DTolerantAction> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if ((goal_handle_act_ && goal_handle_act_->is_active()) && goal_handle_act_->is_canceling())
-    {
-      goal_handle_act_->canceled(std::make_shared<nav2_msgs::action::NavigateToPose_Result>());
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
-    }
-    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_active() && goal_handle_act_tolerant_->is_canceling()))
-    {
-      goal_handle_act_tolerant_->canceled(std::make_shared<planner_cspace_msgs::action::MoveWithTolerance_Result>());
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
-    }
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
@@ -1604,6 +1584,16 @@ public:
 
   void planPath(const rclcpp::Time& now)
   {
+    if ((goal_handle_act_ && goal_handle_act_->is_canceling()))
+    {
+      goal_handle_act_->canceled(std::make_shared<nav2_msgs::action::NavigateToPose_Result>());
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
+    }
+    if ((goal_handle_act_tolerant_ && goal_handle_act_tolerant_->is_canceling()))
+    {
+      goal_handle_act_tolerant_->canceled(std::make_shared<planner_cspace_msgs::action::MoveWithTolerance_Result>());
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
+    }
     if (has_map_ && !cost_estim_cache_created_ && has_goal_)
     {
       createCostEstimCache();
