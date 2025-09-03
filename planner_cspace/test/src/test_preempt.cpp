@@ -65,6 +65,7 @@ TEST_F(PreemptTest, Preempt)
   const rclcpp::Time deadline = node_->now() + rclcpp::Duration(5, 0);
   rclcpp::Rate wait(1.0);
 
+  wait.sleep();
   auto future = move_base_->async_send_goal(CreateGoalInFree());
   rclcpp::spin_until_future_complete(node_, future);
 
@@ -72,6 +73,7 @@ TEST_F(PreemptTest, Preempt)
   {
     rclcpp::spin_some(node_);
     wait.sleep();
+
     if (future.get()->get_status() == rclcpp_action::GoalStatus::STATUS_ACCEPTED)
     {
       break;
@@ -87,18 +89,18 @@ TEST_F(PreemptTest, Preempt)
     rclcpp::spin_until_future_complete(node_, cancel_future);
 
     wait.sleep();
-    if ((cancel_future.get()->return_code == action_msgs::srv::CancelGoal_Response::ERROR_NONE))
+    if (future.get()->get_status() == rclcpp_action::GoalStatus::STATUS_CANCELED)
     {
       break;
     }
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << cancel_future.get()->return_code
+        << "Action didn't get inactive: " << future.get()->get_status()
         << statusString();
   }
 
   ASSERT_TRUE(planner_status_);
 
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_CANCELING,
+  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_CANCELED,
             future.get()->get_status());
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
