@@ -45,7 +45,7 @@ TEST(Planner2DOFSerialJoints, Plan)
   {
     planned = msg;
   };
-  auto sub_plan = nh->create_subscription<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", 1, cb_plan);
+  auto sub_plan = nh->create_subscription<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", rclcpp::QoS(1).transient_local(), cb_plan);
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
@@ -53,7 +53,7 @@ TEST(Planner2DOFSerialJoints, Plan)
     status = msg;
   };
   auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
-      "/planner_2dof_serial_joints/group0/status", 1, cb_status);
+      "/planner_2dof_serial_joints/group0/status", rclcpp::QoS(1).transient_local(), cb_status);
 
   sensor_msgs::msg::JointState s;
   s.name.push_back("front");
