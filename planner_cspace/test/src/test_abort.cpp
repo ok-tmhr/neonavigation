@@ -91,13 +91,16 @@ TEST_F(AbortTest, AbortByGoalInRock)
         << " " << statusString();
   }
 
+  auto result_future = move_base_->async_get_result(future.get());
+  rclcpp::spin_until_future_complete(node_, result_future);
+
   // Try to replan
-  while (future.get()->get_status() ==
-         rclcpp_action::GoalStatus::STATUS_EXECUTING)
+  while (result_future.get().code !=
+         rclcpp_action::ResultCode::ABORTED)
   {
     wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << future.get()->get_status()
+        << "Action didn't get inactive: " << static_cast<int8_t>(result_future.get().code)
         << " " << statusString();
   }
   wait.sleep();
@@ -105,8 +108,8 @@ TEST_F(AbortTest, AbortByGoalInRock)
   ASSERT_TRUE(planner_status_);
 
   // Abort after exceeding max_retry_num
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_ABORTED,
-            future.get()->get_status());
+  ASSERT_EQ(rclcpp_action::ResultCode::ABORTED,
+            result_future.get().code);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND,
             planner_status_->error);
 
@@ -122,8 +125,12 @@ TEST_F(AbortTest, AbortByGoalInRock)
         << "Action didn't get active: " << future.get()->get_status()
         << " " << statusString();
   }
-  while (future.get()->get_status() ==
-         rclcpp_action::GoalStatus::STATUS_EXECUTING)
+
+  result_future = move_base_->async_get_result(future.get());
+  rclcpp::spin_until_future_complete(node_, result_future);
+
+  while (result_future.get().code !=
+         rclcpp_action::ResultCode::SUCCEEDED)
   {
     wait.sleep();
     ASSERT_LT(node_->now(), deadline)
@@ -133,8 +140,8 @@ TEST_F(AbortTest, AbortByGoalInRock)
   wait.sleep();
 
   // Succeed
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_SUCCEEDED,
-            future.get()->get_status());
+  ASSERT_EQ(rclcpp_action::ResultCode::SUCCEEDED,
+            result_future.get().code);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
 }
