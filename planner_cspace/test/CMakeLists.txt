@@ -14,6 +14,7 @@ add_executable(planner_3d_debug
 target_compile_definitions(planner_3d_debug PUBLIC DEBUG)
 target_link_libraries(planner_3d_debug ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(planner_3d_debug ${AMENT_CMAKE_DEPENDS})
+install(TARGETS planner_3d_debug DESTINATION lib/${PROJECT_NAME})
 
 ament_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${Boost_LIBRARIES})
