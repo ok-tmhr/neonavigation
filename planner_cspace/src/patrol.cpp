@@ -102,38 +102,6 @@ public:
 
     pos_ = 0;
   }
-  void on_move_with_tolerance_result(const GoalHandleMoveWithTolerance::WrappedResult& result){
-    if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
-    {
-      RCLCPP_INFO(this->get_logger(), "Action has been finished.");
-      sendNextGoal();
-    }
-    else if (result.code == rclcpp_action::ResultCode::ABORTED)
-    {
-      RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
-      sendNextGoal();
-    }
-    else if (result.code == rclcpp_action::ResultCode::UNKNOWN)
-    {
-      RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
-    }
-  }
-  void on_move_base_result(const GoalHandleMoveBase::WrappedResult& result){
-    if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
-    {
-      RCLCPP_INFO(this->get_logger(), "Action has been finished.");
-      sendNextGoal();
-    }
-    else if (result.code == rclcpp_action::ResultCode::ABORTED)
-    {
-      RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
-      sendNextGoal();
-    }
-    else if (result.code == rclcpp_action::ResultCode::UNKNOWN)
-    {
-      RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
-    }
-  }
   bool sendNextGoal()
   {
     if (path_.poses.size() <= pos_)
@@ -145,6 +113,7 @@ public:
     }
 
     using std::placeholders::_1;
+    rclcpp_action::ResultCode state;
     if (with_tolerance_)
     {
       planner_cspace_msgs::action::MoveWithTolerance_Goal goal;
@@ -156,9 +125,11 @@ public:
       goal.goal_tolerance_ang = tolerance_ang_;
       goal.goal_tolerance_ang_finish = tolerance_ang_finish_;
 
-      auto goal_options = rclcpp_action::Client<planner_cspace_msgs::action::MoveWithTolerance>::SendGoalOptions();
-      goal_options.result_callback = std::bind(&PatrolActionNode::on_move_with_tolerance_result, this, _1);
-      act_cli_tolerant_->async_send_goal(goal, goal_options);
+      auto future = act_cli_tolerant_->async_send_goal(goal);
+      rclcpp::spin_until_future_complete(shared_from_this(), future);
+      auto result_future = act_cli_tolerant_->async_get_result(future.get());
+      rclcpp::spin_until_future_complete(shared_from_this(), result_future);
+      state = result_future.get().code;
     }
     else
     {
@@ -168,11 +139,28 @@ public:
       goal.pose.header.stamp = now();
       goal.pose.pose = path_.poses[pos_].pose;
 
-      auto goal_options = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
-      goal_options.result_callback = std::bind(&PatrolActionNode::on_move_base_result, this, _1);
-      act_cli_->async_send_goal(goal);
+      auto future = act_cli_->async_send_goal(goal);
+      rclcpp::spin_until_future_complete(shared_from_this(), future);
+      auto result_future = act_cli_->async_get_result(future.get());
+      rclcpp::spin_until_future_complete(shared_from_this(), result_future);
+      state = result_future.get().code;
     }
     pos_++;
+
+    if (state == rclcpp_action::ResultCode::SUCCEEDED)
+    {
+      RCLCPP_INFO(this->get_logger(), "Action has been finished.");
+      sendNextGoal();
+    }
+    else if (state == rclcpp_action::ResultCode::ABORTED)
+    {
+      RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
+      sendNextGoal();
+    }
+    else if (state == rclcpp_action::ResultCode::UNKNOWN)
+    {
+      RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
+    }
 
     return true;
   }
