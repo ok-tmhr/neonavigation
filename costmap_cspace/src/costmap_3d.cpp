@@ -249,7 +249,7 @@ public:
       layer->loadConfig(layer_config);
 
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-          layer_config.name, 1,
+          layer_config.name, rclcpp::QoS(1).transient_local(),
           [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMapOverlay(msg, layer);}));
     }
 
@@ -295,7 +295,7 @@ public:
         layer->loadConfig(layer_config);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-            layer_config.name, 1,
+            layer_config.name, rclcpp::QoS(1).transient_local(),
             [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMapOverlay(msg, layer);}));
       }
     }
