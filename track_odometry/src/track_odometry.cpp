@@ -342,11 +342,11 @@ public:
         1, &TrackOdometryNode::cbResetZ, this);
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
-    if (pnh_.hasParam("z_filter"))
+    if (pnh_->has_parameter("z_filter"))
     {
       z_filter_timeconst_ = -1.0;
       double z_filter;
-      if (pnh_.getParam("z_filter", z_filter))
+      if (pnh_->get_parameter("z_filter", z_filter))
       {
         const double odom_freq = 100.0;
         if (0.0 < z_filter && z_filter < 1.0)

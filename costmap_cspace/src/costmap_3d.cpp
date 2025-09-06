@@ -193,12 +193,12 @@ public:
     pnh_->get_parameter_or("ang_resolution", ang_resolution, 16);
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!pnh_.hasParam("footprint"))
+    if (!pnh_->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified.");
     }
-    pnh_.getParam("footprint", footprint_xml);
+    pnh_->get_parameter("footprint", footprint_xml);
     costmap_cspace::Polygon footprint;
     try
     {
@@ -222,10 +222,10 @@ public:
     root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
-    if (pnh_.hasParam("static_layers"))
+    if (pnh_->has_parameter("static_layers"))
     {
       XmlRpc::XmlRpcValue layers_xml;
-      pnh_.getParam("static_layers", layers_xml);
+      pnh_->get_parameter("static_layers", layers_xml);
 
       if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
@@ -288,10 +288,10 @@ public:
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
-    if (pnh_.hasParam("layers"))
+    if (pnh_->has_parameter("layers"))
     {
       XmlRpc::XmlRpcValue layers_xml;
-      pnh_.getParam("layers", layers_xml);
+      pnh_->get_parameter("layers", layers_xml);
 
       if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {

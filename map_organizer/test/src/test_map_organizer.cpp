@@ -216,7 +216,7 @@ TEST(MapOrganizer, SavedMapArray)
   // clean temporary files
   rclcpp::Node::SharedPtr pnh("~");
   std::string file_prefix;
-  if (pnh.getParam("file_prefix", file_prefix))
+  if (pnh->get_parameter("file_prefix", file_prefix))
   {
     ASSERT_EQ(0, system(std::string("rm -f " + file_prefix + "*").c_str()));
   }

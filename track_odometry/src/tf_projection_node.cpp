@@ -67,10 +67,10 @@ public:
     , pnh_("~")
     , tf_listener_(tf_buffer_)
   {
-    if (pnh_.hasParam("base_link_frame") ||
-        pnh_.hasParam("projection_frame") ||
-        pnh_.hasParam("target_frame") ||
-        pnh_.hasParam("frame"))
+    if (pnh_->has_parameter("base_link_frame") ||
+        pnh_->has_parameter("projection_frame") ||
+        pnh_->has_parameter("target_frame") ||
+        pnh_->has_parameter("frame"))
     {
       RCLCPP_ERROR(this->get_logger(),
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "

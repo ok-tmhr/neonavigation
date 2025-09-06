@@ -198,7 +198,7 @@ public:
       }
     }
 
-    if (pnh_.hasParam("t_margin"))
+    if (pnh_->has_parameter("t_margin"))
       RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
     pnh_->get_parameter_or("base_frame", base_frame_id_, std::string("base_link"));
     pnh_->get_parameter_or("fixed_frame", fixed_frame_id_, std::string("odom"));
@@ -213,12 +213,12 @@ public:
     parameter_server_->setCallback(boost::bind(&SafetyLimiterNode::cbParameter, this, _1, _2));
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!pnh_.hasParam("footprint"))
+    if (!pnh_->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
     }
-    pnh_.getParam("footprint", footprint_xml);
+    pnh_->get_parameter("footprint", footprint_xml);
     if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
     {
       RCLCPP_FATAL(this->get_logger(), "Invalid footprint");

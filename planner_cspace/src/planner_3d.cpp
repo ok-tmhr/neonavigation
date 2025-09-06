@@ -1285,7 +1285,7 @@ public:
     {
       RCLCPP_WARN(this->get_logger(), "planner_3d: Experimental fast_map_update is enabled. ");
     }
-    if (pnh_.hasParam("debug_mode"))
+    if (pnh_->has_parameter("debug_mode"))
     {
       RCLCPP_ERROR(this->get_logger(),
           "planner_3d: ~/debug_mode parameter and ~/debug topic are deprecated. "
