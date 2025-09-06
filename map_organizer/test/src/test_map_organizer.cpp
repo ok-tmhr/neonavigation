@@ -31,7 +31,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/Int32.h>
-#include <map_organizer_msgs/OccupancyGridArray.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <gtest/gtest.h>

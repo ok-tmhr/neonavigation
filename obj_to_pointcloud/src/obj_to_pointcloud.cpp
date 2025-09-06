@@ -36,7 +36,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/vtk_lib_io.h>

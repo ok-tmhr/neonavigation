@@ -32,8 +32,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <map_organizer_msgs/OccupancyGridArray.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.h>
 
 #include <gtest/gtest.h>

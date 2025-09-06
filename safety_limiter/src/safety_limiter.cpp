@@ -47,7 +47,7 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>
 #include <sensor_msgs/msg/point_cloud.hpp>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
 #include <tf2_ros/buffer.h>

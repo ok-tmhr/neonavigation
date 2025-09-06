@@ -37,7 +37,7 @@
 #include <tf2_ros/transform_listener.h>
 
 
-class PoseTransformNode
+class PoseTransformNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr pnh_;

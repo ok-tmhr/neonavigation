@@ -36,7 +36,7 @@
 
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <geometry_msgs/msg/twist.hpp>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Empty.h>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>

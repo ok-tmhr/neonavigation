@@ -37,7 +37,7 @@
 #include <cstdio>
 #include <string>
 
-#include <map_organizer_msgs/OccupancyGridArray.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 /**
  * @brief Map generation node.

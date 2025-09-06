@@ -39,23 +39,23 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <map_organizer_msgs/OccupancyGridArray.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 
-class PointcloudToMapsNode
+class PointcloudToMapsNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr pnh_;
   rclcpp::Node::SharedPtr nh_;
-  std::map<std::string, rclcpp::Publisher<>::SharedPtr> pub_maps_;
-  rclcpp::Publisher<>::SharedPtr pub_map_array_;
-  rclcpp::Subscription<>::SharedPtr sub_points_;
+  std::map<std::string, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_maps_;
+  rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
 
 public:
   PointcloudToMapsNode()

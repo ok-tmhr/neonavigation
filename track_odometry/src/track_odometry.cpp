@@ -83,7 +83,7 @@ geometry_msgs::msg::Vector3 toVector3(const Eigen::Vector3d& a)
   return b;
 }
 
-class TrackOdometryNode
+class TrackOdometryNode : public rclcpp::Node
 {
 private:
   using SyncPolicy =

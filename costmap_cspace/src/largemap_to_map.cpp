@@ -41,7 +41,7 @@
 #include <tf2_ros/transform_listener.h>
 
 
-class LargeMapToMapNode
+class LargeMapToMapNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr pnh_;

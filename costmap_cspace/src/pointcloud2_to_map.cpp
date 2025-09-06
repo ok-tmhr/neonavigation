@@ -34,14 +34,14 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <string>
 #include <vector>
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 
-class Pointcloud2ToMapNode
+class Pointcloud2ToMapNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr nh_;

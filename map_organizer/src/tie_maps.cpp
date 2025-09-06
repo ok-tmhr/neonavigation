@@ -29,7 +29,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <map_organizer_msgs/OccupancyGridArray.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,7 +52,7 @@ void operator>>(const YAML::Node& node, T& i)
 }
 #endif
 
-class TieMapNode
+class TieMapNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr pnh_;

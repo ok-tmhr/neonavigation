@@ -40,7 +40,7 @@
 
 #include <track_odometry/tf_projection.h>
 
-class TfProjectionNode
+class TfProjectionNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr nh_;

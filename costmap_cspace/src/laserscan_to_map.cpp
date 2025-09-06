@@ -42,7 +42,7 @@
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 
-class LaserscanToMapNode
+class LaserscanToMapNode : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr nh_;
