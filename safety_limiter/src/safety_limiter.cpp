@@ -96,15 +96,13 @@ protected:
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_cloud_;
   rclcpp::Publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>::SharedPtr pub_status_;
-  rclcpp::Subscription<>::SharedPtr sub_twist_;
-  std::vector<rclcpp::Subscription<>::SharedPtr> sub_clouds_;
-  rclcpp::Subscription<>::SharedPtr sub_disable_;
-  rclcpp::Subscription<>::SharedPtr sub_watchdog_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
+  std::vector<rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr> sub_clouds_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_disable_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr sub_watchdog_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  boost::recursive_mutex parameter_server_mutex_;
-  std::unique_ptr<dynamic_reconfigure::Server<SafetyLimiterConfig>> parameter_server_;
 
   geometry_msgs::msg::Twist twist_;
   rclcpp::Time last_cloud_stamp_;
@@ -147,8 +145,6 @@ protected:
 
 public:
   SafetyLimiterNode() : Node("safety_limiter")
-    , nh_()
-    , pnh_("~")
     , last_cloud_stamp_(0, 0, RCL_ROS_TIME)
     , hold_(0, 0)
     , hold_off_(0, 0, RCL_ROS_TIME)
@@ -165,36 +161,37 @@ public:
       pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
         rclcpp::QoS(1).transient_local());
-    pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud>("collision", rclcpp::QoS(1).transient_local());
-    pub_status_ = pnh_->create_publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>("status", rclcpp::QoS(1).transient_local());
-    sub_twist_ = this->create_subscription(
+    pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud>("collision", rclcpp::QoS(1).transient_local());
+    pub_status_ = this->create_publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>("~/status", rclcpp::QoS(1).transient_local());
+    using std::placeholders::_1;
+    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel_in",
-        1, &SafetyLimiterNode::cbTwist, this);
-    sub_disable_ = this->create_subscription(
+        1, std::bind(&SafetyLimiterNode::cbTwist, this, _1));
+    sub_disable_ = this->create_subscription<std_msgs::msg::Bool>(
         "disable_safety",
-        1, &SafetyLimiterNode::cbDisable, this);
-    sub_watchdog_ = this->create_subscription(
+        1, std::bind(&SafetyLimiterNode::cbDisable, this, _1));
+    sub_watchdog_ = this->create_subscription<std_msgs::msg::Empty>(
         "watchdog_reset",
-        1, &SafetyLimiterNode::cbWatchdogReset, this);
+        1, std::bind(&SafetyLimiterNode::cbWatchdogReset, this, _1));
 
     int num_input_clouds;
     this->get_parameter_or("num_input_clouds", num_input_clouds, 1);
     if (num_input_clouds == 1)
     {
-      sub_clouds_.push_back(this->create_subscription(
+      sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
           "cloud",
-          1, &SafetyLimiterNode::cbCloud, this));
+          1, std::bind(&SafetyLimiterNode::cbCloud, this, _1)));
     }
     else
     {
       for (int i = 0; i < num_input_clouds; ++i)
       {
-        sub_clouds_.push_back(nh_->create_subscription(
-            "cloud" + std::to_string(i), 1, &SafetyLimiterNode::cbCloud, this));
+        sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
+            "cloud" + std::to_string(i), 1, std::bind(&SafetyLimiterNode::cbCloud, this, _1)));
       }
     }
 
-    if (pnh_->has_parameter("t_margin"))
+    if (this->has_parameter("t_margin"))
       RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
     this->get_parameter_or("base_frame", base_frame_id_, std::string("base_link"));
     this->get_parameter_or("fixed_frame", fixed_frame_id_, std::string("odom"));
@@ -255,7 +252,7 @@ public:
           this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::seconds>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     }
 
-    rclcpp::spin();
+    rclcpp::spin(shared_from_this());
   }
 
 protected:
