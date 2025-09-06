@@ -160,10 +160,10 @@ public:
       sub_joy_ = nh_->create_subscription("joy", 1, &JoystickInterrupt::cbJoy, this);
     sub_twist_ = this->create_subscription(
         nh_, "cmd_vel_input",
-        pnh_, "cmd_vel_input", 1, &JoystickInterrupt::cbTwist, this);
+        1, &JoystickInterrupt::cbTwist, this);
     pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         nh_, "cmd_vel",
-        pnh_, "cmd_vel", 2);
+        2);
     pub_int_ = pnh_->create_publisher<std_msgs::msg::Bool>("interrupt_status", 2);
 
     pnh_->get_parameter_or("linear_vel", linear_vel_, 0.5);

@@ -72,7 +72,7 @@ public:
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
-        pnh_, "map", 1, true);
+        1, true);
     sub_largemap_ = nh_->create_subscription("map", 2, &LargeMapToMapNode::cbLargeMap, this);
 
     pnh_->get_parameter_or("width", width_, 30);

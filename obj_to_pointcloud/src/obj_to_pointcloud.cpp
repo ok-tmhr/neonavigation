@@ -93,7 +93,7 @@ public:
   {
       pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
         nh_, "mapcloud",
-        pnh_, "cloud", 1, true);
+        1, true);
 
     pnh_->get_parameter_or("frame_id", frame_id_, std::string("map"));
     pnh_->get_parameter_or("objs", file_, std::string(""));

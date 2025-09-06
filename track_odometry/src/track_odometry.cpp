@@ -308,7 +308,7 @@ public:
     {
       sub_imu_raw_ = this->create_subscription(
           nh_, "imu/data",
-          nh_, "imu", 64, &TrackOdometryNode::cbImu, this);
+          64, &TrackOdometryNode::cbImu, this);
       pnh_->get_parameter_or("base_link_id", base_link_id_, std::string("base_link"));
       pnh_->get_parameter_or("odom_id", odom_id_, std::string("odom"));
     }
@@ -339,7 +339,7 @@ public:
 
     sub_reset_z_ = this->create_subscription(
         nh_, "reset_odometry_z",
-        pnh_, "reset_z", 1, &TrackOdometryNode::cbResetZ, this);
+        1, &TrackOdometryNode::cbResetZ, this);
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
     if (pnh_.hasParam("z_filter"))

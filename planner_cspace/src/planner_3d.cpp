@@ -1156,13 +1156,13 @@ public:
   {
       sub_map_ = this->create_subscription(
         nh_, "costmap",
-        pnh_, "costmap", 1, &Planner3dNode::cbMap, this);
+        1, &Planner3dNode::cbMap, this);
     sub_map_update_ = this->create_subscription(
         nh_, "costmap_update",
-        pnh_, "costmap_update", 1, &Planner3dNode::cbMapUpdate, this);
+        1, &Planner3dNode::cbMapUpdate, this);
     sub_goal_ = this->create_subscription(
         nh_, "move_base_simple/goal",
-        pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
+        1, &Planner3dNode::cbGoal, this);
     sub_temporary_escape_trigger_ = pnh_->create_subscription(
         "temporary_escape", 1, &Planner3dNode::cbTemporaryEscape, this);
     pub_start_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_start", 1, true);
@@ -1172,7 +1172,7 @@ public:
     pub_metrics_ = pnh_->create_publisher<neonavigation_metrics_msgs::msg::Metrics>("metrics", 1, false);
     srs_forget_ = this->create_publisherService(
         nh_, "forget_planning_cost",
-        pnh_, "forget", &Planner3dNode::cbForget, this);
+        &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
 
     // Debug outputs

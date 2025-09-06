@@ -202,17 +202,17 @@ TrackerNode::TrackerNode()
 
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       nh_, "path",
-      pnh_, topic_path_, 2,
+      2,
       boost::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
   sub_path_velocity_ = nh_->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
       "path_velocity", 2,
       boost::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
   sub_vel_ = this->create_subscription(
       nh_, "speed",
-      pnh_, "speed", 20, &TrackerNode::cbSpeed, this);
+      20, &TrackerNode::cbSpeed, this);
   pub_vel_ = this->create_publisher<geometry_msgs::msg::Twist>(
       nh_, "cmd_vel",
-      pnh_, topic_cmd_vel_, 10);
+      10);
   pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("status", 10, true);
   pub_tracking_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("tracking", 10, true);
   if (use_odom_)

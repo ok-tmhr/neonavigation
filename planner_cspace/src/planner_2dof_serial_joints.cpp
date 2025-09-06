@@ -381,13 +381,13 @@ public:
 
     pub_trajectory_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
         nh_, "joint_trajectory",
-        pnh_, "trajectory_out", 1, true);
+        1, true);
     sub_trajectory_ = this->create_subscription(
         nh_, "trajectory_in",
-        pnh_, "trajectory_in", 1, &Planner2dofSerialJointsNode::cbTrajectory, this);
+        1, &Planner2dofSerialJointsNode::cbTrajectory, this);
     sub_joint_ = this->create_subscription(
         nh_, "joint_states",
-        pnh_, "joint", 1, &Planner2dofSerialJointsNode::cbJoint, this);
+        1, &Planner2dofSerialJointsNode::cbJoint, this);
 
     pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
 

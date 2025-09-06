@@ -65,13 +65,13 @@ int main(int argc, char** argv)
 
   auto subMaps = this->create_subscription(
       nh, "maps",
-      nh, "/maps", 1, cbMaps);
+      1, cbMaps);
   auto subFloor = this->create_subscription(
       nh, "floor",
-      pnh, "floor", 1, cbFloor);
+      1, cbFloor);
   auto pubMap = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
       nh, "map",
-      nh, "/map", 1, true);
+      1, true);
 
   tf2_ros::TransformBroadcaster tfb;
   geometry_msgs::msg::TransformStamped trans;

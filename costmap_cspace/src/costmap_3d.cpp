@@ -182,10 +182,10 @@ public:
   {
       pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
         nh_, "costmap",
-        pnh_, "costmap", 1, true);
+        1, true);
     pub_costmap_update_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>(
         nh_, "costmap_update",
-        pnh_, "costmap_update", 1, true);
+        1, true);
     pub_footprint_ = pnh_->create_publisher<geometry_msgs::msg::PolygonStamped>("footprint", 2, true);
     pub_debug_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("debug", 1, true);
 

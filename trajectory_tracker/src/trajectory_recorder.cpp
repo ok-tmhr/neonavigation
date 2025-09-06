@@ -90,7 +90,7 @@ RecorderNode::RecorderNode()
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       nh_, "path",
-      pnh_, topic_path_, 10, true);
+      10, true);
   srs_clear_path_ = pnh_.advertiseService("clear_path", &RecorderNode::clearPath, this);
 }
 

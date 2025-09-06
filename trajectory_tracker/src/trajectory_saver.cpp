@@ -73,7 +73,7 @@ SaverNode::SaverNode()
 
   sub_path_ = this->create_subscription(
       nh_, "path",
-      pnh_, topic_path_, 10, &SaverNode::cbPath, this);
+      10, &SaverNode::cbPath, this);
 }
 SaverNode::~SaverNode()
 {

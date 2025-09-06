@@ -85,7 +85,7 @@ public:
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
-        pnh_, "map", 1, true);
+        1, true);
     sub_scan_ = nh_->create_subscription("scan", 2, &LaserscanToMapNode::cbScan, this);
 
     int width_param;

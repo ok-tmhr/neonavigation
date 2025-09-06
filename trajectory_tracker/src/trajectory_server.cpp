@@ -105,11 +105,11 @@ ServerNode::ServerNode()
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       nh_, "path",
-      pnh_, topic_path_, 2, true);
+      2, true);
   pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("status", 2);
   srv_change_path_ = this->create_publisherService(
       nh_, "change_path",
-      pnh_, "ChangePath", &ServerNode::change, this);
+      &ServerNode::change, this);
   update_num_ = 0;
   max_markers_ = 0;
 }

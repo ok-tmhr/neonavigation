@@ -86,7 +86,7 @@ public:
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
-        pnh_, "map", 1, true);
+        1, true);
     sub_cloud_ = nh_->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud", 100,
         boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, false));
