@@ -28,7 +28,7 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/Joy.h>
+#include <sensor_msgs/msg/joy.hpp>
 
 #include <topic_tools/shape_shifter.h>
 

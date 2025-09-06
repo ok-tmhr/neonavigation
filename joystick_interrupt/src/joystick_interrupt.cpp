@@ -33,19 +33,19 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
-#include <sensor_msgs/Joy.h>
+#include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/bool.hpp>
 
 
-class JoystickInterrupt
+class JoystickInterrupt : public rclcpp::Node
 {
 private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Subscription<>::SharedPtr sub_twist_;
-  rclcpp::Subscription<>::SharedPtr sub_joy_;
-  rclcpp::Publisher<>::SharedPtr pub_twist_;
-  rclcpp::Publisher<>::SharedPtr pub_int_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_int_;
   double linear_vel_;
   double angular_vel_;
   double linear_y_vel_;
