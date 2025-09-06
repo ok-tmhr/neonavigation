@@ -6,7 +6,6 @@ set(COLCON_DEPENDS
 
   rclcpp_action
   diagnostic_updater
-  dynamic_reconfigure
   geometry_msgs
   nav2_msgs
   nav_msgs
@@ -33,21 +32,11 @@ endforeach()
 find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
 
-generate_dynamic_reconfigure_options(
-  cfg/Planner3D.cfg
-)
-
-catkin_package(
-  INCLUDE_DIRS include
-  COLCON_DEPENDS ${COLCON_DEPENDS}
-)
-
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
-include_directories(include ${catkin_INCLUDE_DIRS})
 
 
 add_executable(planner_3d
@@ -60,8 +49,11 @@ add_executable(planner_3d
   src/rotation_cache.cpp
   src/start_pose_predictor.cpp
 )
-target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
+target_include_directories(planner_3d PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(planner_3d ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+add_dependencies(planner_3d)
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
@@ -76,16 +68,25 @@ add_executable(planner_2dof_serial_joints
   src/planner_2dof_serial_joints.cpp
   src/grid_astar_model_2dof_joints.cpp
 )
-target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_2dof_serial_joints ${catkin_EXPORTED_TARGETS})
+target_include_directories(planner_2dof_serial_joints PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(planner_2dof_serial_joints ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+add_dependencies(planner_2dof_serial_joints)
 
 add_executable(dummy_robot src/dummy_robot.cpp)
-target_link_libraries(dummy_robot ${catkin_LIBRARIES})
-add_dependencies(dummy_robot ${catkin_EXPORTED_TARGETS})
+target_include_directories(dummy_robot PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(dummy_robot)
+add_dependencies(dummy_robot)
 
 add_executable(patrol src/patrol.cpp)
-target_link_libraries(patrol ${catkin_LIBRARIES})
-add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
+target_include_directories(patrol PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(patrol)
+add_dependencies(patrol)
 
 
 if(BUILD_TESTING)
@@ -105,6 +106,10 @@ install(TARGETS
   LIBRARY DESTINATION lib/${PROJECT_NAME}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include
+)
+
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 ament_package()

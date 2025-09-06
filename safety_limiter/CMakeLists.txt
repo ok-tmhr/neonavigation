@@ -5,8 +5,7 @@ set(COLCON_DEPENDS
     rclcpp
 
     diagnostic_updater
-    dynamic_reconfigure
-    geometry_msgs
+      geometry_msgs
     pcl_conversions
     pcl_ros
     sensor_msgs
@@ -24,19 +23,11 @@ endforeach()
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 
-generate_dynamic_reconfigure_options(
-  cfg/SafetyLimiter.cfg
-)
-
-catkin_package(
-  COLCON_DEPENDS ${COLCON_DEPENDS}
-)
-
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 
@@ -60,8 +51,11 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 
 add_executable(safety_limiter src/safety_limiter.cpp)
-target_link_libraries(safety_limiter ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(safety_limiter ${catkin_EXPORTED_TARGETS})
+target_include_directories(safety_limiter PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(safety_limiter ${PCL_LIBRARIES})
+add_dependencies(safety_limiter)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)

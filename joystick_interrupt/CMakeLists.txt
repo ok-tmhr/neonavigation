@@ -14,22 +14,22 @@ find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-catkin_package(
-  COLCON_DEPENDS ${COLCON_DEPENDS}
-)
 
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${catkin_INCLUDE_DIRS})
-
-
 add_executable(joystick_interrupt src/joystick_interrupt.cpp)
-target_link_libraries(joystick_interrupt ${catkin_LIBRARIES})
+target_include_directories(joystick_interrupt PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(joystick_interrupt)
 
 add_executable(joystick_mux src/joystick_mux.cpp)
-target_link_libraries(joystick_mux ${catkin_LIBRARIES})
+target_include_directories(joystick_mux PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(joystick_mux)
 
 
 if(BUILD_TESTING)
@@ -49,8 +49,7 @@ install(TARGETS
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 install(DIRECTORY launch
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()
-

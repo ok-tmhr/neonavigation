@@ -16,15 +16,12 @@ foreach(COLCON_DEPEND ${COLCON_DEPENDS})
 endforeach()
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
-catkin_package(
-  COLCON_DEPENDS ${COLCON_DEPENDS}
-)
 
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 
@@ -48,8 +45,11 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 
 add_executable(obj_to_pointcloud src/obj_to_pointcloud.cpp)
-target_link_libraries(obj_to_pointcloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-add_dependencies(obj_to_pointcloud ${catkin_EXPORTED_TARGETS})
+target_include_directories(obj_to_pointcloud PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(obj_to_pointcloud ${PCL_LIBRARIES})
+add_dependencies(obj_to_pointcloud)
 
 
 if(BUILD_TESTING)

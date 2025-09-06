@@ -21,24 +21,27 @@ foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
 find_package(Eigen3 REQUIRED)
-catkin_package(
-  COLCON_DEPENDS ${COLCON_DEPENDS}
-)
 
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+include_directories(${EIGEN3_INCLUDE_DIR})
 
 
 add_executable(track_odometry src/track_odometry.cpp)
-target_link_libraries(track_odometry ${catkin_LIBRARIES})
-add_dependencies(track_odometry ${catkin_EXPORTED_TARGETS})
+target_include_directories(track_odometry PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(track_odometry)
+add_dependencies(track_odometry)
 
 add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
-target_link_libraries(tf_projection ${catkin_LIBRARIES})
-add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
+target_include_directories(tf_projection PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(tf_projection)
+add_dependencies(tf_projection)
 
 
 if(BUILD_TESTING)

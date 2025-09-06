@@ -4,7 +4,6 @@ project(trajectory_tracker)
 set(COLCON_DEPENDS
   rclcpp
 
-  dynamic_reconfigure
   geometry_msgs
   interactive_markers
   nav_msgs
@@ -23,37 +22,40 @@ endforeach()
 find_package(Boost REQUIRED COMPONENTS thread)
 find_package(Eigen3 REQUIRED)
 
-generate_dynamic_reconfigure_options(
-  cfg/TrajectoryTracker.cfg
-)
-
-catkin_package(
-  INCLUDE_DIRS include
-  COLCON_DEPENDS ${COLCON_DEPENDS}
-)
-
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(include ${Boost_INCLUDE_DIRS})
 
 
 add_executable(trajectory_tracker src/trajectory_tracker.cpp)
-target_link_libraries(trajectory_tracker ${catkin_LIBRARIES})
-add_dependencies(trajectory_tracker ${catkin_EXPORTED_TARGETS})
+target_include_directories(trajectory_tracker PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(trajectory_tracker)
+add_dependencies(trajectory_tracker)
 
 add_executable(trajectory_recorder src/trajectory_recorder.cpp)
-target_link_libraries(trajectory_recorder ${catkin_LIBRARIES})
-add_dependencies(trajectory_recorder ${catkin_EXPORTED_TARGETS})
+target_include_directories(trajectory_recorder PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(trajectory_recorder)
+add_dependencies(trajectory_recorder)
 
 add_executable(trajectory_saver src/trajectory_saver.cpp)
-target_link_libraries(trajectory_saver ${catkin_LIBRARIES})
-add_dependencies(trajectory_saver ${catkin_EXPORTED_TARGETS})
+target_include_directories(trajectory_saver PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(trajectory_saver)
+add_dependencies(trajectory_saver)
 
 add_executable(trajectory_server src/trajectory_server.cpp)
-target_link_libraries(trajectory_server ${catkin_LIBRARIES})
-add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
+target_include_directories(trajectory_server PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(trajectory_server)
+add_dependencies(trajectory_server)
 
 
 if(BUILD_TESTING)
