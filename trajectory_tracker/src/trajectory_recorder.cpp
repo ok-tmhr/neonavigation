@@ -87,8 +87,8 @@ RecorderNode::RecorderNode()
   pnh_->get_parameter_or("store_time", store_time_, false);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
-      nh_, "path",
-      10, true);
+      "path",
+      rclcpp::QoS(10).transient_local());
   srs_clear_path_ = pnh_.advertiseService("clear_path", &RecorderNode::clearPath, this);
 }
 

@@ -71,7 +71,7 @@ int main(int argc, char** argv)
       1, cbFloor);
   auto pubMap = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
       nh, "map",
-      1, true);
+      rclcpp::QoS(1).transient_local());
 
   tf2_ros::TransformBroadcaster tfb;
   geometry_msgs::msg::TransformStamped trans;

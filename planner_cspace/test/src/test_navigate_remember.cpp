@@ -79,8 +79,8 @@ protected:
         nh_.serviceClient<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
             "forget_planning_cost");
     pub_initial_pose_ =
-        nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, true);
-    pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", 1, true);
+        nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
+    pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
   }
 
   virtual void SetUp()

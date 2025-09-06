@@ -127,9 +127,9 @@ public:
         "cmd_vel", 1, &TrajectoryTrackerTest::cbCmdVel, this);
     sub_status_ = nh_->create_subscription(
         "trajectory_tracker/status", 1, &TrajectoryTrackerTest::cbStatus, this);
-    pub_path_ = nh_->create_publisher<nav_msgs::msg::Path>("path", 1, true);
-    pub_path_vel_ = nh_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>("path_velocity", 1, true);
-    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 10, true);
+    pub_path_ = nh_->create_publisher<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local());
+    pub_path_vel_ = nh_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>("path_velocity", rclcpp::QoS(1).transient_local());
+    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10).transient_local());
 
     double delay;
     pnh_->get_parameter_or("odom_delay", delay, 0.0);

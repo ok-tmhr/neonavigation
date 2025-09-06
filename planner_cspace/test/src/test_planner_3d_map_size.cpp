@@ -52,7 +52,7 @@ protected:
     : cnt_status_(0)
   {
     sub_status_ = nh_->create_subscription("/planner_3d/status", 100, &Planner3DMapSize::cbStatus, this);
-    pub_map_ = nh_->create_publisher<costmap_cspace_msgs::msg::CSpace3D>("costmap", 1, true);
+    pub_map_ = nh_->create_publisher<costmap_cspace_msgs::msg::CSpace3D>("costmap", rclcpp::QoS(1).transient_local());
     pub_map_update_ = nh_->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   }
 

@@ -53,8 +53,8 @@ public:
     planner_3d_client_.reset(
         new dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>("/planner_3d/"));
     sub_path_ = node_.subscribe("path", 1, &DynamicParameterChangeTest::cbPath, this);
-    pub_map_overlay_ = node_.advertise<nav_msgs::msg::OccupancyGrid>("map_overlay", 1, true);
-    pub_odom_ = node_.advertise<nav_msgs::msg::Odometry>("odom", 1, true);  // not actually used
+    pub_map_overlay_ = node_.advertise<nav_msgs::msg::OccupancyGrid>("map_overlay", rclcpp::QoS(1).transient_local());
+    pub_odom_ = node_.advertise<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());  // not actually used
 
     const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(2);
     while (sub_path_.getNumPublishers() < 1 || pub_map_overlay_->get_subscription_count() < 1)

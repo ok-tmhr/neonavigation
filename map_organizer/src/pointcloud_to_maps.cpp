@@ -63,9 +63,9 @@ public:
     , nh_()
   {
       sub_points_ = this->create_subscription(
-        nh_, "mapcloud",
+        "mapcloud",
         1, &PointcloudToMapsNode::cbPoints, this);
-    pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, true);
+    pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
   }
   void cbPoints(const sensor_msgs::msg::PointCloud2::Ptr& msg)
   {
@@ -336,7 +336,7 @@ public:
       }
 
       std::string name = "map" + std::to_string(floor_num);
-      pub_maps_[name] = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>(name, 1, true);
+      pub_maps_[name] = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>(name, rclcpp::QoS(1).transient_local());
       pub_maps_[name]->publish(map);
       map_array.maps.push_back(map);
       RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm",

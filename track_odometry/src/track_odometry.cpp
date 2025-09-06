@@ -307,7 +307,7 @@ public:
     if (without_odom_)
     {
       sub_imu_raw_ = this->create_subscription(
-          nh_, "imu/data",
+          "imu/data",
           64, &TrackOdometryNode::cbImu, this);
       pnh_->get_parameter_or("base_link_id", base_link_id_, std::string("base_link"));
       pnh_->get_parameter_or("odom_id", odom_id_, std::string("odom"));
@@ -315,16 +315,16 @@ public:
     else
     {
       sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::msg::Odometry>(nh_, "odom_raw", 50, transport_hints));
+          new message_filters::Subscriber<nav_msgs::msg::Odometry>("odom_raw", 50, transport_hints));
       if (neonavigation_common::compat::getCompat() == neonavigation_common::compat::current_level)
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::msg::Imu>(nh_, "imu/data", 50, transport_hints));
+            new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu/data", 50, transport_hints));
       }
       else
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::msg::Imu>(nh_, "imu", 50, transport_hints));
+            new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu", 50, transport_hints));
       }
 
       int sync_window;
@@ -338,7 +338,7 @@ public:
     }
 
     sub_reset_z_ = this->create_subscription(
-        nh_, "reset_odometry_z",
+        "reset_odometry_z",
         1, &TrackOdometryNode::cbResetZ, this);
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 

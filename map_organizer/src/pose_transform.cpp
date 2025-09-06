@@ -80,10 +80,10 @@ public:
     , tfl_(tfbuf_)
   {
       sub_pose_ = this->create_subscription(
-        nh_, "pose_in",
+        "pose_in",
         1, &PoseTransformNode::cbPose, this);
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
-        nh_, "pose_out",
+        "pose_out",
         1, false);
     pnh_->get_parameter_or("to_frame", to_, std::string("map"));
   }

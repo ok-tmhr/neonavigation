@@ -181,13 +181,13 @@ public:
     , pnh_("~")
   {
       pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
-        nh_, "costmap",
-        1, true);
+        "costmap",
+        rclcpp::QoS(1).transient_local());
     pub_costmap_update_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>(
-        nh_, "costmap_update",
-        1, true);
-    pub_footprint_ = pnh_->create_publisher<geometry_msgs::msg::PolygonStamped>("footprint", 2, true);
-    pub_debug_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("debug", 1, true);
+        "costmap_update",
+        rclcpp::QoS(1).transient_local());
+    pub_footprint_ = pnh_->create_publisher<geometry_msgs::msg::PolygonStamped>("footprint", rclcpp::QoS(2).transient_local());
+    pub_debug_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("debug", rclcpp::QoS(1).transient_local());
 
     int ang_resolution;
     pnh_->get_parameter_or("ang_resolution", ang_resolution, 16);

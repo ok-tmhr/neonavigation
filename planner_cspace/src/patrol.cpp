@@ -81,7 +81,7 @@ public:
     , pnh_("~")
   {
       sub_path_ = this->create_subscription(
-        nh_, "patrol_nodes",
+        "patrol_nodes",
         1, &PatrolActionNode::cbPath, this);
 
     pnh_->get_parameter_or("with_tolerance", with_tolerance_, false);

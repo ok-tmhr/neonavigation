@@ -96,11 +96,11 @@ protected:
     srv_forget_ =
         nh_.serviceClient<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
             "forget_planning_cost");
-    pub_map_ = nh_->create_publisher<nav_msgs::msg::OccupancyGrid>("map", 1, true);
-    pub_map_local_ = nh_->create_publisher<nav_msgs::msg::OccupancyGrid>("overlay", 1, true);
+    pub_map_ = nh_->create_publisher<nav_msgs::msg::OccupancyGrid>("map", rclcpp::QoS(1).transient_local());
+    pub_map_local_ = nh_->create_publisher<nav_msgs::msg::OccupancyGrid>("overlay", rclcpp::QoS(1).transient_local());
     pub_initial_pose_ =
-        nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, true);
-    pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", 1, true);
+        nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
+    pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
   }
 
   void SetUp() override
@@ -573,7 +573,7 @@ TEST_F(Navigate, GlobalPlan)
 
 TEST_F(Navigate, RobotIsInRockOnSetGoal)
 {
-  rclcpp::Publisher<>::SharedPtr pub_path = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", 1, true);
+  rclcpp::Publisher<>::SharedPtr pub_path = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
 
   rclcpp::spin_some(shared_from_this());
   ASSERT_TRUE(static_cast<bool>(map_));

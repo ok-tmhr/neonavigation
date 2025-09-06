@@ -102,11 +102,11 @@ ServerNode::ServerNode()
   pnh_->get_parameter_or("filter_step", filter_step_, 0.0);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
-      nh_, "path",
-      2, true);
+      "path",
+      rclcpp::QoS(2).transient_local());
   pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("status", 2);
   srv_change_path_ = this->create_publisherService(
-      nh_, "change_path",
+      "change_path",
       &ServerNode::change, this);
   update_num_ = 0;
   max_markers_ = 0;

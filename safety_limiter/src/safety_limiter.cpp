@@ -167,18 +167,18 @@ public:
     , stuck_started_since_(rclcpp::Time(0))
   {
       pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
-        nh_, "cmd_vel",
-        1, true);
-    pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud>("collision", 1, true);
-    pub_status_ = pnh_->create_publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>("status", 1, true);
+        "cmd_vel",
+        rclcpp::QoS(1).transient_local());
+    pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud>("collision", rclcpp::QoS(1).transient_local());
+    pub_status_ = pnh_->create_publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>("status", rclcpp::QoS(1).transient_local());
     sub_twist_ = this->create_subscription(
-        nh_, "cmd_vel_in",
+        "cmd_vel_in",
         1, &SafetyLimiterNode::cbTwist, this);
     sub_disable_ = this->create_subscription(
-        nh_, "disable_safety",
+        "disable_safety",
         1, &SafetyLimiterNode::cbDisable, this);
     sub_watchdog_ = this->create_subscription(
-        nh_, "watchdog_reset",
+        "watchdog_reset",
         1, &SafetyLimiterNode::cbWatchdogReset, this);
 
     int num_input_clouds;
@@ -186,7 +186,7 @@ public:
     if (num_input_clouds == 1)
     {
       sub_clouds_.push_back(this->create_subscription(
-          nh_, "cloud",
+          "cloud",
           1, &SafetyLimiterNode::cbCloud, this));
     }
     else

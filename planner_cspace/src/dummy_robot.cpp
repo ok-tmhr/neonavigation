@@ -98,7 +98,7 @@ public:
     v_ = 0.0;
     w_ = 0.0;
 
-    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 1, true);
+    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());
     sub_twist_ = nh_->create_subscription("cmd_vel", 1, &DummyRobotNode::cbTwist, this);
     sub_init_ = nh_->create_subscription("initialpose", 1, &DummyRobotNode::cbInit, this);
   }

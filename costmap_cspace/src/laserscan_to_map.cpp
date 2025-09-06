@@ -84,8 +84,8 @@ public:
     accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-        nh_, "map_local",
-        1, true);
+        "map_local",
+        rclcpp::QoS(1).transient_local());
     sub_scan_ = nh_->create_subscription("scan", 2, &LaserscanToMapNode::cbScan, this);
 
     int width_param;

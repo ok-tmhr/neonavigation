@@ -380,16 +380,16 @@ public:
     rclcpp::Node::SharedPtr nh_group("~/" + group_);
 
     pub_trajectory_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
-        nh_, "joint_trajectory",
-        1, true);
+        "joint_trajectory",
+        rclcpp::QoS(1).transient_local());
     sub_trajectory_ = this->create_subscription(
-        nh_, "trajectory_in",
+        "trajectory_in",
         1, &Planner2dofSerialJointsNode::cbTrajectory, this);
     sub_joint_ = this->create_subscription(
-        nh_, "joint_states",
+        "joint_states",
         1, &Planner2dofSerialJointsNode::cbJoint, this);
 
-    pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
+    pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", rclcpp::QoS(1).transient_local());
 
     nh_group->get_parameter_or("resolution", resolution_, 128);
     pnh_->get_parameter_or("debug_aa", debug_aa_, false);

@@ -37,8 +37,8 @@
 TEST(Planner2DOFSerialJoints, Plan)
 {
   rclcpp::Node::SharedPtr nh;
-  rclcpp::Publisher<>::SharedPtr pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", 1, true);
-  rclcpp::Publisher<>::SharedPtr pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", 1, true);
+  rclcpp::Publisher<>::SharedPtr pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
+  rclcpp::Publisher<>::SharedPtr pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
   trajectory_msgs::msg::JointTrajectory::ConstPtr planned;
   const auto cb_plan = [&planned](const trajectory_msgs::msg::JointTrajectory::ConstPtr& msg)
@@ -147,8 +147,8 @@ TEST(Planner2DOFSerialJoints, Plan)
 TEST(Planner2DOFSerialJoints, NoPath)
 {
   rclcpp::Node::SharedPtr nh;
-  rclcpp::Publisher<>::SharedPtr pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", 1, true);
-  rclcpp::Publisher<>::SharedPtr pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", 1, true);
+  rclcpp::Publisher<>::SharedPtr pub_state = nh.advertise<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
+  rclcpp::Publisher<>::SharedPtr pub_cmd = nh.advertise<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)

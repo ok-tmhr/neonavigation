@@ -126,7 +126,7 @@ TEST(PointcloudToMaps, Convert)
     maps = msg;
   };
   rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("maps", 1, cb);
-  rclcpp::Publisher<>::SharedPtr pub = nh.advertise<sensor_msgs::msg::PointCloud2>("mapcloud", 1, true);
+  rclcpp::Publisher<>::SharedPtr pub = nh.advertise<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local());
 
   pub->publish(generateMapCloud());
   rclcpp::Rate rate(10.0);

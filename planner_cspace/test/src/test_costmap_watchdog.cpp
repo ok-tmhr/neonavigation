@@ -65,7 +65,7 @@ TEST(Planner3D, CostmapWatchdog)
   };
 
   rclcpp::Node::SharedPtr nh("");
-  rclcpp::Publisher<>::SharedPtr pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", 1, true);
+  rclcpp::Publisher<>::SharedPtr pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
   rclcpp::Publisher<>::SharedPtr pub_cost_update = nh.advertise<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   rclcpp::Subscription<>::SharedPtr sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
   rclcpp::Subscription<>::SharedPtr sub_path = nh.subscribe("path", 1, cb_path);
@@ -145,7 +145,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   };
 
   rclcpp::Node::SharedPtr nh("");
-  rclcpp::Publisher<>::SharedPtr pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", 1, true);
+  rclcpp::Publisher<>::SharedPtr pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
   rclcpp::Publisher<>::SharedPtr pub_cost_update = nh.advertise<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   rclcpp::Subscription<>::SharedPtr sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
   rclcpp::Subscription<>::SharedPtr sub_path = nh.subscribe("path", 1, cb_path);

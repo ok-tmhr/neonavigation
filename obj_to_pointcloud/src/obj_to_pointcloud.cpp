@@ -92,8 +92,8 @@ public:
     , engine_(seed_gen_())
   {
       pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-        nh_, "mapcloud",
-        1, true);
+        "mapcloud",
+        rclcpp::QoS(1).transient_local());
 
     pnh_->get_parameter_or("frame_id", frame_id_, std::string("map"));
     pnh_->get_parameter_or("objs", file_, std::string(""));

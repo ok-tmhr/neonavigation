@@ -70,7 +70,7 @@ SaverNode::SaverNode()
   pnh_->get_parameter_or("file", filename_, std::string("a.path"));
 
   sub_path_ = this->create_subscription(
-      nh_, "path",
+      "path",
       10, &SaverNode::cbPath, this);
 }
 SaverNode::~SaverNode()

@@ -66,7 +66,7 @@ public:
     , pnh_("~")
     , nh_()
   {
-    pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, true);
+    pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 
     map_organizer_msgs::msg::OccupancyGridArray maps;
 

@@ -1154,30 +1154,30 @@ public:
     , jump_(tfbuf_)
   {
       sub_map_ = this->create_subscription(
-        nh_, "costmap",
+        "costmap",
         1, &Planner3dNode::cbMap, this);
     sub_map_update_ = this->create_subscription(
-        nh_, "costmap_update",
+        "costmap_update",
         1, &Planner3dNode::cbMapUpdate, this);
     sub_goal_ = this->create_subscription(
-        nh_, "move_base_simple/goal",
+        "move_base_simple/goal",
         1, &Planner3dNode::cbGoal, this);
     sub_temporary_escape_trigger_ = pnh_->create_subscription(
         "temporary_escape", 1, &Planner3dNode::cbTemporaryEscape, this);
-    pub_start_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_start", 1, true);
-    pub_end_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_end", 1, true);
-    pub_goal_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("current_goal", 1, true);
-    pub_status_ = pnh_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
+    pub_start_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_start", rclcpp::QoS(1).transient_local());
+    pub_end_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_end", rclcpp::QoS(1).transient_local());
+    pub_goal_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("current_goal", rclcpp::QoS(1).transient_local());
+    pub_status_ = pnh_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", rclcpp::QoS(1).transient_local());
     pub_metrics_ = pnh_->create_publisher<neonavigation_metrics_msgs::msg::Metrics>("metrics", 1, false);
     srs_forget_ = this->create_publisherService(
-        nh_, "forget_planning_cost",
+        "forget_planning_cost",
         &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
 
     // Debug outputs
-    pub_distance_map_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("distance_map", 1, true);
-    pub_hysteresis_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("hysteresis_map", 1, true);
-    pub_remembered_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("remembered_map", 1, true);
+    pub_distance_map_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("distance_map", rclcpp::QoS(1).transient_local());
+    pub_hysteresis_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("hysteresis_map", rclcpp::QoS(1).transient_local());
+    pub_remembered_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("remembered_map", rclcpp::QoS(1).transient_local());
 
     act_.reset(new Planner3DActionServer(rclcpp::Node::SharedPtr(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
@@ -1192,16 +1192,16 @@ public:
     if (use_path_with_velocity_)
     {
       pub_path_velocity_ = nh_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
-          "path_velocity", 1, true);
+          "path_velocity", rclcpp::QoS(1).transient_local());
     }
     else
     {
       pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
-          nh_, "path",
-          pnh_, "path", 1, true);
+          "path",
+          rclcpp::QoS(1).transient_local());
     }
-    pub_path_poses_ = pnh_->create_publisher<geometry_msgs::msg::PoseArray>("path_poses", 1, true);
-    pub_preserved_path_poses_ = pnh_->create_publisher<nav_msgs::msg::Path>("preserved_path_poses", 1, true);
+    pub_path_poses_ = pnh_->create_publisher<geometry_msgs::msg::PoseArray>("path_poses", rclcpp::QoS(1).transient_local());
+    pub_preserved_path_poses_ = pnh_->create_publisher<nav_msgs::msg::Path>("preserved_path_poses", rclcpp::QoS(1).transient_local());
 
     pnh_->get_parameter_or("freq", freq_, 4.0f);
     pnh_->get_parameter_or("freq_min", freq_min_, 2.0f);

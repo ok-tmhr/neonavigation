@@ -90,7 +90,7 @@ private:
         }
         else
         {
-          pub_topic_ = msg->advertise(nh_, "mux_output", 1, false);
+          pub_topic_ = msg->advertise("mux_output", 1, false);
         }
       }
       pub_topic_->publish(*msg);
@@ -111,10 +111,10 @@ public:
   {
       sub_joy_ = nh_->create_subscription("joy", 1, &JoystickMux::cbJoy, this);
     sub_topics_[0] = this->create_subscription<topic_tools::ShapeShifter>(
-        nh_, "mux_input0",
+        "mux_input0",
         1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
     sub_topics_[1] = this->create_subscription<topic_tools::ShapeShifter>(
-        nh_, "mux_input1",
+        "mux_input1",
         1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
 
     pnh_->get_parameter_or("interrupt_button", interrupt_button_, 5);
