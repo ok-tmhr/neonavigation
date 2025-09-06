@@ -283,7 +283,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   {
     if (std::isfinite(path_pose.velocity_) && path_pose.velocity_ < -0.0)
     {
-      ROS_ERROR_THROTTLE(1.0, "path_velocity.velocity.x must be positive");
+      RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "path_velocity.velocity.x must be positive");
       path_.clear();
       return;
     }

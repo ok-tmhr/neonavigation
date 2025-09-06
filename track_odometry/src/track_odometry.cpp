@@ -39,7 +39,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/float32.hpp>
 
 #include <message_filters/subscriber.h>
@@ -92,13 +92,13 @@ private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
 
-  rclcpp::Subscription<>::SharedPtr sub_imu_raw_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_raw_;
   std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> sub_odom_;
   std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Imu>> sub_imu_;
   std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
 
-  rclcpp::Subscription<>::SharedPtr sub_reset_z_;
-  rclcpp::Publisher<>::SharedPtr pub_odom_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_reset_z_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
@@ -217,7 +217,7 @@ private:
 
       if (!has_imu_)
       {
-        ROS_ERROR_THROTTLE(1.0, "IMU data not received");
+        RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "IMU data not received");
         return;
       }
 
