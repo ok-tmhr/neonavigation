@@ -69,39 +69,37 @@ private:
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
-  LaserscanToMapNode() : Node()
-    , nh_()
-    , pnh_("~")
+  LaserscanToMapNode() : Node("laserscan_to_map")
     , tfl_(tfbuf_)
   {
-      pnh_->get_parameter_or("z_min", z_min_, std::numeric_limits<double>::lowest());
-    pnh_->get_parameter_or("z_max", z_max_, std::numeric_limits<double>::max());
-    pnh_->get_parameter_or("global_frame", global_frame_, std::string("map"));
-    pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
+      this->get_parameter_or("z_min", z_min_, std::numeric_limits<double>::lowest());
+    this->get_parameter_or("z_max", z_max_, std::numeric_limits<double>::max());
+    this->get_parameter_or("global_frame", global_frame_, std::string("map"));
+    this->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     double accum_duration;
-    pnh_->get_parameter_or("accum_duration", accum_duration, 1.0);
+    this->get_parameter_or("accum_duration", accum_duration, 1.0);
     accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map_local",
         rclcpp::QoS(1).transient_local());
-    sub_scan_ = nh_->create_subscription("scan", 2, &LaserscanToMapNode::cbScan, this);
+    sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan", 2, std::bind(&LaserscanToMapNode::cbScan, this, std::placeholders::_1));
 
     int width_param;
-    pnh_->get_parameter_or("width", width_param, 30);
+    this->get_parameter_or("width", width_param, 30);
     height_ = width_ = width_param;
     map.header.frame_id = global_frame_;
 
     double resolution;
-    pnh_->get_parameter_or("resolution", resolution, 0.1);
+    this->get_parameter_or("resolution", resolution, 0.1);
     map.info.resolution = resolution;
     map.info.width = width_;
     map.info.height = height_;
     map.data.resize(map.info.width * map.info.height);
 
     double hz;
-    pnh_->get_parameter_or("hz", hz, 1.0);
+    this->get_parameter_or("hz", hz, 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
   }
 
@@ -179,10 +177,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "laserscan_to_map");
+  rclcpp::init(argc, argv);
 
-  LaserscanToMapNode conv;
-  rclcpp::spin();
+  auto conv = std::make_shared<LaserscanToMapNode>();
+  rclcpp::spin(conv);
 
   return 0;
 }

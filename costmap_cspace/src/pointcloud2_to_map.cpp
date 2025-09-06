@@ -68,9 +68,7 @@ private:
   std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>> accums_;
 
 public:
-  Pointcloud2ToMapNode() : Node()
-    , nh_()
-    , pnh_("~")
+  Pointcloud2ToMapNode() : Node("pointcloud2_to_map")
     , tfl_(tfbuf_)
     , accums_(2)
   {
@@ -190,10 +188,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "pointcloud2_to_map");
+  rclcpp::init(argc, argv);
 
-  Pointcloud2ToMapNode conv;
-  rclcpp::spin();
+  auto conv = std::make_shared<Pointcloud2ToMapNode>();
+  rclcpp::spin(conv);
 
   return 0;
 }

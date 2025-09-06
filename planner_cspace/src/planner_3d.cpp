@@ -951,7 +951,7 @@ protected:
   {
     planPath(e.current_real);
     no_map_update_timer_ =
-        nh_->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+        this->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
   }
   void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
   {
@@ -967,7 +967,7 @@ protected:
       if (costmap_watchdog_ > rclcpp::Duration::from_seconds(0))
       {
         no_map_update_timer_ =
-            nh_->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+            this->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
       }
     }
     else
@@ -1143,7 +1143,7 @@ protected:
   }
 
 public:
-  Planner3dNode() : Node()
+  Planner3dNode() : Node("planner_3d")
     , nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
@@ -1153,31 +1153,33 @@ public:
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
-      sub_map_ = this->create_subscription(
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+      sub_map_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3D>(
         "costmap",
-        1, &Planner3dNode::cbMap, this);
-    sub_map_update_ = this->create_subscription(
+        1, std::bind(&Planner3dNode::cbMap, this, _1));
+    sub_map_update_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3DUpdate>(
         "costmap_update",
-        1, &Planner3dNode::cbMapUpdate, this);
-    sub_goal_ = this->create_subscription(
+        1, std::bind(&Planner3dNode::cbMapUpdate, this, _1));
+    sub_goal_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
         "move_base_simple/goal",
-        1, &Planner3dNode::cbGoal, this);
-    sub_temporary_escape_trigger_ = pnh_->create_subscription(
-        "temporary_escape", 1, &Planner3dNode::cbTemporaryEscape, this);
-    pub_start_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_start", rclcpp::QoS(1).transient_local());
-    pub_end_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_end", rclcpp::QoS(1).transient_local());
-    pub_goal_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("current_goal", rclcpp::QoS(1).transient_local());
-    pub_status_ = pnh_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", rclcpp::QoS(1).transient_local());
-    pub_metrics_ = pnh_->create_publisher<neonavigation_metrics_msgs::msg::Metrics>("metrics", 1, false);
-    srs_forget_ = this->create_publisherService(
+        1, std::bind(&Planner3dNode::cbGoal, this, _1));
+    sub_temporary_escape_trigger_ = this->create_subscription<std_msgs::msg::Empty>(
+        "~/temporary_escape", 1, std::bind(&Planner3dNode::cbTemporaryEscape, this, _1));
+    pub_start_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/path_start", rclcpp::QoS(1).transient_local());
+    pub_end_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/path_end", rclcpp::QoS(1).transient_local());
+    pub_goal_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/current_goal", rclcpp::QoS(1).transient_local());
+    pub_status_ = this->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/status", rclcpp::QoS(1).transient_local());
+    pub_metrics_ = this->create_publisher<neonavigation_metrics_msgs::msg::Metrics>("~/metrics", 1);
+    srs_forget_ = this->create_service<std_srvs::srv::Empty>(
         "forget_planning_cost",
-        &Planner3dNode::cbForget, this);
-    srs_make_plan_ = pnh_->create_service("make_plan", &Planner3dNode::cbMakePlan, this);
+        std::bind(&Planner3dNode::cbForget, this, _1, _2));
+    srs_make_plan_ = this->create_service<nav_msgs::srv::GetPlan>("~/make_plan", std::bind(&Planner3dNode::cbMakePlan, this, _1, _2));
 
     // Debug outputs
-    pub_distance_map_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("distance_map", rclcpp::QoS(1).transient_local());
-    pub_hysteresis_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("hysteresis_map", rclcpp::QoS(1).transient_local());
-    pub_remembered_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("remembered_map", rclcpp::QoS(1).transient_local());
+    pub_distance_map_ = this->create_publisher<sensor_msgs::msg::PointCloud>("~/distance_map", rclcpp::QoS(1).transient_local());
+    pub_hysteresis_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/hysteresis_map", rclcpp::QoS(1).transient_local());
+    pub_remembered_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/remembered_map", rclcpp::QoS(1).transient_local());
 
     act_.reset(new Planner3DActionServer(rclcpp::Node::SharedPtr(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
@@ -1188,7 +1190,7 @@ public:
     act_tolerant_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
     goal_tolerant_ = nullptr;
 
-    pnh_->get_parameter_or("use_path_with_velocity", use_path_with_velocity_, false);
+    this->get_parameter_or("use_path_with_velocity", use_path_with_velocity_, false);
     if (use_path_with_velocity_)
     {
       pub_path_velocity_ = nh_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
@@ -1200,86 +1202,86 @@ public:
           "path",
           rclcpp::QoS(1).transient_local());
     }
-    pub_path_poses_ = pnh_->create_publisher<geometry_msgs::msg::PoseArray>("path_poses", rclcpp::QoS(1).transient_local());
-    pub_preserved_path_poses_ = pnh_->create_publisher<nav_msgs::msg::Path>("preserved_path_poses", rclcpp::QoS(1).transient_local());
+    pub_path_poses_ = this->create_publisher<geometry_msgs::msg::PoseArray>("~/path_poses", rclcpp::QoS(1).transient_local());
+    pub_preserved_path_poses_ = this->create_publisher<nav_msgs::msg::Path>("~/preserved_path_poses", rclcpp::QoS(1).transient_local());
 
-    pnh_->get_parameter_or("freq", freq_, 4.0f);
-    pnh_->get_parameter_or("freq_min", freq_min_, 2.0f);
-    pnh_->get_parameter_or("search_timeout_abort", search_timeout_abort_, 30.0f);
-    pnh_->get_parameter_or("search_range", search_range_, 0.4f);
-    pnh_->get_parameter_or("antialias_start", antialias_start_, false);
+    this->get_parameter_or("freq", freq_, 4.0f);
+    this->get_parameter_or("freq_min", freq_min_, 2.0f);
+    this->get_parameter_or("search_timeout_abort", search_timeout_abort_, 30.0f);
+    this->get_parameter_or("search_range", search_range_, 0.4f);
+    this->get_parameter_or("antialias_start", antialias_start_, false);
 
     double costmap_watchdog;
-    pnh_->get_parameter_or("costmap_watchdog", costmap_watchdog, 0.0);
+    this->get_parameter_or("costmap_watchdog", costmap_watchdog, 0.0);
     costmap_watchdog_ = rclcpp::Duration::from_seconds(costmap_watchdog);
 
-    pnh_->get_parameter_or("max_vel", cc_.max_vel_, 0.3f);
-    pnh_->get_parameter_or("max_ang_vel", cc_.max_ang_vel_, 0.6f);
-    pnh_->get_parameter_or("min_curve_radius", cc_.min_curve_radius_, 0.1f);
+    this->get_parameter_or("max_vel", cc_.max_vel_, 0.3f);
+    this->get_parameter_or("max_ang_vel", cc_.max_ang_vel_, 0.6f);
+    this->get_parameter_or("min_curve_radius", cc_.min_curve_radius_, 0.1f);
 
-    pnh_->get_parameter_or("weight_decel", cc_.weight_decel_, 50.0f);
-    pnh_->get_parameter_or("weight_backward", cc_.weight_backward_, 0.9f);
-    pnh_->get_parameter_or("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
-    pnh_->get_parameter_or("weight_costmap", cc_.weight_costmap_, 50.0f);
-    pnh_->get_parameter_or("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
-    pnh_->get_parameter_or("weight_remembered", cc_.weight_remembered_, 1000.0f);
-    pnh_->get_parameter_or("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
-    pnh_->get_parameter_or("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.1f);
-    pnh_->get_parameter_or("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
-    pnh_->get_parameter_or("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
+    this->get_parameter_or("weight_decel", cc_.weight_decel_, 50.0f);
+    this->get_parameter_or("weight_backward", cc_.weight_backward_, 0.9f);
+    this->get_parameter_or("weight_ang_vel", cc_.weight_ang_vel_, 1.0f);
+    this->get_parameter_or("weight_costmap", cc_.weight_costmap_, 50.0f);
+    this->get_parameter_or("weight_costmap_turn", cc_.weight_costmap_turn_, 0.0f);
+    this->get_parameter_or("weight_remembered", cc_.weight_remembered_, 1000.0f);
+    this->get_parameter_or("cost_in_place_turn", cc_.in_place_turn_, 30.0f);
+    this->get_parameter_or("hysteresis_max_dist", cc_.hysteresis_max_dist_, 0.1f);
+    this->get_parameter_or("hysteresis_expand", cc_.hysteresis_expand_, 0.1f);
+    this->get_parameter_or("weight_hysteresis", cc_.weight_hysteresis_, 5.0f);
 
-    pnh_->get_parameter_or("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
-    pnh_->get_parameter_or("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
-    pnh_->get_parameter_or("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
-    pnh_->get_parameter_or("temporary_escape_tolerance_lin", temporary_escape_tolerance_lin_f_, 0.1);
-    pnh_->get_parameter_or("temporary_escape_tolerance_ang", temporary_escape_tolerance_ang_f_, 1.57);
+    this->get_parameter_or("goal_tolerance_lin", goal_tolerance_lin_f_, 0.05);
+    this->get_parameter_or("goal_tolerance_ang", goal_tolerance_ang_f_, 0.1);
+    this->get_parameter_or("goal_tolerance_ang_finish", goal_tolerance_ang_finish_, 0.05);
+    this->get_parameter_or("temporary_escape_tolerance_lin", temporary_escape_tolerance_lin_f_, 0.1);
+    this->get_parameter_or("temporary_escape_tolerance_ang", temporary_escape_tolerance_ang_f_, 1.57);
 
-    pnh_->get_parameter_or("unknown_cost", unknown_cost_, 100);
-    pnh_->get_parameter_or("overwrite_cost", overwrite_cost_, false);
-    pnh_->get_parameter_or("relocation_acceptable_cost", relocation_acceptable_cost_, 50);
+    this->get_parameter_or("unknown_cost", unknown_cost_, 100);
+    this->get_parameter_or("overwrite_cost", overwrite_cost_, false);
+    this->get_parameter_or("relocation_acceptable_cost", relocation_acceptable_cost_, 50);
 
-    pnh_->get_parameter_or("hist_ignore_range", hist_ignore_range_f_, 0.6);
-    pnh_->get_parameter_or("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
-    pnh_->get_parameter_or("remember_updates", remember_updates_, false);
+    this->get_parameter_or("hist_ignore_range", hist_ignore_range_f_, 0.6);
+    this->get_parameter_or("hist_ignore_range_max", hist_ignore_range_max_f_, 1.25);
+    this->get_parameter_or("remember_updates", remember_updates_, false);
     double remember_hit_prob, remember_miss_prob;
-    pnh_->get_parameter_or("remember_hit_prob", remember_hit_prob, 0.6);
-    pnh_->get_parameter_or("remember_miss_prob", remember_miss_prob, 0.3);
+    this->get_parameter_or("remember_hit_prob", remember_hit_prob, 0.6);
+    this->get_parameter_or("remember_miss_prob", remember_miss_prob, 0.3);
     remember_hit_odds_ = bbf::probabilityToOdds(remember_hit_prob);
     remember_miss_odds_ = bbf::probabilityToOdds(remember_miss_prob);
 
-    pnh_->get_parameter_or("local_range", local_range_f_, 2.5);
-    pnh_->get_parameter_or("longcut_range", longcut_range_f_, 0.0);
-    pnh_->get_parameter_or("esc_range", esc_range_f_, 0.25);
-    pnh_->get_parameter_or("esc_range_min_ratio", esc_range_min_ratio_, 0.5);
-    pnh_->get_parameter_or("tolerance_range", tolerance_range_f_, 0.25);
-    pnh_->get_parameter_or("tolerance_angle", tolerance_angle_f_, 0.0);
-    pnh_->get_parameter_or("path_interpolation_resolution", path_interpolation_resolution_, 0.5);
-    pnh_->get_parameter_or("grid_enumeration_resolution", grid_enumeration_resolution_, 0.1);
+    this->get_parameter_or("local_range", local_range_f_, 2.5);
+    this->get_parameter_or("longcut_range", longcut_range_f_, 0.0);
+    this->get_parameter_or("esc_range", esc_range_f_, 0.25);
+    this->get_parameter_or("esc_range_min_ratio", esc_range_min_ratio_, 0.5);
+    this->get_parameter_or("tolerance_range", tolerance_range_f_, 0.25);
+    this->get_parameter_or("tolerance_angle", tolerance_angle_f_, 0.0);
+    this->get_parameter_or("path_interpolation_resolution", path_interpolation_resolution_, 0.5);
+    this->get_parameter_or("grid_enumeration_resolution", grid_enumeration_resolution_, 0.1);
     if (path_interpolation_resolution_ < grid_enumeration_resolution_)
     {
       RCLCPP_ERROR(this->get_logger(), "path_interpolation_resolution must be greater than or equal to grid_enumeration_resolution.");
       path_interpolation_resolution_ = grid_enumeration_resolution_;
     }
 
-    pnh_->get_parameter_or("sw_wait", sw_wait_, 2.0f);
-    pnh_->get_parameter_or("find_best", find_best_, true);
+    this->get_parameter_or("sw_wait", sw_wait_, 2.0f);
+    this->get_parameter_or("find_best", find_best_, true);
 
-    pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
+    this->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     double pos_jump, yaw_jump;
     std::string jump_detect_frame;
-    pnh_->get_parameter_or("pos_jump", pos_jump, 1.0);
-    pnh_->get_parameter_or("yaw_jump", yaw_jump, 1.5);
-    pnh_->get_parameter_or("jump_detect_frame", jump_detect_frame, std::string("base_link"));
+    this->get_parameter_or("pos_jump", pos_jump, 1.0);
+    this->get_parameter_or("yaw_jump", yaw_jump, 1.5);
+    this->get_parameter_or("jump_detect_frame", jump_detect_frame, std::string("base_link"));
     jump_.setBaseFrame(jump_detect_frame);
     jump_.setThresholds(pos_jump, yaw_jump);
 
-    pnh_->get_parameter_or("force_goal_orientation", force_goal_orientation_, true);
+    this->get_parameter_or("force_goal_orientation", force_goal_orientation_, true);
 
-    pnh_->get_parameter_or("temporary_escape", temporary_escape_, true);
-    pnh_->get_parameter_or("enable_crowd_mode", enable_crowd_mode_, false);
+    this->get_parameter_or("temporary_escape", temporary_escape_, true);
+    this->get_parameter_or("enable_crowd_mode", enable_crowd_mode_, false);
 
-    pnh_->get_parameter_or("fast_map_update", fast_map_update_, false);
+    this->get_parameter_or("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
     {
       RCLCPP_WARN(this->get_logger(), "planner_3d: Experimental fast_map_update is enabled. ");
@@ -1292,7 +1294,7 @@ public:
     }
 
     bool print_planning_duration;
-    pnh_->get_parameter_or("print_planning_duration", print_planning_duration, false);
+    this->get_parameter_or("print_planning_duration", print_planning_duration, false);
     if (print_planning_duration)
     {
       if (rclcpp::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, rclcpp::console::levels::Debug))
@@ -1301,24 +1303,24 @@ public:
       }
     }
 
-    pnh_->get_parameter_or("max_retry_num", max_retry_num_, -1);
+    this->get_parameter_or("max_retry_num", max_retry_num_, -1);
 
     int queue_size_limit;
-    pnh_->get_parameter_or("queue_size_limit", queue_size_limit, 0);
+    this->get_parameter_or("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
     int num_threads;
-    pnh_->get_parameter_or("num_threads", num_threads, 1);
+    this->get_parameter_or("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
 
     int num_task;
-    pnh_->get_parameter_or("num_search_task", num_task, num_threads * 16);
+    this->get_parameter_or("num_search_task", num_task, num_threads * 16);
     as_.setSearchTaskNum(num_task);
-    pnh_->get_parameter_or("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
+    this->get_parameter_or("num_cost_estim_task", num_cost_estim_task_, num_threads * 16);
     cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
     cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
 
-    pnh_->get_parameter_or("retain_last_error_status", retain_last_error_status_, true);
+    this->get_parameter_or("retain_last_error_status", retain_last_error_status_, true);
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
 
     has_map_ = false;
@@ -1337,7 +1339,6 @@ public:
     act_tolerant_->start();
 
     // cbParameter() with the inital parameters will be called within setCallback().
-    parameter_server_.setCallback(boost::bind(&Planner3dNode::cbParameter, this, _1, _2));
   }
 
   void resetGridAstarModel(const bool force_reset)
@@ -2341,10 +2342,10 @@ protected:
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "planner_3d");
+  rclcpp::init(argc, argv);
 
-  planner_cspace::planner_3d::Planner3dNode node;
-  node.spin();
+  auto node = std::make_shared<planner_cspace::planner_3d::Planner3dNode>();
+  node->spin();
 
   return 0;
 }

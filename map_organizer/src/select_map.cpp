@@ -63,11 +63,11 @@ int main(int argc, char** argv)
   rclcpp::Node::SharedPtr pnh("~");
   rclcpp::Node::SharedPtr nh("");
 
-  auto subMaps = this->create_subscription(
-      nh, "maps",
+  auto subMaps = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+      "maps",
       1, cbMaps);
-  auto subFloor = this->create_subscription(
-      nh, "floor",
+  auto subFloor = this->create_subscription<std_msgs::msg::Int32>(
+      "floor",
       1, cbFloor);
   auto pubMap = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
       nh, "map",

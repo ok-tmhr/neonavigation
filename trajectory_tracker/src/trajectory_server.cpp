@@ -91,9 +91,7 @@ private:
   int max_markers_;
 };
 
-ServerNode::ServerNode()
-  : nh_()
-  , pnh_("~")
+ServerNode::ServerNode() : Node("trajectory_server")
   , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
@@ -105,9 +103,9 @@ ServerNode::ServerNode()
       "path",
       rclcpp::QoS(2).transient_local());
   pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("status", 2);
-  srv_change_path_ = this->create_publisherService(
+  srv_change_path_ = this->create_service<trajectory_tracker_msgs::srv::ChangePath>(
       "change_path",
-      &ServerNode::change, this);
+      std::bind(&ServerNode::change, this, std::placeholders::_1, std::placeholders::_2));
   update_num_ = 0;
   max_markers_ = 0;
 }
@@ -222,7 +220,7 @@ void ServerNode::updateIM()
     menu.title = "Add";
 
     mark.menu_entries.push_back(menu);
-    srv_im_fb_.insert(mark, boost::bind(&ServerNode::processFeedback, this, _1));
+    srv_im_fb_.insert(mark, boost::bind(&ServerNode::processFeedback, this, std::placeholders::_1));
     viz.markers.push_back(mark);
   }
   srv_im_fb_.applyChanges();
@@ -289,10 +287,10 @@ void ServerNode::spin()
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "trajectory_server");
+  rclcpp::init(argc, argv);
 
-  ServerNode serv;
-  serv.spin();
+  auto serv = std::make_shared<ServerNode>();
+  serv->spin();
 
   return 0;
 }

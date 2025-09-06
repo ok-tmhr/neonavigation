@@ -75,26 +75,25 @@ private:
   }
 
 public:
-  PoseTransformNode() : Node()
-    , pnh_("~")
+  PoseTransformNode() : Node("pose_transform")
     , tfl_(tfbuf_)
   {
-      sub_pose_ = this->create_subscription(
+      sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_in",
-        1, &PoseTransformNode::cbPose, this);
+        1, std::bind(&PoseTransformNode::cbPose, this, std::placeholders::_1));
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_out",
-        1, false);
+        1);
     pnh_->get_parameter_or("to_frame", to_, std::string("map"));
   }
 };
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "pose_transform");
+  rclcpp::init(argc, argv);
 
-  PoseTransformNode ptn();
-  rclcpp::spin();
+  auto ptn = std::make_shared<PoseTransformNode>();
+  rclcpp::spin(ptn);
 
   return 0;
 }

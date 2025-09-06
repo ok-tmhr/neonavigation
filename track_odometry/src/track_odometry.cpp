@@ -292,25 +292,23 @@ private:
   }
 
 public:
-  TrackOdometryNode() : Node()
-    , nh_()
-    , pnh_("~")
+  TrackOdometryNode() : Node("track_odometry")
     , tf_listener_(tf_buffer_)
   {
 
     bool enable_tcp_no_delay;
-    pnh_->get_parameter_or("enable_tcp_no_delay", enable_tcp_no_delay, true);
-    const rclcpp::TransportHints transport_hints =
-        enable_tcp_no_delay ? rclcpp::TransportHints().reliable().tcpNoDelay(true) : rclcpp::TransportHints();
+    this->get_parameter_or("enable_tcp_no_delay", enable_tcp_no_delay, true);
+    const rclcpp::QoS transport_hints =
+        enable_tcp_no_delay ? rclcpp::QoS() : rclcpp::QoS().best_effort();
 
-    pnh_->get_parameter_or("without_odom", without_odom_, false);
+    this->get_parameter_or("without_odom", without_odom_, false);
     if (without_odom_)
     {
-      sub_imu_raw_ = this->create_subscription(
+      sub_imu_raw_ = this->create_subscription<sensor_msgs::msg::Imu>(
           "imu/data",
           64, &TrackOdometryNode::cbImu, this);
-      pnh_->get_parameter_or("base_link_id", base_link_id_, std::string("base_link"));
-      pnh_->get_parameter_or("odom_id", odom_id_, std::string("odom"));
+      this->get_parameter_or("base_link_id", base_link_id_, std::string("base_link"));
+      this->get_parameter_or("odom_id", odom_id_, std::string("odom"));
     }
     else
     {
@@ -328,25 +326,25 @@ public:
       }
 
       int sync_window;
-      pnh_->get_parameter_or("sync_window", sync_window, 50);
+      this->get_parameter_or("sync_window", sync_window, 50);
       sync_.reset(
           new message_filters::Synchronizer<SyncPolicy>(
               SyncPolicy(sync_window), *sub_odom_, *sub_imu_));
-      sync_->registerCallback(boost::bind(&TrackOdometryNode::cbOdomImu, this, _1, _2));
+      sync_->registerCallback(boost::bind(&TrackOdometryNode::cbOdomImu, this, std::placeholders::_1, std::placeholders::_2));
 
-      pnh_->get_parameter_or("base_link_id", base_link_id_overwrite_, std::string(""));
+      this->get_parameter_or("base_link_id", base_link_id_overwrite_, std::string(""));
     }
 
-    sub_reset_z_ = this->create_subscription(
+    sub_reset_z_ = this->create_subscription<std_msgs::msg::Float32>(
         "reset_odometry_z",
-        1, &TrackOdometryNode::cbResetZ, this);
+        1, std::bind(&TrackOdometryNode::cbResetZ, this, std::placeholders::_1));
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
-    if (pnh_->has_parameter("z_filter"))
+    if (this->has_parameter("z_filter"))
     {
       z_filter_timeconst_ = -1.0;
       double z_filter;
-      if (pnh_->get_parameter("z_filter", z_filter))
+      if (this->get_parameter("z_filter", z_filter))
       {
         const double odom_freq = 100.0;
         if (0.0 < z_filter && z_filter < 1.0)
@@ -360,13 +358,13 @@ public:
     }
     else
     {
-      pnh_->get_parameter_or("z_filter_timeconst", z_filter_timeconst_, -1.0);
+      this->get_parameter_or("z_filter_timeconst", z_filter_timeconst_, -1.0);
     }
-    pnh_->get_parameter_or("tf_tolerance", tf_tolerance_, 0.01);
-    pnh_->get_parameter_or("use_kf", use_kf_, true);
-    pnh_->get_parameter_or("enable_negative_slip", negative_slip_, false);
-    pnh_->get_parameter_or("debug", debug_, false);
-    pnh_->get_parameter_or("publish_tf", publish_tf_, true);
+    this->get_parameter_or("tf_tolerance", tf_tolerance_, 0.01);
+    this->get_parameter_or("use_kf", use_kf_, true);
+    this->get_parameter_or("enable_negative_slip", negative_slip_, false);
+    this->get_parameter_or("debug", debug_, false);
+    this->get_parameter_or("publish_tf", publish_tf_, true);
 
     if (base_link_id_overwrite_.size() > 0)
     {
@@ -374,11 +372,11 @@ public:
     }
 
     // sigma_odom_ [rad/s]: standard deviation of odometry angular vel on straight running
-    pnh_->get_parameter_or("sigma_odom", sigma_odom_, 0.005);
+    this->get_parameter_or("sigma_odom", sigma_odom_, 0.005);
     // sigma_predict_ [sigma/second]: prediction sigma of kalman filter
-    pnh_->get_parameter_or("sigma_predict", sigma_predict_, 0.5);
+    this->get_parameter_or("sigma_predict", sigma_predict_, 0.5);
     // predict_filter_tc_ [sec.]: LPF time-constant to forget estimated slip_ ratio
-    pnh_->get_parameter_or("predict_filter_tc", predict_filter_tc_, 1.0);
+    this->get_parameter_or("predict_filter_tc", predict_filter_tc_, 1.0);
 
     has_imu_ = false;
     has_odom_ = false;
@@ -399,24 +397,24 @@ public:
   {
     if (!without_odom_)
     {
-      rclcpp::spin();
+      rclcpp::spin(shared_from_this());
     }
     else
     {
-      rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
+      rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
           rclcpp::Duration::from_seconds(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
-      rclcpp::spin();
+      rclcpp::spin(shared_from_this());
     }
   }
 };
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "track_odometry");
+  rclcpp::init(argc, argv);
 
-  TrackOdometryNode odom;
+  auto odom = std::make_shared<TrackOdometryNode>();
 
-  odom.spin();
+  odom->spin();
 
   return 0;
 }

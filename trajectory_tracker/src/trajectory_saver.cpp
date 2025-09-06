@@ -62,16 +62,14 @@ private:
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg);
 };
 
-SaverNode::SaverNode()
-  : nh_()
-  , pnh_("~")
+SaverNode::SaverNode() : Node("trajectory_saver")
   , saved_(false)
 {
   pnh_->get_parameter_or("file", filename_, std::string("a.path"));
 
-  sub_path_ = this->create_subscription(
+  sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
-      10, &SaverNode::cbPath, this);
+      10, std::bind(&SaverNode::cbPath, this, std::placeholders::_1));
 }
 SaverNode::~SaverNode()
 {
@@ -118,10 +116,10 @@ void SaverNode::save()
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "trajectory_saver");
+  rclcpp::init(argc, argv);
 
-  SaverNode rec;
-  rec.save();
+  auto rec = std::make_shared<SaverNode>();
+  rec->save();
 
   return 0;
 }

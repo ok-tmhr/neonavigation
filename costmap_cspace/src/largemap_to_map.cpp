@@ -46,8 +46,8 @@ class LargeMapToMapNode : public rclcpp::Node
 private:
   rclcpp::Node::SharedPtr pnh_;
   rclcpp::Node::SharedPtr nh_;
-  rclcpp::Publisher<>::SharedPtr pub_map_;
-  rclcpp::Subscription<>::SharedPtr sub_largemap_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_largemap_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
@@ -63,22 +63,20 @@ private:
   std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
-  LargeMapToMapNode() : Node()
-    , pnh_("~")
-    , nh_()
+  LargeMapToMapNode() : Node("largemap_to_map")
     , tfl_(tfbuf_)
   {
-      pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
+      this->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map_local",
         rclcpp::QoS(1).transient_local());
-    sub_largemap_ = nh_->create_subscription("map", 2, &LargeMapToMapNode::cbLargeMap, this);
+    sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 2, std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
 
-    pnh_->get_parameter_or("width", width_, 30);
-    pnh_->get_parameter_or("round_local_map", round_local_map_, false);
-    pnh_->get_parameter_or("simulate_occlusion", simulate_occlusion_, false);
-    pnh_->get_parameter_or("simulate_surrounded", simulate_surrounded_, false);
+    this->get_parameter_or("width", width_, 30);
+    this->get_parameter_or("round_local_map", round_local_map_, false);
+    this->get_parameter_or("simulate_occlusion", simulate_occlusion_, false);
+    this->get_parameter_or("simulate_surrounded", simulate_surrounded_, false);
 
     for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
     {
@@ -107,8 +105,8 @@ public:
     }
 
     double hz;
-    pnh_->get_parameter_or("hz", hz, 1.0);
-    timer_ = nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
+    this->get_parameter_or("hz", hz, 1.0);
+    timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
   }
 
 private:
@@ -207,10 +205,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "largemap_to_map");
+  rclcpp::init(argc, argv);
 
-  LargeMapToMapNode conv;
-  rclcpp::spin();
+  auto conv = std::make_shared<LargeMapToMapNode>();
+  rclcpp::spin(conv);
 
   return 0;
 }

@@ -176,9 +176,7 @@ protected:
   };
 
 public:
-  Costmap3DOFNode() : Node()
-    , nh_()
-    , pnh_("~")
+  Costmap3DOFNode() : Node("costmap_3d")
   {
       pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
         "costmap",
@@ -284,7 +282,7 @@ public:
     auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dStaticLayerOutput>();
     static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1));
 
-    sub_map_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>(
+    sub_map_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
@@ -379,7 +377,7 @@ public:
     update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
 
     const geometry_msgs::msg::PolygonStamped footprint_msg = footprint.toMsg();
-    timer_footprint_ = nh_->create_wall_timer(
+    timer_footprint_ = this->create_wall_timer(
         rclcpp::Duration::from_seconds(1.0),
         boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, _1, footprint_msg));
   }
@@ -387,10 +385,10 @@ public:
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "costmap_3d");
+  rclcpp::init(argc, argv);
 
-  Costmap3DOFNode cm;
-  rclcpp::spin();
+  auto cm = std::make_shared<Costmap3DOFNode>();
+  rclcpp::spin(cm);
 
   return 0;
 }

@@ -75,21 +75,19 @@ private:
   nav_msgs::msg::Path path_;
 };
 
-RecorderNode::RecorderNode()
-  : nh_()
-  , pnh_("~")
+RecorderNode::RecorderNode() : Node("trajectory_recorder")
   , tfl_(tfbuf_)
 {
-  pnh_->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
-  pnh_->get_parameter_or("frame_global", frame_global_, std::string("map"));
-  pnh_->get_parameter_or("dist_interval", dist_interval_, 0.3);
-  pnh_->get_parameter_or("ang_interval", ang_interval_, 1.0);
-  pnh_->get_parameter_or("store_time", store_time_, false);
+  this->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
+  this->get_parameter_or("frame_global", frame_global_, std::string("map"));
+  this->get_parameter_or("dist_interval", dist_interval_, 0.3);
+  this->get_parameter_or("ang_interval", ang_interval_, 1.0);
+  this->get_parameter_or("store_time", store_time_, false);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(10).transient_local());
-  srs_clear_path_ = pnh_->create_service("clear_path", &RecorderNode::clearPath, this);
+  srs_clear_path_ = pnh_->create_service<std_srvs::srv::Empty>("clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 RecorderNode::~RecorderNode()
@@ -163,10 +161,10 @@ void RecorderNode::spin()
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "trajectory_recorder");
+  rclcpp::init(argc, argv);
 
-  RecorderNode rec;
-  rec.spin();
+  auto rec = std::make_shared<RecorderNode>();
+  rec->spin();
 
   return 0;
 }

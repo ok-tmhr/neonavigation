@@ -51,20 +51,19 @@ protected:
   bool saved_map_;
 
 public:
-  explicit MapGeneratorNode(const std::string& mapname)
-    : nh_()
+  explicit MapGeneratorNode(const std::string& mapname) : Node("save_maps")
     , mapname_(mapname)
     , saved_map_(false)
   {
     RCLCPP_INFO(this->get_logger(), "Waiting for the map");
-    map_sub_ = nh_->create_subscription("maps", 1, &MapGeneratorNode::mapsCallback, this);
+    map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, std::bind(&MapGeneratorNode::mapsCallback, this, std::placeholders::_1));
   }
 
   bool done() const
   {
     return saved_map_;
   }
-  void mapsCallback(const map_organizer_msgs::msg::OccupancyGridArrayConstPtr& maps)
+  void mapsCallback(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& maps)
   {
     int i = 0;
     for (auto& map : maps->maps)
@@ -141,7 +140,7 @@ public:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "save_maps");
+  rclcpp::init(argc, argv);
   std::string mapname = "map";
 
   for (int i = 1; i < argc; i++)
@@ -168,10 +167,10 @@ int main(int argc, char** argv)
     }
   }
 
-  MapGeneratorNode mg(mapname);
+  auto mg = std::make_shared<MapGeneratorNode>(mapname);
 
-  while (!mg.done() && rclcpp::ok())
-    rclcpp::spin_some(shared_from_this());
+  while (!mg->done() && rclcpp::ok())
+    rclcpp::spin_some(mg);
 
   return 0;
 }

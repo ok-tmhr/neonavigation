@@ -62,9 +62,7 @@ private:
   std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
 
 public:
-  TieMapNode() : Node()
-    , pnh_("~")
-    , nh_()
+  TieMapNode() : Node("tie_maps")
   {
     pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 
@@ -233,10 +231,10 @@ public:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "tie_maps");
+  rclcpp::init(argc, argv);
 
-  TieMapNode tmn;
-  rclcpp::spin();
+  auto tmn = std::make_shared<TieMapNode>();
+  rclcpp::spin(tmn);
 
   return 0;
 }

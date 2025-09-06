@@ -182,25 +182,24 @@ private:
       const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double) const;
 };
 
-TrackerNode::TrackerNode()
-  : nh_()
-  , pnh_("~")
+TrackerNode::TrackerNode() : Node("trajectory_tracker")
   , tfl_(tfbuf_)
   , is_path_updated_(false)
 {
-  pnh_->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
-  pnh_->get_parameter_or("frame_odom", frame_odom_, std::string("odom"));
-  pnh_->get_parameter_or("hz", hz_, 50.0);
-  pnh_->get_parameter_or("use_odom", use_odom_, false);
-  pnh_->get_parameter_or("predict_odom", predict_odom_, true);
-  pnh_->get_parameter_or("max_dt", max_dt_, 0.1);
-  pnh_->get_parameter_or("odom_timeout_sec", odom_timeout_sec_, 0.1);
+  this->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
+  this->get_parameter_or("frame_odom", frame_odom_, std::string("odom"));
+  this->get_parameter_or("hz", hz_, 50.0);
+  this->get_parameter_or("use_odom", use_odom_, false);
+  this->get_parameter_or("predict_odom", predict_odom_, true);
+  this->get_parameter_or("max_dt", max_dt_, 0.1);
+  this->get_parameter_or("odom_timeout_sec", odom_timeout_sec_, 0.1);
 
+  using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
       2,
       boost::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
-  sub_path_velocity_ = nh_->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
+  sub_path_velocity_ = this->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
       "path_velocity", 2,
       boost::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
   sub_vel_ = this->create_subscription(
@@ -209,12 +208,12 @@ TrackerNode::TrackerNode()
   pub_vel_ = this->create_publisher<geometry_msgs::msg::Twist>(
       "cmd_vel",
       10);
-  pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("status", rclcpp::QoS(10).transient_local());
-  pub_tracking_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("tracking", rclcpp::QoS(10).transient_local());
+  pub_status_ = this->create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("~/status", rclcpp::QoS(10).transient_local());
+  pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", rclcpp::QoS(10).transient_local());
   if (use_odom_)
   {
-    sub_odom_ = nh_->create_subscription<nav_msgs::msg::Odometry>("odom", 10, &TrackerNode::cbOdometry, this,
-                                                  rclcpp::TransportHints().reliable().tcpNoDelay(true));
+    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10), &TrackerNode::cbOdometry, this,
+                                                  );
   }
 
 }
@@ -390,7 +389,7 @@ void TrackerNode::spin()
   {
     timer = nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &TrackerNode::cbTimer, this);
   }
-  rclcpp::spin();
+  rclcpp::spin(shared_from_this());
 }
 
 void TrackerNode::control(
@@ -694,9 +693,9 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "trajectory_tracker");
-  trajectory_tracker::TrackerNode track;
-  track.spin();
+  rclcpp::init(argc, argv);
+  auto track = std::make_shared<trajectory_tracker::TrackerNode>();
+  track->spin();
 
   return 0;
 }

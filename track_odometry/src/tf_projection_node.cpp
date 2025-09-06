@@ -62,39 +62,37 @@ private:
   std::string projected_frame_;
 
 public:
-  TfProjectionNode() : Node()
-    , nh_()
-    , pnh_("~")
+  TfProjectionNode() : Node("tf_projection")
     , tf_listener_(tf_buffer_)
   {
-    if (pnh_->has_parameter("base_link_frame") ||
-        pnh_->has_parameter("projection_frame") ||
-        pnh_->has_parameter("target_frame") ||
-        pnh_->has_parameter("frame"))
+    if (this->has_parameter("base_link_frame") ||
+        this->has_parameter("projection_frame") ||
+        this->has_parameter("target_frame") ||
+        this->has_parameter("frame"))
     {
       RCLCPP_ERROR(this->get_logger(),
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
           "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
-      pnh_->get_parameter_or("base_link_frame", source_frame_, std::string("base_link"));
-      pnh_->get_parameter_or("projection_frame", projection_surface_frame_, std::string("map"));
-      pnh_->get_parameter_or("target_frame", parent_frame_, std::string("map"));
-      pnh_->get_parameter_or("frame", projected_frame_, std::string("base_link_projected"));
+      this->get_parameter_or("base_link_frame", source_frame_, std::string("base_link"));
+      this->get_parameter_or("projection_frame", projection_surface_frame_, std::string("map"));
+      this->get_parameter_or("target_frame", parent_frame_, std::string("map"));
+      this->get_parameter_or("frame", projected_frame_, std::string("base_link_projected"));
     }
     else
     {
-      pnh_->get_parameter_or("source_frame", source_frame_, std::string("base_link"));
-      pnh_->get_parameter_or("projection_surface_frame", projection_surface_frame_, std::string("map"));
-      pnh_->get_parameter_or("parent_frame", parent_frame_, std::string("map"));
-      pnh_->get_parameter_or("projected_frame", projected_frame_, std::string("base_link_projected"));
+      this->get_parameter_or("source_frame", source_frame_, std::string("base_link"));
+      this->get_parameter_or("projection_surface_frame", projection_surface_frame_, std::string("map"));
+      this->get_parameter_or("parent_frame", parent_frame_, std::string("map"));
+      this->get_parameter_or("projected_frame", projected_frame_, std::string("base_link_projected"));
     }
 
-    pnh_->get_parameter_or("hz", rate_, 10.0);
-    pnh_->get_parameter_or("tf_tolerance", tf_tolerance_, 0.1);
-    pnh_->get_parameter_or("flat", flat_, false);
+    this->get_parameter_or("hz", rate_, 10.0);
+    this->get_parameter_or("tf_tolerance", tf_tolerance_, 0.1);
+    this->get_parameter_or("flat", flat_, false);
 
-    pnh_->get_parameter_or("project_posture", project_posture_, false);
-    pnh_->get_parameter_or("align_all_posture_to_source", align_all_posture_to_source_, false);
+    this->get_parameter_or("project_posture", project_posture_, false);
+    this->get_parameter_or("align_all_posture_to_source", align_all_posture_to_source_, false);
   }
   void process()
   {
@@ -164,16 +162,16 @@ public:
   {
     rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
         rclcpp::Duration::from_seconds(1.0 / rate_), &TfProjectionNode::cbTimer, this);
-    rclcpp::spin();
+    rclcpp::spin(shared_from_this());
   }
 };
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "tf_projection");
+  rclcpp::init(argc, argv);
 
-  TfProjectionNode proj;
-  proj.spin();
+  auto proj = std::make_shared<TfProjectionNode>();
+  proj->spin();
 
   return 0;
 }

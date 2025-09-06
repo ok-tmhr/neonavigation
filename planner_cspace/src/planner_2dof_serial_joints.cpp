@@ -370,32 +370,31 @@ private:
   }
 
 public:
-  explicit Planner2dofSerialJointsNode(const std::string group_name)
-    : nh_()
-    , pnh_("~")
+  explicit Planner2dofSerialJointsNode(const std::string group_name) : Node("planner_2dof_serial_joints")
     , tfl_(tfbuf_)
     , has_joint_states_(false)
   {
       group_ = group_name;
     rclcpp::Node::SharedPtr nh_group("~/" + group_);
 
+    using std::placeholders::_1;
     pub_trajectory_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
         "joint_trajectory",
         rclcpp::QoS(1).transient_local());
-    sub_trajectory_ = this->create_subscription(
+    sub_trajectory_ = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
         "trajectory_in",
-        1, &Planner2dofSerialJointsNode::cbTrajectory, this);
-    sub_joint_ = this->create_subscription(
+        1, std::bind(&Planner2dofSerialJointsNode::cbTrajectory, this, _1));
+    sub_joint_ = this->create_subscription<sensor_msgs::msg::JointState>(
         "joint_states",
-        1, &Planner2dofSerialJointsNode::cbJoint, this);
+        1, std::bind(&Planner2dofSerialJointsNode::cbJoint, this, _1));
 
-    pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", rclcpp::QoS(1).transient_local());
+    pub_status_ = nh_group->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", rclcpp::QoS(1).transient_local());
 
     nh_group->get_parameter_or("resolution", resolution_, 128);
-    pnh_->get_parameter_or("debug_aa", debug_aa_, false);
+    this->get_parameter_or("debug_aa", debug_aa_, false);
 
     double interval;
-    pnh_->get_parameter_or("replan_interval", interval, 0.2);
+    this->get_parameter_or("replan_interval", interval, 0.2);
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
     replan_prev_ = rclcpp::Time(0);
 
@@ -667,7 +666,7 @@ private:
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "planner_2dof_serial_joints");
+  rclcpp::init(argc, argv);
   rclcpp::Node::SharedPtr pnh("~");
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;

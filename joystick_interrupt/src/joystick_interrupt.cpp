@@ -153,33 +153,32 @@ private:
   };
 
 public:
-  JoystickInterrupt()
-    : nh_("")
-    , pnh_("~")
+  JoystickInterrupt() : Node("joystick_interrupt")
   {
-      sub_joy_ = nh_->create_subscription("joy", 1, &JoystickInterrupt::cbJoy, this);
-    sub_twist_ = this->create_subscription(
+    using std::placeholders::_1;
+      sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickInterrupt::cbJoy, this, _1));
+    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel_input",
-        1, &JoystickInterrupt::cbTwist, this);
+        1, std::bind(&JoystickInterrupt::cbTwist, this, _1));
     pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
         2);
-    pub_int_ = pnh_->create_publisher<std_msgs::msg::Bool>("interrupt_status", 2);
+    pub_int_ = this->create_publisher<std_msgs::msg::Bool>("~/interrupt_status", 2);
 
-    pnh_->get_parameter_or("linear_vel", linear_vel_, 0.5);
-    pnh_->get_parameter_or("angular_vel", angular_vel_, 0.8);
-    pnh_->get_parameter_or("linear_axis", linear_axis_, 1);
-    pnh_->get_parameter_or("angular_axis", angular_axis_, 0);
-    pnh_->get_parameter_or("linear_axis2", linear_axis2_, -1);
-    pnh_->get_parameter_or("angular_axis2", angular_axis2_, -1);
-    pnh_->get_parameter_or("interrupt_button", interrupt_button_, 6);
-    pnh_->get_parameter_or("high_speed_button", high_speed_button_, -1);
-    pnh_->get_parameter_or("linear_high_speed_ratio", linear_high_speed_ratio_, 1.3);
-    pnh_->get_parameter_or("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
-    pnh_->get_parameter_or("timeout", timeout_, 0.5);
-    pnh_->get_parameter_or("linear_y_vel", linear_y_vel_, 0.0);
-    pnh_->get_parameter_or("linear_y_axis", linear_y_axis_, -1);
-    pnh_->get_parameter_or("linear_y_axis2", linear_y_axis2_, -1);
+    this->get_parameter_or("linear_vel", linear_vel_, 0.5);
+    this->get_parameter_or("angular_vel", angular_vel_, 0.8);
+    this->get_parameter_or("linear_axis", linear_axis_, 1);
+    this->get_parameter_or("angular_axis", angular_axis_, 0);
+    this->get_parameter_or("linear_axis2", linear_axis2_, -1);
+    this->get_parameter_or("angular_axis2", angular_axis2_, -1);
+    this->get_parameter_or("interrupt_button", interrupt_button_, 6);
+    this->get_parameter_or("high_speed_button", high_speed_button_, -1);
+    this->get_parameter_or("linear_high_speed_ratio", linear_high_speed_ratio_, 1.3);
+    this->get_parameter_or("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
+    this->get_parameter_or("timeout", timeout_, 0.5);
+    this->get_parameter_or("linear_y_vel", linear_y_vel_, 0.0);
+    this->get_parameter_or("linear_y_axis", linear_y_axis_, -1);
+    this->get_parameter_or("linear_y_axis2", linear_y_axis2_, -1);
 
     last_joy_msg_ = rclcpp::Time(0);
 
@@ -206,10 +205,10 @@ public:
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "joystick_interrupt");
+  rclcpp::init(argc, argv);
 
-  JoystickInterrupt jy;
-  rclcpp::spin();
+  auto jy = std::make_shared<JoystickInterrupt>();
+  rclcpp::spin(jy);
 
   return 0;
 }

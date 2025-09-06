@@ -58,14 +58,12 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
 
 public:
-  PointcloudToMapsNode() : Node()
-    , pnh_("~")
-    , nh_()
+  PointcloudToMapsNode() : Node("pointcloud_to_maps")
   {
-      sub_points_ = this->create_subscription(
+      sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
-        1, &PointcloudToMapsNode::cbPoints, this);
-    pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
+        1, std::bind(&PointcloudToMapsNode::cbPoints, this, std::placeholders::_1));
+    pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
   }
   void cbPoints(const sensor_msgs::msg::PointCloud2::Ptr& msg)
   {
@@ -84,13 +82,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    pnh_->get_parameter_or("grid", grid, 0.05);
-    pnh_->get_parameter_or("points_thresh_rate", points_thresh_rate, 0.5);
-    pnh_->get_parameter_or("robot_height", robot_height_f, 1.0);
-    pnh_->get_parameter_or("floor_height", floor_height_f, 0.1);
-    pnh_->get_parameter_or("floor_tolerance", floor_tolerance_f, 0.2);
-    pnh_->get_parameter_or("min_floor_area", min_floor_area, 100.0);
-    pnh_->get_parameter_or("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
+    this->get_parameter_or("grid", grid, 0.05);
+    this->get_parameter_or("points_thresh_rate", points_thresh_rate, 0.5);
+    this->get_parameter_or("robot_height", robot_height_f, 1.0);
+    this->get_parameter_or("floor_height", floor_height_f, 0.1);
+    this->get_parameter_or("floor_tolerance", floor_tolerance_f, 0.2);
+    this->get_parameter_or("min_floor_area", min_floor_area, 100.0);
+    this->get_parameter_or("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
     robot_height = std::lround(robot_height_f / grid);
     floor_height = std::lround(floor_height_f / grid);
     floor_tolerance = std::lround(floor_tolerance_f / grid);
@@ -349,10 +347,10 @@ public:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "pointcloud_to_maps");
+  rclcpp::init(argc, argv);
 
-  PointcloudToMapsNode p2m;
-  rclcpp::spin();
+  auto p2m = std::make_shared<PointcloudToMapsNode>();
+  rclcpp::spin(p2m);
 
   return 0;
 }

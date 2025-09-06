@@ -87,9 +87,7 @@ protected:
   }
 
 public:
-  DummyRobotNode() : Node()
-    , nh_()
-    , pnh_("~")
+  DummyRobotNode() : Node("dummy_robot")
     , tfl_(tfbuf_)
   {
       pnh_->get_parameter_or("initial_x", x_, 0.0);
@@ -98,9 +96,9 @@ public:
     v_ = 0.0;
     w_ = 0.0;
 
-    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());
-    sub_twist_ = nh_->create_subscription("cmd_vel", 1, &DummyRobotNode::cbTwist, this);
-    sub_init_ = nh_->create_subscription("initialpose", 1, &DummyRobotNode::cbInit, this);
+    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());
+    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&DummyRobotNode::cbTwist, this, std::placeholders::_1));
+    sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
   }
   void spin()
   {
@@ -141,10 +139,10 @@ public:
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "dummy_robot");
+  rclcpp::init(argc, argv);
 
-  DummyRobotNode robot;
-  robot.spin();
+  auto robot = std::make_shared<DummyRobotNode>();
+  robot->spin();
 
   return 0;
 }
