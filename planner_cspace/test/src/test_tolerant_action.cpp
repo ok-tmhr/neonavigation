@@ -91,9 +91,9 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
   // Assure that goal is received after map in planner_3d.
   rclcpp::Duration::from_seconds(0.5).sleep();
   const planner_cspace_msgs::action::MoveWithTolerance::Goal goal = createGoalInFree();
-  move_base_->sendGoal(goal);
+  move_base_->async_send_goal(goal);
 
-  while (rclcpp::ok() && move_base_->getState().state_ != actionlib::SimpleClientGoalState::ACTIVE)
+  while (rclcpp::ok() && move_base_->getState().state_ != rclcpp_action::ResultCode::ACTIVE)
   {
     ASSERT_LT(this->now(), deadline)
         << "Action didn't get active: " << move_base_->getState().toString()
@@ -101,7 +101,7 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
     rclcpp::spin_some(shared_from_this());
   }
 
-  while (rclcpp::ok() && move_base_->getState().state_ != actionlib::SimpleClientGoalState::SUCCEEDED)
+  while (rclcpp::ok() && move_base_->getState().state_ != rclcpp_action::ResultCode::SUCCEEDED)
   {
     ASSERT_LT(this->now(), deadline)
         << "Action didn't succeeded: " << move_base_->getState().toString()

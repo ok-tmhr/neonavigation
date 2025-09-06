@@ -81,9 +81,9 @@ TEST_F(AbortTest, AbortByGoalInRock)
   // Assure that goal is received after map in planner_3d.
   rclcpp::Duration::from_seconds(0.5).sleep();
   // Send a goal which is in Rock
-  move_base_->sendGoal(createGoalInRock());
+  move_base_->async_send_goal(createGoalInRock());
   while (move_base_->getState().state_ !=
-         actionlib::SimpleClientGoalState::ACTIVE)
+         rclcpp_action::ResultCode::ACTIVE)
   {
     wait.sleep();
     ASSERT_LT(this->now(), deadline)
@@ -93,7 +93,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
 
   // Try to replan
   while (move_base_->getState().state_ ==
-         actionlib::SimpleClientGoalState::ACTIVE)
+         rclcpp_action::ResultCode::ACTIVE)
   {
     wait.sleep();
     ASSERT_LT(this->now(), deadline)
@@ -105,15 +105,15 @@ TEST_F(AbortTest, AbortByGoalInRock)
   ASSERT_TRUE(planner_status_);
 
   // Abort after exceeding max_retry_num
-  ASSERT_EQ(actionlib::SimpleClientGoalState::ABORTED,
+  ASSERT_EQ(rclcpp_action::ResultCode::ABORTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND,
             planner_status_->error);
 
   // Send another goal which is not in Rock
-  move_base_->sendGoal(createGoalInFree());
+  move_base_->async_send_goal(createGoalInFree());
   while (move_base_->getState().state_ !=
-         actionlib::SimpleClientGoalState::ACTIVE)
+         rclcpp_action::ResultCode::ACTIVE)
   {
     wait.sleep();
     ASSERT_LT(this->now(), deadline)
@@ -121,7 +121,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
         << " " << statusString();
   }
   while (move_base_->getState().state_ ==
-         actionlib::SimpleClientGoalState::ACTIVE)
+         rclcpp_action::ResultCode::ACTIVE)
   {
     wait.sleep();
     ASSERT_LT(this->now(), deadline)
@@ -131,7 +131,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   wait.sleep();
 
   // Succeed
-  ASSERT_EQ(actionlib::SimpleClientGoalState::SUCCEEDED,
+  ASSERT_EQ(rclcpp_action::ResultCode::SUCCEEDED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);

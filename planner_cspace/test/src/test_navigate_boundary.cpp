@@ -91,7 +91,7 @@ protected:
     goal.target_pose.pose.orientation.w = 1;
     goal.target_pose.pose.position.x = 1.4;
     goal.target_pose.pose.position.y = 0.6;
-    move_base_->sendGoal(goal);
+    move_base_->async_send_goal(goal);
     rclcpp::Duration::from_seconds(0.5).sleep();
   }
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)

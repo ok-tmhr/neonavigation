@@ -1172,7 +1172,7 @@ public:
     srs_forget_ = this->create_publisherService(
         "forget_planning_cost",
         &Planner3dNode::cbForget, this);
-    srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
+    srs_make_plan_ = pnh_->create_service("make_plan", &Planner3dNode::cbMakePlan, this);
 
     // Debug outputs
     pub_distance_map_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("distance_map", rclcpp::QoS(1).transient_local());

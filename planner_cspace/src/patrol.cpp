@@ -46,7 +46,7 @@ protected:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
 
-  rclcpp::Subscription<>::SharedPtr sub_path_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   std::shared_ptr<MoveBaseClient> act_cli_;
   std::shared_ptr<MoveWithToleranceClient> act_cli_tolerant_;
 
@@ -64,11 +64,11 @@ protected:
       // Cancel previous patrol if stored
       if (with_tolerance_)
       {
-        act_cli_tolerant_->cancelAllGoals();
+        act_cli_tolerant_->async_cancel_all_goals();
       }
       else
       {
-        act_cli_->cancelAllGoals();
+        act_cli_->async_cancel_all_goals();
       }
     }
     path_ = *msg;
@@ -121,7 +121,7 @@ public:
       goal.goal_tolerance_ang = tolerance_ang_;
       goal.goal_tolerance_ang_finish = tolerance_ang_finish_;
 
-      act_cli_tolerant_->sendGoal(goal);
+      act_cli_tolerant_->async_send_goal(goal);
     }
     else
     {
@@ -131,7 +131,7 @@ public:
       goal.target_pose.header.stamp = this->now();
       goal.target_pose.pose = path_.poses[pos_].pose;
 
-      act_cli_->sendGoal(goal);
+      act_cli_->async_send_goal(goal);
     }
     pos_++;
 
@@ -157,23 +157,23 @@ public:
         continue;
       }
 
-      actionlib::SimpleClientGoalState state =
+      rclcpp_action::ResultCode state =
           with_tolerance_ ?
               act_cli_tolerant_->getState() :
               act_cli_->getState();
-      if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+      if (state == rclcpp_action::ResultCode::SUCCEEDED)
       {
         RCLCPP_INFO(this->get_logger(), "Action has been finished.");
         sendNextGoal();
       }
-      else if (state == actionlib::SimpleClientGoalState::ABORTED)
+      else if (state == rclcpp_action::ResultCode::ABORTED)
       {
         RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
         sendNextGoal();
       }
-      else if (state == actionlib::SimpleClientGoalState::LOST)
+      else if (state == rclcpp_action::ResultCode::UNKNOWN)
       {
-        ROS_WARN_ONCE("Action server is not ready.");
+        RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
       }
     }
   }

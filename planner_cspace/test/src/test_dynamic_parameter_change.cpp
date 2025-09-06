@@ -93,7 +93,7 @@ public:
   }
   void TearDown() final
   {
-    move_base_->cancelAllGoals();
+    move_base_->async_cancel_all_goals();
   }
 
 protected:
@@ -167,7 +167,7 @@ protected:
 
   void sendGoalAndWaitForPath()
   {
-    move_base_->sendGoal(CreateGoalInFree());
+    move_base_->async_send_goal(CreateGoalInFree());
 
     rclcpp::spin_some(shared_from_this());  // Flush message buffer
     path_ = nullptr;
@@ -214,8 +214,8 @@ protected:
   {
     publishMapAndRobot(2.55, 0.45, M_PI);
     rclcpp::Duration::from_seconds(0.3).sleep();
-    move_base_->sendGoal(CreateGoalInFree());
-    while (rclcpp::ok() && (move_base_->getState() != actionlib::SimpleClientGoalState::ACTIVE))
+    move_base_->async_send_goal(CreateGoalInFree());
+    while (rclcpp::ok() && (move_base_->getState() != rclcpp_action::ResultCode::ACTIVE))
     {
       rclcpp::spin_some(shared_from_this());
     }
@@ -296,7 +296,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   EXPECT_FALSE(comparePath(initial_path, *path_));
 
   // Enable start pose prediction.
-  move_base_->cancelAllGoals();
+  move_base_->async_cancel_all_goals();
   planner_cspace::Planner3DConfig config = default_config_;
   config.keep_a_part_of_previous_path = true;
   config.dist_stop_to_previous_path = 0.1;
@@ -318,7 +318,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   EXPECT_TRUE(comparePath(initial_path, *path_));
 
   // It is expected that the robot reaches the goal during the path planning.
-  move_base_->cancelAllGoals();
+  move_base_->async_cancel_all_goals();
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
   publishMapAndRobot(1.25, 0.95, M_PI / 2);
   rclcpp::Duration::from_seconds(0.5).sleep();

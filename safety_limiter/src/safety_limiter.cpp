@@ -28,6 +28,7 @@
  */
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -100,9 +101,9 @@ class SafetyLimiterNode : public rclcpp::Node
 protected:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Publisher<>::SharedPtr pub_twist_;
-  rclcpp::Publisher<>::SharedPtr pub_cloud_;
-  rclcpp::Publisher<>::SharedPtr pub_status_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_cloud_;
+  rclcpp::Publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>::SharedPtr pub_status_;
   rclcpp::Subscription<>::SharedPtr sub_twist_;
   std::vector<rclcpp::Subscription<>::SharedPtr> sub_clouds_;
   rclcpp::Subscription<>::SharedPtr sub_disable_;
@@ -563,8 +564,8 @@ protected:
           std::abs(in.linear.y - out.linear.y) > EPSILON ||
           std::abs(in.angular.z - out.angular.z) > EPSILON)
       {
-        ROS_WARN_THROTTLE(
-            1.0, "safety_limiter: (%0.2f, %0.2f, %0.2f)->(%0.2f, %0.2f, %0.2f)",
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(),
+            1000, "safety_limiter: (%0.2f, %0.2f, %0.2f)->(%0.2f, %0.2f, %0.2f)",
             in.linear.x, in.linear.y, in.angular.z,
             out.linear.x, out.linear.y, out.angular.z);
       }
@@ -613,12 +614,12 @@ protected:
     }
     float& operator[](const int& i)
     {
-      ROS_ASSERT(i < 2);
+      assert(i < 2);
       return c[i];
     }
     const float& operator[](const int& i) const
     {
-      ROS_ASSERT(i < 2);
+      assert(i < 2);
       return c[i];
     }
     vec operator-(const vec& a) const

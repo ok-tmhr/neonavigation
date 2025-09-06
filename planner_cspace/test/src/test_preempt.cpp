@@ -64,9 +64,9 @@ TEST_F(PreemptTest, Preempt)
   const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(5);
   const rclcpp::Duration wait(1.0);
 
-  move_base_->sendGoal(CreateGoalInFree());
+  move_base_->async_send_goal(CreateGoalInFree());
   while (move_base_->getState().state_ !=
-         actionlib::SimpleClientGoalState::ACTIVE)
+         rclcpp_action::ResultCode::ACTIVE)
   {
     wait.sleep();
     ASSERT_LT(this->now(), deadline)
@@ -74,9 +74,9 @@ TEST_F(PreemptTest, Preempt)
         << statusString();
   }
   while (move_base_->getState().state_ ==
-         actionlib::SimpleClientGoalState::ACTIVE)
+         rclcpp_action::ResultCode::ACTIVE)
   {
-    move_base_->cancelAllGoals();
+    move_base_->async_cancel_all_goals();
     wait.sleep();
     ASSERT_LT(this->now(), deadline)
         << "Action didn't get inactive: " << move_base_->getState().toString()
@@ -85,7 +85,7 @@ TEST_F(PreemptTest, Preempt)
 
   ASSERT_TRUE(planner_status_);
 
-  ASSERT_EQ(actionlib::SimpleClientGoalState::PREEMPTED,
+  ASSERT_EQ(rclcpp_action::ResultCode::PREEMPTED,
             move_base_->getState().state_);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);

@@ -89,7 +89,7 @@ RecorderNode::RecorderNode()
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(10).transient_local());
-  srs_clear_path_ = pnh_.advertiseService("clear_path", &RecorderNode::clearPath, this);
+  srs_clear_path_ = pnh_->create_service("clear_path", &RecorderNode::clearPath, this);
 }
 
 RecorderNode::~RecorderNode()
