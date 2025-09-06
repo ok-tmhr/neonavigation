@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -32,7 +32,7 @@
 
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <geometry_msgs/Twist.h>
@@ -47,17 +47,17 @@
 
 namespace
 {
-inline void GenerateEmptyPointcloud2(sensor_msgs::PointCloud2& cloud)
+inline void GenerateEmptyPointcloud2(sensor_msgs::msg::PointCloud2& cloud)
 {
   cloud.height = 1;
   cloud.width = 0;
   cloud.is_bigendian = false;
   cloud.is_dense = false;
-  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2FieldsByString(1, "xyz");
 }
 inline void GenerateSinglePointPointcloud2(
-    sensor_msgs::PointCloud2& cloud,
+    sensor_msgs::msg::PointCloud2& cloud,
     const float x,
     const float y,
     const float z)
@@ -66,11 +66,11 @@ inline void GenerateSinglePointPointcloud2(
   cloud.width = 1;
   cloud.is_bigendian = false;
   cloud.is_dense = false;
-  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2FieldsByString(1, "xyz");
-  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_z(cloud, "z");
   modifier.resize(1);
   *iter_x = x;
   *iter_y = y;
@@ -81,56 +81,56 @@ inline void GenerateSinglePointPointcloud2(
 class SafetyLimiterTest : public ::testing::Test
 {
 protected:
-  ros::NodeHandle nh_;
-  ros::Publisher pub_cmd_vel_;
-  ros::Publisher pub_cloud_;
-  ros::Publisher pub_watchdog_;
-  ros::Subscriber sub_diag_;
-  ros::Subscriber sub_status_;
-  ros::Subscriber sub_cmd_vel_;
+  rclcpp::Node::SharedPtr nh_;
+  rclcpp::Publisher<>::SharedPtr pub_cmd_vel_;
+  rclcpp::Publisher<>::SharedPtr pub_cloud_;
+  rclcpp::Publisher<>::SharedPtr pub_watchdog_;
+  rclcpp::Subscription<>::SharedPtr sub_diag_;
+  rclcpp::Subscription<>::SharedPtr sub_status_;
+  rclcpp::Subscription<>::SharedPtr sub_cmd_vel_;
 
   tf2_ros::TransformBroadcaster tfb_;
 
-  inline void cbDiag(const diagnostic_msgs::DiagnosticArray::ConstPtr& msg)
+  inline void cbDiag(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg)
   {
     diag_ = msg;
   }
 
-  inline void cbStatus(const safety_limiter_msgs::SafetyLimiterStatus::ConstPtr& msg)
+  inline void cbStatus(const safety_limiter_msgs::msg::SafetyLimiterStatus::ConstPtr& msg)
   {
     status_ = msg;
   }
 
-  inline void cbCmdVel(const geometry_msgs::Twist::ConstPtr& msg)
+  inline void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
   {
     cmd_vel_ = msg;
   }
 
 public:
-  diagnostic_msgs::DiagnosticArray::ConstPtr diag_;
-  safety_limiter_msgs::SafetyLimiterStatus::ConstPtr status_;
-  geometry_msgs::Twist::ConstPtr cmd_vel_;
+  diagnostic_msgs::msg::DiagnosticArray::ConstPtr diag_;
+  safety_limiter_msgs::msg::SafetyLimiterStatus::ConstPtr status_;
+  geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
 
   inline SafetyLimiterTest()
     : nh_()
   {
-    pub_cmd_vel_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel_in", 1);
-    pub_cloud_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 1);
-    pub_watchdog_ = nh_.advertise<std_msgs::Empty>("watchdog_reset", 1);
-    sub_diag_ = nh_.subscribe("diagnostics", 1, &SafetyLimiterTest::cbDiag, this);
-    sub_status_ = nh_.subscribe("/safety_limiter/status", 1, &SafetyLimiterTest::cbStatus, this);
-    sub_cmd_vel_ = nh_.subscribe("cmd_vel", 1, &SafetyLimiterTest::cbCmdVel, this);
+    pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_in", 1);
+    pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 1);
+    pub_watchdog_ = nh_->create_publisher<std_msgs::msg::Empty>("watchdog_reset", 1);
+    sub_diag_ = nh_->create_subscription("diagnostics", 1, &SafetyLimiterTest::cbDiag, this);
+    sub_status_ = nh_->create_subscription("/safety_limiter/status", 1, &SafetyLimiterTest::cbStatus, this);
+    sub_cmd_vel_ = nh_->create_subscription("cmd_vel", 1, &SafetyLimiterTest::cbCmdVel, this);
 
-    ros::Rate wait(10.0);
+    rclcpp::Rate wait(10.0);
     // Skip initial state
-    for (int i = 0; i < 10 && ros::ok(); ++i)
+    for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
-      publishEmptyPointPointcloud2("base_link", ros::Time::now());
+      publishEmptyPointPointcloud2("base_link", this->now());
       publishWatchdogReset();
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(shared_from_this());
     }
     cmd_vel_.reset();
     diag_.reset();
@@ -138,42 +138,42 @@ public:
   }
   inline void publishWatchdogReset()
   {
-    std_msgs::Empty watchdog_reset;
-    pub_watchdog_.publish(watchdog_reset);
+    std_msgs::msg::Empty watchdog_reset;
+    pub_watchdog_->publish(watchdog_reset);
   }
   inline void publishEmptyPointPointcloud2(
       const std::string frame_id,
-      const ros::Time stamp)
+      const rclcpp::Time stamp)
   {
-    sensor_msgs::PointCloud2 cloud;
+    sensor_msgs::msg::PointCloud2 cloud;
     cloud.header.frame_id = frame_id;
     cloud.header.stamp = stamp;
     GenerateEmptyPointcloud2(cloud);
-    pub_cloud_.publish(cloud);
+    pub_cloud_->publish(cloud);
   }
   inline void publishSinglePointPointcloud2(
       const float x,
       const float y,
       const float z,
       const std::string frame_id,
-      const ros::Time stamp)
+      const rclcpp::Time stamp)
   {
-    sensor_msgs::PointCloud2 cloud;
+    sensor_msgs::msg::PointCloud2 cloud;
     cloud.header.frame_id = frame_id;
     cloud.header.stamp = stamp;
     GenerateSinglePointPointcloud2(cloud, x, y, z);
-    pub_cloud_.publish(cloud);
+    pub_cloud_->publish(cloud);
   }
   inline void publishTwist(
       const float lin,
       const float ang,
       const float lin_y = 0.0)
   {
-    geometry_msgs::Twist cmd_vel_out;
+    geometry_msgs::msg::Twist cmd_vel_out;
     cmd_vel_out.linear.x = lin;
     cmd_vel_out.linear.y = lin_y;
     cmd_vel_out.angular.z = ang;
-    pub_cmd_vel_.publish(cmd_vel_out);
+    pub_cmd_vel_->publish(cmd_vel_out);
   }
   inline void broadcastTF(
       const std::string parent_frame_id,
@@ -181,8 +181,8 @@ public:
       const float lin,
       const float ang)
   {
-    geometry_msgs::TransformStamped trans;
-    trans.header.stamp = ros::Time::now();
+    geometry_msgs::msg::TransformStamped trans;
+    trans.header.stamp = this->now();
     trans.transform = tf2::toMsg(
         tf2::Transform(tf2::Quaternion(tf2::Vector3(0, 0, 1), ang), tf2::Vector3(lin, 0, 0)));
     trans.header.frame_id = parent_frame_id;

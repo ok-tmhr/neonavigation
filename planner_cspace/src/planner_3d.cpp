@@ -46,36 +46,33 @@
 
 #include <omp.h>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <diagnostic_updater/diagnostic_updater.h>
-#include <dynamic_reconfigure/server.h>
-#include <geometry_msgs/PoseArray.h>
-#include <nav_msgs/GetPlan.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h>
-#include <neonavigation_metrics_msgs/Metrics.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
+#include <diagnostic_updater/diagnostic_updater.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
+#include <nav_msgs/srv/get_plan.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <neonavigation_metrics_msgs/msg/metrics.hpp>
 #include <neonavigation_metrics_msgs/helper.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
-#include <sensor_msgs/PointCloud.h>
-#include <std_srvs/Empty.h>
-#include <trajectory_tracker_msgs/PathWithVelocity.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <sensor_msgs/msg/point_cloud.hpp>
+#include <std_srvs/srv/empty.hpp>
+#include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
 #include <trajectory_tracker_msgs/converter.h>
 
-#include <ros/console.h>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <actionlib/server/simple_action_server.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/MoveWithToleranceAction.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <planner_cspace_msgs/action/move_with_tolerance.hpp>
 
-#include <neonavigation_common/compatibility.h>
 
-#include <planner_cspace/Planner3DConfig.h>
 #include <planner_cspace/bbf.h>
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/jump_detector.h>
@@ -93,42 +90,41 @@ namespace planner_cspace
 {
 namespace planner_3d
 {
-class Planner3dNode
+class Planner3dNode : public rclcpp::Node
 {
 public:
   using Astar = GridAstar<3, 2>;
 
 protected:
-  using Planner3DActionServer = actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction>;
-  using Planner3DTolerantActionServer = actionlib::SimpleActionServer<planner_cspace_msgs::MoveWithToleranceAction>;
+  using Planner3DActionServer = rclcpp_action::Server<nav2_msgs::action::NavigateToPose>;
+  using Planner3DTolerantActionServer = rclcpp_action::Server<planner_cspace_msgs::action::MoveWithTolerance>;
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Subscriber sub_map_;
-  ros::Subscriber sub_map_update_;
-  ros::Subscriber sub_goal_;
-  ros::Subscriber sub_temporary_escape_trigger_;
-  ros::Publisher pub_path_;
-  ros::Publisher pub_path_velocity_;
-  ros::Publisher pub_path_poses_;
-  ros::Publisher pub_preserved_path_poses_;
-  ros::Publisher pub_hysteresis_map_;
-  ros::Publisher pub_distance_map_;
-  ros::Publisher pub_remembered_map_;
-  ros::Publisher pub_start_;
-  ros::Publisher pub_end_;
-  ros::Publisher pub_goal_;
-  ros::Publisher pub_status_;
-  ros::Publisher pub_metrics_;
-  ros::ServiceServer srs_forget_;
-  ros::ServiceServer srs_make_plan_;
+  rclcpp::Node::SharedPtr nh_;
+  rclcpp::Node::SharedPtr pnh_;
+  rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr sub_map_;
+  rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3DUpdate>::SharedPtr sub_map_update_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goal_;
+  rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr sub_temporary_escape_trigger_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
+  rclcpp::Publisher<trajectory_tracker_msgs::msg::PathWithVelocity>::SharedPtr pub_path_velocity_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr pub_path_poses_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_preserved_path_poses_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_hysteresis_map_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_distance_map_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_remembered_map_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_start_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_end_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_goal_;
+  rclcpp::Publisher<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr pub_status_;
+  rclcpp::Publisher<neonavigation_metrics_msgs::msg::Metrics>::SharedPtr pub_metrics_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srs_forget_;
+  rclcpp::Service<nav_msgs::srv::GetPlan>::SharedPtr srs_make_plan_;
 
   std::shared_ptr<Planner3DActionServer> act_;
   std::shared_ptr<Planner3DTolerantActionServer> act_tolerant_;
-  planner_cspace_msgs::MoveWithToleranceGoalConstPtr goal_tolerant_;
+  planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal_tolerant_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  dynamic_reconfigure::Server<Planner3DConfig> parameter_server_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -145,9 +141,9 @@ protected:
 
   GridAstarModel3D::Ptr model_;
 
-  costmap_cspace_msgs::MapMetaData3D map_info_;
-  costmap_cspace_msgs::CSpace3DUpdate::ConstPtr map_update_retained_;
-  std_msgs::Header map_header_;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info_;
+  costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr map_update_retained_;
+  std_msgs::msg::Header map_header_;
   float freq_;
   float freq_min_;
   float search_timeout_abort_;
@@ -205,10 +201,10 @@ protected:
   // Cost weights
   CostCoeff cc_;
 
-  geometry_msgs::PoseStamped start_;
-  geometry_msgs::PoseStamped goal_;
-  geometry_msgs::PoseStamped goal_raw_;
-  geometry_msgs::PoseStamped goal_original_;
+  geometry_msgs::msg::PoseStamped start_;
+  geometry_msgs::msg::PoseStamped goal_;
+  geometry_msgs::msg::PoseStamped goal_raw_;
+  geometry_msgs::msg::PoseStamped goal_original_;
   Astar::Vecf ec_;
   double goal_tolerance_lin_f_;
   double goal_tolerance_ang_f_;
@@ -220,12 +216,12 @@ protected:
   int temporary_escape_tolerance_lin_;
   int temporary_escape_tolerance_ang_;
 
-  planner_cspace_msgs::PlannerStatus status_;
-  neonavigation_metrics_msgs::Metrics metrics_;
+  planner_cspace_msgs::msg::PlannerStatus status_;
+  neonavigation_metrics_msgs::msg::Metrics metrics_;
 
   bool find_best_;
   float sw_wait_;
-  geometry_msgs::PoseStamped sw_pos_;
+  geometry_msgs::msg::PoseStamped sw_pos_;
   bool is_path_switchback_;
 
   bool rough_;
@@ -238,27 +234,27 @@ protected:
   bool is_start_occupied_;
 
   diagnostic_updater::Updater diag_updater_;
-  ros::Duration costmap_watchdog_;
-  ros::Time last_costmap_;
+  rclcpp::Duration costmap_watchdog_;
+  rclcpp::Time last_costmap_;
 
   int prev_map_update_x_min_;
   int prev_map_update_x_max_;
   int prev_map_update_y_min_;
   int prev_map_update_y_max_;
-  nav_msgs::Path previous_path_;
+  nav_msgs::msg::Path previous_path_;
   StartPosePredictor start_pose_predictor_;
-  ros::Timer no_map_update_timer_;
+  rclcpp::TimerBase::SharedPtr no_map_update_timer_;
 
-  bool cbForget(std_srvs::EmptyRequest& req,
-                std_srvs::EmptyResponse& res)
+  bool cbForget(std_srvs::srv::Empty::Request& req,
+                std_srvs::srv::Empty::Response& res)
   {
-    ROS_WARN("Forgetting remembered costmap.");
+    RCLCPP_WARN(this->get_logger(), "Forgetting remembered costmap.");
     if (has_map_)
       bbf_costmap_->clear();
 
     return true;
   }
-  void cbTemporaryEscape(const std_msgs::Empty::ConstPtr&)
+  void cbTemporaryEscape(const std_msgs::msg::Empty::ConstPtr&)
   {
     if (!has_map_)
     {
@@ -302,7 +298,7 @@ protected:
     }
   }
 
-  Astar::Vec metric2Grid(const geometry_msgs::Pose& pose) const
+  Astar::Vec metric2Grid(const geometry_msgs::msg::Pose& pose) const
   {
     Astar::Vec grid;
     grid_metric_converter::metric2Grid(
@@ -312,39 +308,39 @@ protected:
     grid.cycleUnsigned(map_info_.angle);
     return grid;
   }
-  geometry_msgs::Pose grid2MetricPose(const Astar::Vec& grid) const
+  geometry_msgs::msg::Pose grid2MetricPose(const Astar::Vec& grid) const
   {
     float x, y, yaw;
     grid_metric_converter::grid2Metric(map_info_, grid[0], grid[1], grid[2], x, y, yaw);
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
     pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     pose.position.x = x;
     pose.position.y = y;
     return pose;
   }
-  geometry_msgs::Point32 grid2MetricPoint(const Astar::Vec& grid) const
+  geometry_msgs::msg::Point32 grid2MetricPoint(const Astar::Vec& grid) const
   {
     float x, y, yaw;
     grid_metric_converter::grid2Metric(map_info_, grid[0], grid[1], grid[2], x, y, yaw);
-    geometry_msgs::Point32 point;
+    geometry_msgs::msg::Point32 point;
     point.x = x;
     point.y = y;
     return point;
   }
 
-  bool cbMakePlan(nav_msgs::GetPlan::Request& req,
-                  nav_msgs::GetPlan::Response& res)
+  bool cbMakePlan(nav_msgs::srv::GetPlan::Request& req,
+                  nav_msgs::srv::GetPlan::Response& res)
   {
     if (!has_map_)
     {
-      ROS_ERROR("make_plan service is called without map.");
+      RCLCPP_ERROR(this->get_logger(), "make_plan service is called without map.");
       return false;
     }
 
     if (req.start.header.frame_id != map_header_.frame_id ||
         req.goal.header.frame_id != map_header_.frame_id)
     {
-      ROS_ERROR("Start [%s] and Goal [%s] poses must be in the map frame [%s].",
+      RCLCPP_ERROR(this->get_logger(), "Start [%s] and Goal [%s] poses must be in the map frame [%s].",
                 req.start.header.frame_id.c_str(),
                 req.goal.header.frame_id.c_str(),
                 map_header_.frame_id.c_str());
@@ -353,7 +349,7 @@ protected:
 
     Astar::Vec s = metric2Grid(req.start.pose);
     Astar::Vec e = metric2Grid(req.goal.pose);
-    ROS_INFO("Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
+    RCLCPP_INFO(this->get_logger(), "Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
 
     const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
     const DiscretePoseStatus start_status = relocateDiscretePoseIfNeeded(s, tolerance_range, tolerance_angle_, true);
@@ -361,13 +357,13 @@ protected:
     switch (start_status)
     {
       case DiscretePoseStatus::OUT_OF_MAP:
-        ROS_ERROR("Given start is not on the map.");
+        RCLCPP_ERROR(this->get_logger(), "Given start is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
-        ROS_ERROR("Given start is in Rock.");
+        RCLCPP_ERROR(this->get_logger(), "Given start is in Rock.");
         return false;
       case DiscretePoseStatus::RELOCATED:
-        ROS_INFO("Given start is moved (%d, %d)", s[0], s[1]);
+        RCLCPP_INFO(this->get_logger(), "Given start is moved (%d, %d)", s[0], s[1]);
         break;
       default:
         break;
@@ -375,13 +371,13 @@ protected:
     switch (goal_status)
     {
       case DiscretePoseStatus::OUT_OF_MAP:
-        ROS_ERROR("Given goal is not on the map.");
+        RCLCPP_ERROR(this->get_logger(), "Given goal is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
-        ROS_ERROR("Given goal is in Rock.");
+        RCLCPP_ERROR(this->get_logger(), "Given goal is in Rock.");
         return false;
       case DiscretePoseStatus::RELOCATED:
-        ROS_INFO("Given goal is moved (%d, %d)", e[0], e[1]);
+        RCLCPP_INFO(this->get_logger(), "Given goal is moved (%d, %d)", e[0], e[1]);
         break;
       default:
         break;
@@ -405,16 +401,16 @@ protected:
             cb_progress,
             0, 1.0f / freq_min_, find_best_))
     {
-      ROS_WARN("Path plan failed (goal unreachable)");
+      RCLCPP_WARN(this->get_logger(), "Path plan failed (goal unreachable)");
       return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
-    ROS_INFO("Path found (%0.4f sec.)",
+    RCLCPP_INFO(this->get_logger(), "Path found (%0.4f sec.)",
              boost::chrono::duration<float>(tnow - ts).count());
 
-    nav_msgs::Path path;
+    nav_msgs::msg::Path path;
     path.header = map_header_;
-    path.header.stamp = ros::Time::now();
+    path.header.stamp = this->now();
 
     const std::list<Astar::Vecf> path_interpolated = model_->interpolatePath(path_grid);
     grid_metric_converter::appendGridPath2MetricPath(map_info_, path_interpolated, path);
@@ -428,34 +424,34 @@ protected:
     return true;
   }
 
-  void cbGoal(const geometry_msgs::PoseStamped::ConstPtr& msg)
+  void cbGoal(const geometry_msgs::msg::PoseStamped::ConstPtr& msg)
   {
     if (act_->isActive() || act_tolerant_->isActive())
     {
-      ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding the action.");
+      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding the action.");
       return;
     }
     setGoal(*msg);
   }
   void cbPreempt()
   {
-    ROS_WARN("Preempting the current goal.");
+    RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
     if (act_->isActive())
-      act_->setPreempted(move_base_msgs::MoveBaseResult(), "Preempted.");
+      act_->setPreempted(nav2_msgs::action::NavigateToPose::Result(), "Preempted.");
 
     if (act_tolerant_->isActive())
-      act_tolerant_->setPreempted(planner_cspace_msgs::MoveWithToleranceResult(), "Preempted.");
+      act_tolerant_->setPreempted(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Preempted.");
 
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
-    status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+    status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
   }
 
-  bool setGoal(const geometry_msgs::PoseStamped& msg)
+  bool setGoal(const geometry_msgs::msg::PoseStamped& msg)
   {
     if (msg.header.frame_id != map_header_.frame_id)
     {
-      ROS_ERROR("Goal [%s] pose must be in the map frame [%s].",
+      RCLCPP_ERROR(this->get_logger(), "Goal [%s] pose must be in the map frame [%s].",
                 msg.header.frame_id.c_str(), map_header_.frame_id.c_str());
       return false;
     }
@@ -477,18 +473,18 @@ protected:
         has_goal_ = false;
         return false;
       }
-      status_.status = planner_cspace_msgs::PlannerStatus::DOING;
-      status_.header.stamp = ros::Time::now();
-      pub_status_.publish(status_);
+      status_.status = planner_cspace_msgs::msg::PlannerStatus::DOING;
+      status_.header.stamp = this->now();
+      pub_status_->publish(status_);
       diag_updater_.update();
     }
     else
     {
       has_goal_ = false;
       if (act_->isActive())
-        act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal cleared.");
+        act_->setSucceeded(nav2_msgs::action::NavigateToPose::Result(), "Goal cleared.");
       if (act_tolerant_->isActive())
-        act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal cleared.");
+        act_tolerant_->setSucceeded(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Goal cleared.");
     }
     return true;
   }
@@ -501,7 +497,7 @@ protected:
     {
       cost_acceptable = relocation_acceptable_cost_;
     }
-    ROS_DEBUG("%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
+    RCLCPP_DEBUG(this->get_logger(), "%d, %d  (%d,%d,%d)", xy_range, angle_range, s[0], s[1], s[2]);
 
     float range_min = std::numeric_limits<float>::max();
     Astar::Vec s_out;
@@ -549,7 +545,7 @@ protected:
     }
     s = s_out;
     s.cycleUnsigned(map_info_.angle);
-    ROS_DEBUG("    (%d,%d,%d)", s[0], s[1], s[2]);
+    RCLCPP_DEBUG(this->get_logger(), "    (%d,%d,%d)", s[0], s[1], s[2]);
     return true;
   }
 
@@ -560,7 +556,7 @@ protected:
 
     if (!has_map_ || !has_start_)
     {
-      ROS_ERROR("Goal received, however map/goal/start are not ready. (%d/%d/%d)",
+      RCLCPP_ERROR(this->get_logger(), "Goal received, however map/goal/start are not ready. (%d/%d/%d)",
                 static_cast<int>(has_map_), static_cast<int>(has_goal_), static_cast<int>(has_start_));
       return true;
     }
@@ -572,7 +568,7 @@ protected:
     Astar::Vec e = metric2Grid(goal_raw_.pose);
     if (goal_changed)
     {
-      ROS_INFO("New goal received. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+      RCLCPP_INFO(this->get_logger(), "New goal received. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
                goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
                e[0], e[1], e[2]);
       clearHysteresis();
@@ -583,10 +579,10 @@ protected:
     switch (start_pose_status)
     {
       case DiscretePoseStatus::OUT_OF_MAP:
-        ROS_ERROR("You are on the edge of the world.");
+        RCLCPP_ERROR(this->get_logger(), "You are on the edge of the world.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
-        ROS_WARN("Oops! You are in Rock!");
+        RCLCPP_WARN(this->get_logger(), "Oops! You are in Rock!");
         ++cnt_stuck_;
         is_start_occupied_ = true;
         return true;
@@ -596,17 +592,17 @@ protected:
     switch (goal_pose_status)
     {
       case DiscretePoseStatus::OUT_OF_MAP:
-        ROS_ERROR("Given goal is not on the map.");
+        RCLCPP_ERROR(this->get_logger(), "Given goal is not on the map.");
         return false;
       case DiscretePoseStatus::IN_ROCK:
         if (isEscaping(escape_status_))
         {
-          ROS_WARN("Oops! Temporary goal is in Rock! Reverting the temporary goal.");
+          RCLCPP_WARN(this->get_logger(), "Oops! Temporary goal is in Rock! Reverting the temporary goal.");
           goal_raw_ = goal_ = goal_original_;
           escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           return true;
         }
-        ROS_WARN("Oops! Goal is in Rock!");
+        RCLCPP_WARN(this->get_logger(), "Oops! Goal is in Rock!");
         ++cnt_stuck_;
         if (temporary_escape_ && enable_crowd_mode_)
         {
@@ -615,7 +611,7 @@ protected:
         return true;
       case DiscretePoseStatus::RELOCATED:
         goal_.pose = grid2MetricPose(e);
-        ROS_INFO("Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+        RCLCPP_INFO(this->get_logger(), "Goal moved. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
                  goal_.pose.position.x, goal_.pose.position.y, tf2::getYaw(goal_.pose.orientation),
                  e[0], e[1], e[2]);
         break;
@@ -623,7 +619,7 @@ protected:
         const Astar::Vec e_prev = metric2Grid(goal_.pose);
         if (e[0] != e_prev[0] || e[1] != e_prev[1] || e[2] != e_prev[2])
         {
-          ROS_INFO("Goal reverted. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
+          RCLCPP_INFO(this->get_logger(), "Goal reverted. Metric: (%.3f, %.3f, %.3f), Grid: (%d, %d, %d)",
                    goal_raw_.pose.position.x, goal_raw_.pose.position.y, tf2::getYaw(goal_raw_.pose.orientation),
                    e[0], e[1], e[2]);
         }
@@ -636,11 +632,11 @@ protected:
       cost_estim_cache_.create(s, e);
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
-      ROS_DEBUG("Cost estimation cache generated (%0.4f sec.)", dur);
+      RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache generated (%0.4f sec.)", dur);
 
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "distance_map_init_dur", dur, "second"));
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "distance_map_update_dur", 0.0, "second"));
     }
 
@@ -660,11 +656,11 @@ protected:
   }
   void publishDebug()
   {
-    if (pub_distance_map_.getNumSubscribers() > 0)
+    if (pub_distance_map_->get_subscription_count() > 0)
     {
-      sensor_msgs::PointCloud distance_map;
+      sensor_msgs::msg::PointCloud distance_map;
       distance_map.header = map_header_;
-      distance_map.header.stamp = ros::Time::now();
+      distance_map.header.stamp = this->now();
       distance_map.channels.resize(1);
       distance_map.channels[0].name = "distance";
       distance_map.points.reserve(1024);
@@ -679,18 +675,18 @@ protected:
           if (cost == std::numeric_limits<float>::max())
             continue;
 
-          geometry_msgs::Point32 point = grid2MetricPoint(p);
+          geometry_msgs::msg::Point32 point = grid2MetricPoint(p);
           point.z = cost / 500;
           distance_map.points.push_back(point);
           distance_map.channels[0].values.push_back(cost * k_dist);
         }
       }
-      pub_distance_map_.publish(distance_map);
+      pub_distance_map_->publish(distance_map);
     }
 
-    if (pub_hysteresis_map_.getNumSubscribers() > 0)
+    if (pub_hysteresis_map_->get_subscription_count() > 0)
     {
-      nav_msgs::OccupancyGrid hysteresis_map;
+      nav_msgs::msg::OccupancyGrid hysteresis_map;
       hysteresis_map.header.frame_id = map_header_.frame_id;
       hysteresis_map.info.resolution = map_info_.linear_resolution;
       hysteresis_map.info.width = map_info_.width;
@@ -713,14 +709,14 @@ protected:
           hysteresis_map.data[p[0] + p[1] * map_info_.width] = cost;
         }
       }
-      pub_hysteresis_map_.publish(hysteresis_map);
+      pub_hysteresis_map_->publish(hysteresis_map);
     }
   }
   void publishRememberedMap()
   {
-    if (pub_remembered_map_.getNumSubscribers() > 0 && remember_updates_)
+    if (pub_remembered_map_->get_subscription_count() > 0 && remember_updates_)
     {
-      nav_msgs::OccupancyGrid remembered_map;
+      nav_msgs::msg::OccupancyGrid remembered_map;
       remembered_map.header.frame_id = map_header_.frame_id;
       remembered_map.info.resolution = map_info_.linear_resolution;
       remembered_map.info.width = map_info_.width;
@@ -734,21 +730,21 @@ protected:
             (bbf.getProbability() - bbf::MIN_PROBABILITY) * 100 / (bbf::MAX_PROBABILITY - bbf::MIN_PROBABILITY);
       };
       bbf_costmap_->forEach(generate_pointcloud);
-      pub_remembered_map_.publish(remembered_map);
+      pub_remembered_map_->publish(remembered_map);
     }
   }
   void publishEmptyPath()
   {
-    nav_msgs::Path path;
+    nav_msgs::msg::Path path;
     path.header.frame_id = robot_frame_;
-    path.header.stamp = ros::Time::now();
+    path.header.stamp = this->now();
     publishPath(path);
   }
   void publishFinishPath()
   {
-    nav_msgs::Path path;
+    nav_msgs::msg::Path path;
     path.header.frame_id = map_header_.frame_id;
-    path.header.stamp = ros::Time::now();
+    path.header.stamp = this->now();
     // Specify single pose to control only orientation
     path.poses.resize(1);
     path.poses[0].header = path.header;
@@ -758,25 +754,25 @@ protected:
       path.poses[0].pose = goal_.pose;
     publishPath(path);
   }
-  void publishPath(const nav_msgs::Path& path)
+  void publishPath(const nav_msgs::msg::Path& path)
   {
     if (use_path_with_velocity_)
     {
-      pub_path_velocity_.publish(
-          trajectory_tracker_msgs::toPathWithVelocity(
+      pub_path_velocity_->publish(
+          trajectory_tracker_msgs::msg::toPathWithVelocity(
               path, std::numeric_limits<double>::quiet_NaN()));
     }
     else
     {
-      pub_path_.publish(path);
+      pub_path_->publish(path);
     }
     previous_path_ = path;
   }
 
-  void applyCostmapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
+  void applyCostmapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
   {
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
-    const ros::Time now = ros::Time::now();
+    const rclcpp::Time now = this->now();
 
     const int map_update_x_min = static_cast<int>(msg->x);
     const int map_update_x_max = std::max(static_cast<int>(msg->x + msg->width) - 1, 0);
@@ -787,7 +783,7 @@ protected:
         static_cast<size_t>(map_update_y_max) >= map_info_.height ||
         msg->angle > map_info_.angle)
     {
-      ROS_WARN(
+      RCLCPP_WARN(this->get_logger(),
           "Map update out of range (update range: %dx%dx%d, map range: %dx%dx%d)",
           map_update_x_max, map_update_y_max, msg->angle,
           map_info_.width, map_info_.height, map_info_.angle);
@@ -876,15 +872,15 @@ protected:
     map_update_retained_ = nullptr;
     const auto ts_cm_init_end = boost::chrono::high_resolution_clock::now();
     const float ts_cm_init_dur = boost::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count();
-    ROS_DEBUG("Costmaps updated (%.4f)", ts_cm_init_dur);
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+    RCLCPP_DEBUG(this->get_logger(), "Costmaps updated (%.4f)", ts_cm_init_dur);
+    metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "costmap_dur",
         ts_cm_init_dur,
         "second"));
 
     if (clear_hysteresis && has_hysteresis_map_)
     {
-      ROS_INFO("The previous path collides to the obstacle. Clearing hysteresis map.");
+      RCLCPP_INFO(this->get_logger(), "The previous path collides to the obstacle. Clearing hysteresis map.");
       clearHysteresis();
       has_hysteresis_map_ = false;
     }
@@ -905,7 +901,7 @@ protected:
       bbf_costmap_->updateCostmap();
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
-      ROS_DEBUG("Remembered costmap updated (%0.4f sec.)", dur);
+      RCLCPP_DEBUG(this->get_logger(), "Remembered costmap updated (%0.4f sec.)", dur);
     }
     if (!has_goal_)
       return;
@@ -933,45 +929,45 @@ protected:
               Astar::Vec(search_range_x_max, search_range_y_max, 0)));
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
-      ROS_DEBUG("Cost estimation cache updated (%0.4f sec.)", dur);
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache updated (%0.4f sec.)", dur);
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "distance_map_update_dur", dur, "second"));
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "distance_map_init_dur", 0.0, "second"));
     }
 
     const DistanceMap::DebugData dm_debug = cost_estim_cache_.getDebugData();
     if (dm_debug.has_negative_cost)
     {
-      ROS_WARN("Negative cost value is detected. Limited to zero.");
+      RCLCPP_WARN(this->get_logger(), "Negative cost value is detected. Limited to zero.");
     }
-    ROS_DEBUG("Cost estimation cache search queue initial size: %lu, capacity: %lu",
+    RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache search queue initial size: %lu, capacity: %lu",
               dm_debug.search_queue_size, dm_debug.search_queue_cap);
     publishDebug();
     return;
   }
 
-  void cbNoMapUpdateTimer(const ros::TimerEvent& e)
+  void cbNoMapUpdateTimer()
   {
     planPath(e.current_real);
     no_map_update_timer_ =
-        nh_.createTimer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+        nh_->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
   }
-  void cbMapUpdate(const costmap_cspace_msgs::CSpace3DUpdate::ConstPtr& msg)
+  void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
   {
     if (!has_map_)
       return;
-    ROS_DEBUG("Map updated");
+    RCLCPP_DEBUG(this->get_logger(), "Map updated");
     if (trigger_plan_by_costmap_update_)
     {
-      no_map_update_timer_.stop();
+      no_map_update_timer_->cancel();
       updateStart();
       applyCostmapUpdate(msg);
       planPath(last_costmap_);
-      if (costmap_watchdog_ > ros::Duration(0))
+      if (costmap_watchdog_ > rclcpp::Duration(0, 0))
       {
         no_map_update_timer_ =
-            nh_.createTimer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+            nh_->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
       }
     }
     else
@@ -979,14 +975,14 @@ protected:
       applyCostmapUpdate(msg);
     }
   }
-  void cbMap(const costmap_cspace_msgs::CSpace3D::ConstPtr& msg)
+  void cbMap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
-    ROS_INFO("Map received");
-    ROS_INFO(" linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
+    RCLCPP_INFO(this->get_logger(), "Map received");
+    RCLCPP_INFO(this->get_logger(), " linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
              msg->info.width, msg->info.height);
-    ROS_INFO(" angular_resolution %0.2f x %d px", msg->info.angular_resolution,
+    RCLCPP_INFO(this->get_logger(), " angular_resolution %0.2f x %d px", msg->info.angular_resolution,
              msg->info.angle);
-    ROS_INFO(" origin %0.3f m, %0.3f m, %0.3f rad",
+    RCLCPP_INFO(this->get_logger(), " origin %0.3f m, %0.3f m, %0.3f rad",
              msg->info.origin.position.x,
              msg->info.origin.position.y,
              tf2::getYaw(msg->info.origin.orientation));
@@ -1004,7 +1000,7 @@ protected:
     {
       map_info_ = msg->info;
       resetGridAstarModel(true);
-      ROS_DEBUG("Search model updated");
+      RCLCPP_DEBUG(this->get_logger(), "Search model updated");
     }
     else
     {
@@ -1065,7 +1061,7 @@ protected:
         cm_rough_[p] = cost_min;
       }
     }
-    ROS_DEBUG("Map copied");
+    RCLCPP_DEBUG(this->get_logger(), "Map copied");
 
     cm_hyst_.clear(100);
     hyst_updated_cells_.clear();
@@ -1088,7 +1084,7 @@ protected:
 
     if (map_update_retained_ && map_update_retained_->header.stamp >= msg->header.stamp)
     {
-      ROS_INFO("Applying retained map update");
+      RCLCPP_INFO(this->get_logger(), "Applying retained map update");
       cbMapUpdate(map_update_retained_);
     }
     map_update_retained_ = nullptr;
@@ -1097,33 +1093,33 @@ protected:
   {
     if (act_tolerant_->isActive())
     {
-      ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding by tolerant_move action.");
+      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding by tolerant_move action.");
       return;
     }
 
-    move_base_msgs::MoveBaseGoalConstPtr goal = act_->acceptNewGoal();
+    nav2_msgs::action::NavigateToPose::Goal::ConstPtr goal = act_->acceptNewGoal();
     if (!setGoal(goal->target_pose))
-      act_->setAborted(move_base_msgs::MoveBaseResult(), "Given goal is invalid.");
+      act_->setAborted(nav2_msgs::action::NavigateToPose::Result(), "Given goal is invalid.");
   }
 
   void cbTolerantAction()
   {
     if (act_->isActive())
     {
-      ROS_ERROR("Setting new goal is ignored since planner_3d is proceeding by move_base action.");
+      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding by move_base action.");
       return;
     }
 
     goal_tolerant_ = act_tolerant_->acceptNewGoal();
     if (!setGoal(goal_tolerant_->target_pose))
-      act_tolerant_->setAborted(planner_cspace_msgs::MoveWithToleranceResult(), "Given goal is invalid.");
+      act_tolerant_->setAborted(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Given goal is invalid.");
   }
 
   void updateStart()
   {
-    geometry_msgs::PoseStamped start;
+    geometry_msgs::msg::PoseStamped start;
     start.header.frame_id = robot_frame_;
-    start.header.stamp = ros::Time(0);
+    start.header.stamp = rclcpp::Time(0);
     start.pose.orientation.x = 0.0;
     start.pose.orientation.y = 0.0;
     start.pose.orientation.z = 0.0;
@@ -1133,8 +1129,8 @@ protected:
     start.pose.position.z = 0;
     try
     {
-      geometry_msgs::TransformStamped trans =
-          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, ros::Time(), ros::Duration(0.1));
+      geometry_msgs::msg::TransformStamped trans =
+          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(), rclcpp::Duration(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)
@@ -1168,28 +1164,28 @@ public:
     sub_goal_ = neonavigation_common::compat::subscribe(
         nh_, "move_base_simple/goal",
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
-    sub_temporary_escape_trigger_ = pnh_.subscribe(
+    sub_temporary_escape_trigger_ = pnh_->create_subscription(
         "temporary_escape", 1, &Planner3dNode::cbTemporaryEscape, this);
-    pub_start_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_start", 1, true);
-    pub_end_ = pnh_.advertise<geometry_msgs::PoseStamped>("path_end", 1, true);
-    pub_goal_ = pnh_.advertise<geometry_msgs::PoseStamped>("current_goal", 1, true);
-    pub_status_ = pnh_.advertise<planner_cspace_msgs::PlannerStatus>("status", 1, true);
-    pub_metrics_ = pnh_.advertise<neonavigation_metrics_msgs::Metrics>("metrics", 1, false);
+    pub_start_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_start", 1, true);
+    pub_end_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("path_end", 1, true);
+    pub_goal_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("current_goal", 1, true);
+    pub_status_ = pnh_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
+    pub_metrics_ = pnh_->create_publisher<neonavigation_metrics_msgs::msg::Metrics>("metrics", 1, false);
     srs_forget_ = neonavigation_common::compat::advertiseService(
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
 
     // Debug outputs
-    pub_distance_map_ = pnh_.advertise<sensor_msgs::PointCloud>("distance_map", 1, true);
-    pub_hysteresis_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("hysteresis_map", 1, true);
-    pub_remembered_map_ = pnh_.advertise<nav_msgs::OccupancyGrid>("remembered_map", 1, true);
+    pub_distance_map_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("distance_map", 1, true);
+    pub_hysteresis_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("hysteresis_map", 1, true);
+    pub_remembered_map_ = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>("remembered_map", 1, true);
 
-    act_.reset(new Planner3DActionServer(ros::NodeHandle(), "move_base", false));
+    act_.reset(new Planner3DActionServer(rclcpp::Node::SharedPtr(), "move_base", false));
     act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
     act_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
 
-    act_tolerant_.reset(new Planner3DTolerantActionServer(ros::NodeHandle(), "tolerant_move", false));
+    act_tolerant_.reset(new Planner3DTolerantActionServer(rclcpp::Node::SharedPtr(), "tolerant_move", false));
     act_tolerant_->registerGoalCallback(boost::bind(&Planner3dNode::cbTolerantAction, this));
     act_tolerant_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
     goal_tolerant_ = nullptr;
@@ -1197,17 +1193,17 @@ public:
     pnh_.param("use_path_with_velocity", use_path_with_velocity_, false);
     if (use_path_with_velocity_)
     {
-      pub_path_velocity_ = nh_.advertise<trajectory_tracker_msgs::PathWithVelocity>(
+      pub_path_velocity_ = nh_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
           "path_velocity", 1, true);
     }
     else
     {
-      pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
+      pub_path_ = neonavigation_common::compat::advertise<nav_msgs::msg::Path>(
           nh_, "path",
           pnh_, "path", 1, true);
     }
-    pub_path_poses_ = pnh_.advertise<geometry_msgs::PoseArray>("path_poses", 1, true);
-    pub_preserved_path_poses_ = pnh_.advertise<nav_msgs::Path>("preserved_path_poses", 1, true);
+    pub_path_poses_ = pnh_->create_publisher<geometry_msgs::msg::PoseArray>("path_poses", 1, true);
+    pub_preserved_path_poses_ = pnh_->create_publisher<nav_msgs::msg::Path>("preserved_path_poses", 1, true);
 
     pnh_.param("freq", freq_, 4.0f);
     pnh_.param("freq_min", freq_min_, 2.0f);
@@ -1217,7 +1213,7 @@ public:
 
     double costmap_watchdog;
     pnh_.param("costmap_watchdog", costmap_watchdog, 0.0);
-    costmap_watchdog_ = ros::Duration(costmap_watchdog);
+    costmap_watchdog_ = rclcpp::Duration(costmap_watchdog);
 
     pnh_.param("max_vel", cc_.max_vel_, 0.3f);
     pnh_.param("max_ang_vel", cc_.max_ang_vel_, 0.6f);
@@ -1263,7 +1259,7 @@ public:
     pnh_.param("grid_enumeration_resolution", grid_enumeration_resolution_, 0.1);
     if (path_interpolation_resolution_ < grid_enumeration_resolution_)
     {
-      ROS_ERROR("path_interpolation_resolution must be greater than or equal to grid_enumeration_resolution.");
+      RCLCPP_ERROR(this->get_logger(), "path_interpolation_resolution must be greater than or equal to grid_enumeration_resolution.");
       path_interpolation_resolution_ = grid_enumeration_resolution_;
     }
 
@@ -1288,11 +1284,11 @@ public:
     pnh_.param("fast_map_update", fast_map_update_, false);
     if (fast_map_update_)
     {
-      ROS_WARN("planner_3d: Experimental fast_map_update is enabled. ");
+      RCLCPP_WARN(this->get_logger(), "planner_3d: Experimental fast_map_update is enabled. ");
     }
     if (pnh_.hasParam("debug_mode"))
     {
-      ROS_ERROR(
+      RCLCPP_ERROR(this->get_logger(),
           "planner_3d: ~/debug_mode parameter and ~/debug topic are deprecated. "
           "Use ~/distance_map, ~/hysteresis_map, and ~/remembered_map topics instead.");
     }
@@ -1301,9 +1297,9 @@ public:
     pnh_.param("print_planning_duration", print_planning_duration, false);
     if (print_planning_duration)
     {
-      if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
+      if (rclcpp::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, rclcpp::console::levels::Debug))
       {
-        ros::console::notifyLoggerLevelsChanged();
+        rclcpp::console::notifyLoggerLevelsChanged();
       }
     }
 
@@ -1325,7 +1321,7 @@ public:
     cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
 
     pnh_.param("retain_last_error_status", retain_last_error_status_, true);
-    status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+    status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
 
     has_map_ = false;
     has_goal_ = false;
@@ -1388,7 +1384,7 @@ public:
     search_timeout_abort_ = config.search_timeout_abort;
     search_range_ = config.search_range;
     antialias_start_ = config.antialias_start;
-    costmap_watchdog_ = ros::Duration(config.costmap_watchdog);
+    costmap_watchdog_ = rclcpp::Duration(config.costmap_watchdog);
 
     cc_.max_vel_ = config.max_vel;
     cc_.max_ang_vel_ = config.max_ang_vel;
@@ -1479,15 +1475,15 @@ public:
     }
     start_pose_predictor_.setConfig(start_pose_predictor_config);
     trigger_plan_by_costmap_update_ = config.trigger_plan_by_costmap_update;
-    no_map_update_timer_.stop();
+    no_map_update_timer_->cancel();
   }
 
-  void waitUntil(const ros::Time& next_replan_time)
+  void waitUntil(const rclcpp::Time& next_replan_time)
   {
-    while (ros::ok())
+    while (rclcpp::ok())
     {
-      const ros::Time prev_map_update_stamp = last_costmap_;
-      ros::spinOnce();
+      const rclcpp::Time prev_map_update_stamp = last_costmap_;
+      rclcpp::spin_some(shared_from_this());
       const bool costmap_updated = last_costmap_ != prev_map_update_stamp;
 
       if (has_map_)
@@ -1530,34 +1526,34 @@ public:
           }
         }
       }
-      if (ros::Time::now() > next_replan_time)
+      if (this->now() > next_replan_time)
       {
         return;
       }
-      ros::Duration(0.01).sleep();
+      rclcpp::Duration(0.01).sleep();
     }
   }
 
-  void planPath(const ros::Time& now)
+  void planPath(const rclcpp::Time& now)
   {
     if (has_map_ && !cost_estim_cache_created_ && has_goal_)
     {
       createCostEstimCache();
     }
     bool has_costmap(false);
-    if (costmap_watchdog_ > ros::Duration(0))
+    if (costmap_watchdog_ > rclcpp::Duration(0, 0))
     {
-      const ros::Duration costmap_delay = now - last_costmap_;
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      const rclcpp::Duration costmap_delay = now - last_costmap_;
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "costmap_delay",
-          costmap_delay.toSec(),
+          costmap_delay.seconds(),
           "second"));
       if (costmap_delay > costmap_watchdog_)
       {
-        ROS_WARN_THROTTLE(1.0,
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
                           "Navigation is stopping since the costmap is too old (costmap: %0.3f)",
-                          last_costmap_.toSec());
-        status_.error = planner_cspace_msgs::PlannerStatus::DATA_MISSING;
+                          last_costmap_.seconds());
+        status_.error = planner_cspace_msgs::msg::PlannerStatus::DATA_MISSING;
         publishEmptyPath();
       }
       else
@@ -1567,7 +1563,7 @@ public:
     }
     else
     {
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "costmap_delay",
           -1.0,
           "second"));
@@ -1578,20 +1574,20 @@ public:
     {
       if (act_->isActive())
       {
-        move_base_msgs::MoveBaseFeedback feedback;
+        nav2_msgs::action::NavigateToPose::Feedback feedback;
         feedback.base_position = start_;
-        act_->publishFeedback(feedback);
+        act_->publish_feedback(feedback);
       }
 
       if (act_tolerant_->isActive())
       {
-        planner_cspace_msgs::MoveWithToleranceFeedback feedback;
+        planner_cspace_msgs::action::MoveWithTolerance::Feedback feedback;
         feedback.base_position = start_;
-        act_tolerant_->publishFeedback(feedback);
+        act_tolerant_->publish_feedback(feedback);
       }
 
       is_path_switchback_ = false;
-      if (status_.status == planner_cspace_msgs::PlannerStatus::FINISHING)
+      if (status_.status == planner_cspace_msgs::msg::PlannerStatus::FINISHING)
       {
         const float yaw_s = tf2::getYaw(start_.pose.orientation);
         float yaw_g = tf2::getYaw(goal_.pose.orientation);
@@ -1606,16 +1602,16 @@ public:
         if (std::abs(yaw_diff) <
             (act_tolerant_->isActive() ? goal_tolerant_->goal_tolerance_ang_finish : goal_tolerance_ang_finish_))
         {
-          status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+          status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
           has_goal_ = false;
           // Don't publish empty path here in order a path follower
           // to minimize the error to the desired final pose
-          ROS_INFO("Path plan finished");
+          RCLCPP_INFO(this->get_logger(), "Path plan finished");
 
           if (act_->isActive())
-            act_->setSucceeded(move_base_msgs::MoveBaseResult(), "Goal reached.");
+            act_->setSucceeded(nav2_msgs::action::NavigateToPose::Result(), "Goal reached.");
           if (act_tolerant_->isActive())
-            act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(), "Goal reached.");
+            act_tolerant_->setSucceeded(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Goal reached.");
         }
         else
         {
@@ -1628,19 +1624,19 @@ public:
         bool skip_path_planning = false;
         if (max_retry_num_ != -1 && cnt_stuck_ > max_retry_num_)
         {
-          status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-          status_.status = planner_cspace_msgs::PlannerStatus::DONE;
+          status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
+          status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
           has_goal_ = false;
 
           publishEmptyPath();
-          ROS_ERROR("Exceeded max_retry_num:%d", max_retry_num_);
+          RCLCPP_ERROR(this->get_logger(), "Exceeded max_retry_num:%d", max_retry_num_);
 
           if (act_->isActive())
             act_->setAborted(
-                move_base_msgs::MoveBaseResult(), "Goal is in Rock");
+                nav2_msgs::action::NavigateToPose::Result(), "Goal is in Rock");
           if (act_tolerant_->isActive())
             act_tolerant_->setAborted(
-                planner_cspace_msgs::MoveWithToleranceResult(), "Goal is in Rock");
+                planner_cspace_msgs::action::MoveWithTolerance::Result(), "Goal is in Rock");
           return;
         }
         else if (!cost_estim_cache_created_)
@@ -1648,16 +1644,16 @@ public:
           skip_path_planning = true;
           if (is_start_occupied_)
           {
-            status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
+            status_.error = planner_cspace_msgs::msg::PlannerStatus::IN_ROCK;
           }
           else
           {
-            status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+            status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
           }
         }
         else
         {
-          status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+          status_.error = planner_cspace_msgs::msg::PlannerStatus::GOING_WELL;
         }
 
         if (skip_path_planning)
@@ -1666,7 +1662,7 @@ public:
         }
         else
         {
-          nav_msgs::Path path;
+          nav_msgs::msg::Path path;
           path.header = map_header_;
           path.header.stamp = now;
           makePlan(start_.pose, goal_.pose, path, true);
@@ -1681,7 +1677,7 @@ public:
           if (isEscaping(escape_status_) || isEscaping(previous_escape_status))
           {
             // Planner error status is obtained by escape_status_ during temporary escape.
-            // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::PlannerStatus
+            // TODO(at-wat): Add temporary_escape status field to planner_cspace_msgs::msg::PlannerStatus
             status_.error = temporaryEscapeStatus2PlannerErrorStatus(escape_status_ | previous_escape_status);
           }
         }
@@ -1690,38 +1686,38 @@ public:
     else if (!has_goal_)
     {
       if (!retain_last_error_status_)
-        status_.error = planner_cspace_msgs::PlannerStatus::GOING_WELL;
+        status_.error = planner_cspace_msgs::msg::PlannerStatus::GOING_WELL;
       publishEmptyPath();
     }
     publishCurrentGoal();
     status_.header.stamp = now;
-    pub_status_.publish(status_);
+    pub_status_->publish(status_);
     diag_updater_.force_update();
 
     metrics_.header.stamp = now;
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+    metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "stuck_cnt",
         cnt_stuck_,
         "count"));
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+    metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "error",
         status_.error,
         "enum"));
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+    metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "status",
         status_.status,
         "enum"));
-    pub_metrics_.publish(metrics_);
+    pub_metrics_->publish(metrics_);
     metrics_.data.clear();
   }
 
   void spin()
   {
-    ROS_DEBUG("Initialized");
+    RCLCPP_DEBUG(this->get_logger(), "Initialized");
 
-    ros::Time next_replan_time = ros::Time::now();
-    ros::Rate r(100);
-    while (ros::ok())
+    rclcpp::Time next_replan_time = this->now();
+    rclcpp::Rate r(100);
+    while (rclcpp::ok())
     {
       if (trigger_plan_by_costmap_update_)
       {
@@ -1729,22 +1725,22 @@ public:
         {
           bbf_costmap_->clear();
         }
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
         r.sleep();
       }
       else
       {
         waitUntil(next_replan_time);
-        const ros::Time now = ros::Time::now();
+        const rclcpp::Time now = this->now();
         planPath(now);
         if (is_path_switchback_)
         {
-          next_replan_time = now + ros::Duration(sw_wait_);
-          ROS_INFO("Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.toSec());
+          next_replan_time = now + rclcpp::Duration(sw_wait_);
+          RCLCPP_INFO(this->get_logger(), "Planned path has switchback. Planner will stop until: %f at the latest.", next_replan_time.seconds());
         }
         else
         {
-          next_replan_time = now + ros::Duration(1.0 / freq_);
+          next_replan_time = now + rclcpp::Duration(1.0 / freq_);
         }
       }
     }
@@ -1753,19 +1749,19 @@ public:
 protected:
   void publishStartAndGoalMarkers(const Astar::Vec& start_grid, const Astar::Vec& end_grid)
   {
-    geometry_msgs::PoseStamped p;
+    geometry_msgs::msg::PoseStamped p;
     p.header = map_header_;
     p.pose = grid2MetricPose(end_grid);
-    pub_end_.publish(p);
+    pub_end_->publish(p);
     p.pose = grid2MetricPose(start_grid);
-    pub_start_.publish(p);
+    pub_start_->publish(p);
   }
 
   void publishCurrentGoal()
   {
-    geometry_msgs::PoseStamped p(goal_);
+    geometry_msgs::msg::PoseStamped p(goal_);
     p.header = map_header_;
-    pub_goal_.publish(p);
+    pub_goal_->publish(p);
   }
 
   bool isPathFinishing(const Astar::Vec& start_grid, const Astar::Vec& end_grid) const
@@ -1791,7 +1787,7 @@ protected:
     return (remain.sqlen() <= g_tolerance_lin * g_tolerance_lin && std::abs(remain[2]) <= g_tolerance_ang);
   }
 
-  StartPoseStatus buildStartPoses(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
+  StartPoseStatus buildStartPoses(const geometry_msgs::msg::Pose& start_metric, const geometry_msgs::msg::Pose& end_metric,
                                   std::vector<Astar::VecWithCost>& result_start_poses)
   {
     result_start_poses.clear();
@@ -1808,7 +1804,7 @@ protected:
 
     if (!cm_.validate(start_grid, range_))
     {
-      ROS_ERROR("You are on the edge of the world.");
+      RCLCPP_ERROR(this->get_logger(), "You are on the edge of the world.");
       return StartPoseStatus::START_OCCUPIED;
     }
 
@@ -1817,7 +1813,7 @@ protected:
       Astar::Vec expected_start_grid;
       if (start_pose_predictor_.process(start_metric, cm_, map_info_, previous_path_, expected_start_grid))
       {
-        ROS_DEBUG("Start grid is moved to (%d, %d, %d) from (%d, %d, %d) by start pose predictor.",
+        RCLCPP_DEBUG(this->get_logger(), "Start grid is moved to (%d, %d, %d) from (%d, %d, %d) by start pose predictor.",
                   expected_start_grid[0], expected_start_grid[1], expected_start_grid[2],
                   start_grid[0], start_grid[1], start_grid[2]);
         result_start_poses.push_back(Astar::VecWithCost(expected_start_grid));
@@ -1863,10 +1859,10 @@ protected:
       const Astar::Vec original_start_grid = start_grid;
       if (!searchAvailablePos(cm_, start_grid, tolerance_range_, tolerance_angle_))
       {
-        ROS_WARN("Oops! You are in Rock!");
+        RCLCPP_WARN(this->get_logger(), "Oops! You are in Rock!");
         return StartPoseStatus::START_OCCUPIED;
       }
-      ROS_INFO("Start grid is moved to (%d, %d, %d) from (%d, %d, %d) by relocation.",
+      RCLCPP_INFO(this->get_logger(), "Start grid is moved to (%d, %d, %d) from (%d, %d, %d) by relocation.",
                start_grid[0], start_grid[1], start_grid[2],
                original_start_grid[0], original_start_grid[1], original_start_grid[2]);
       result_start_poses.push_back(Astar::VecWithCost(start_grid));
@@ -1881,8 +1877,8 @@ protected:
     return StartPoseStatus::NORMAL;
   }
 
-  bool makePlan(const geometry_msgs::Pose& start_metric, const geometry_msgs::Pose& end_metric,
-                nav_msgs::Path& path, bool hyst)
+  bool makePlan(const geometry_msgs::msg::Pose& start_metric, const geometry_msgs::msg::Pose& end_metric,
+                nav_msgs::msg::Path& path, bool hyst)
   {
     const Astar::Vec start_grid = metric2Grid(start_metric);
     const Astar::Vec end_grid = metric2Grid(end_metric);
@@ -1892,7 +1888,7 @@ protected:
     switch (buildStartPoses(start_metric, end_metric, starts))
     {
       case StartPoseStatus::START_OCCUPIED:
-        status_.error = planner_cspace_msgs::PlannerStatus::IN_ROCK;
+        status_.error = planner_cspace_msgs::msg::PlannerStatus::IN_ROCK;
         return false;
       case StartPoseStatus::FINISHING:
         if (isEscaping(escape_status_))
@@ -1900,21 +1896,21 @@ protected:
           goal_ = goal_raw_ = goal_original_;
           escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
           createCostEstimCache();
-          ROS_INFO("Escaped");
+          RCLCPP_INFO(this->get_logger(), "Escaped");
           return true;
         }
         if (act_tolerant_->isActive() && goal_tolerant_->continuous_movement_mode)
         {
-          ROS_INFO("Robot reached near the goal.");
-          act_tolerant_->setSucceeded(planner_cspace_msgs::MoveWithToleranceResult(),
+          RCLCPP_INFO(this->get_logger(), "Robot reached near the goal.");
+          act_tolerant_->setSucceeded(planner_cspace_msgs::action::MoveWithTolerance::Result(),
                                       "Goal reached (Continuous movement mode).");
           goal_tolerant_ = nullptr;
         }
         else
         {
-          status_.status = planner_cspace_msgs::PlannerStatus::FINISHING;
+          status_.status = planner_cspace_msgs::msg::PlannerStatus::FINISHING;
           publishFinishPath();
-          ROS_INFO("Path plan finishing");
+          RCLCPP_INFO(this->get_logger(), "Path plan finishing");
           return true;
         }
         break;
@@ -1927,8 +1923,8 @@ protected:
     // computational cost for clearing huge map. In this case, cm_[e] is 100.
     if (initial_2dof_cost == std::numeric_limits<float>::max() || cm_[end_grid] >= 100)
     {
-      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
-      ROS_WARN("Goal unreachable.");
+      status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
+      RCLCPP_WARN(this->get_logger(), "Goal unreachable.");
       start_pose_predictor_.clear();
       if (temporary_escape_)
       {
@@ -1947,7 +1943,7 @@ protected:
       publishEmptyPath();
       if (tdiff > search_timeout_abort_)
       {
-        ROS_ERROR(
+        RCLCPP_ERROR(this->get_logger(),
             "Search aborted due to timeout. "
             "search_timeout_abort may be too small or planner_3d may have a bug: "
             "s=(%d, %d, %d), g=(%d, %d, %d), tdiff=%0.4f, "
@@ -1959,7 +1955,7 @@ protected:
             stats.num_loop, stats.num_search_queue, stats.num_prev_updates, stats.num_total_updates);
         return false;
       }
-      ROS_WARN("Search timed out (%0.4f sec.)", tdiff);
+      RCLCPP_WARN(this->get_logger(), "Search timed out (%0.4f sec.)", tdiff);
       return true;
     };
 
@@ -1970,7 +1966,7 @@ protected:
     {
       if (s.v_ == end_grid)
       {
-        ROS_DEBUG("The start grid is the same as the end grid. Path planning skipped.");
+        RCLCPP_DEBUG(this->get_logger(), "The start grid is the same as the end grid. Path planning skipped.");
         path_grid.push_back(end_grid);
         is_goal_same_as_start = true;
         break;
@@ -1983,29 +1979,29 @@ protected:
                                               1.0f / freq_min_,
                                               find_best_))
     {
-      ROS_WARN("Path plan failed (goal unreachable)");
-      status_.error = planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND;
+      RCLCPP_WARN(this->get_logger(), "Path plan failed (goal unreachable)");
+      status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       if (!find_best_)
         return false;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
     const float dur = boost::chrono::duration<float>(tnow - ts).count();
-    ROS_DEBUG("Path found (%0.4f sec.)", dur);
-    metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+    RCLCPP_DEBUG(this->get_logger(), "Path found (%0.4f sec.)", dur);
+    metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "path_search_dur",
         dur,
         "second"));
 
-    geometry_msgs::PoseArray poses;
+    geometry_msgs::msg::PoseArray poses;
     poses.header = path.header;
     for (const auto& p : path_grid)
     {
       poses.poses.push_back(grid2MetricPose(p));
     }
-    pub_path_poses_.publish(poses);
+    pub_path_poses_->publish(poses);
     if (!start_pose_predictor_.getPreservedPath().poses.empty())
     {
-      pub_preserved_path_poses_.publish(start_pose_predictor_.getPreservedPath());
+      pub_preserved_path_poses_->publish(start_pose_predictor_.getPreservedPath());
     }
     const std::list<Astar::Vecf> path_interpolated = model_->interpolatePath(path_grid);
     path.poses = start_pose_predictor_.getPreservedPath().poses;
@@ -2068,8 +2064,8 @@ protected:
       has_hysteresis_map_ = true;
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
-      ROS_DEBUG("Hysteresis map generated (%0.4f sec.)", dur);
-      metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+      RCLCPP_DEBUG(this->get_logger(), "Hysteresis map generated (%0.4f sec.)", dur);
+      metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "hyst_map_dur",
           dur,
           "second"));
@@ -2085,13 +2081,13 @@ protected:
     {
       if (log_on_unready)
       {
-        ROS_WARN("Not ready to update temporary escape goal");
+        RCLCPP_WARN(this->get_logger(), "Not ready to update temporary escape goal");
       }
       return;
     }
     if (is_path_switchback_)
     {
-      ROS_INFO("Skipping temporary goal update during switch back");
+      RCLCPP_INFO(this->get_logger(), "Skipping temporary goal update during switch back");
       return;
     }
 
@@ -2101,11 +2097,11 @@ protected:
       Astar::Vec te;
       if (!searchAvailablePos(cm_, te, esc_range_, esc_angle_, relocation_acceptable_cost_, esc_range_min_))
       {
-        ROS_WARN("No valid temporary escape goal");
+        RCLCPP_WARN(this->get_logger(), "No valid temporary escape goal");
         return;
       }
       escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
-      ROS_INFO("Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
+      RCLCPP_INFO(this->get_logger(), "Temporary goal (%d, %d, %d)", te[0], te[1], te[2]);
       goal_raw_.pose = grid2MetricPose(te);
       goal_ = goal_raw_;
 
@@ -2118,7 +2114,7 @@ protected:
       const Astar::Vec s(start_grid[0], start_grid[1], 0);
       if (!cm_.validate(s, esc_range_))
       {
-        ROS_ERROR("Crowd escape is disabled on the edge of the world.");
+        RCLCPP_ERROR(this->get_logger(), "Crowd escape is disabled on the edge of the world.");
         return;
       }
       const Astar::Vec g_orig = metric2Grid(goal_original_.pose);
@@ -2132,10 +2128,10 @@ protected:
             DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
         const auto tnow = boost::chrono::high_resolution_clock::now();
         const float dur = boost::chrono::duration<float>(tnow - ts).count();
-        ROS_DEBUG("Cost estimation cache for static map updated (%0.4f sec.)", dur);
-        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache for static map updated (%0.4f sec.)", dur);
+        metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
             "distance_map_static_update_dur", dur, "second"));
-        metrics_.data.push_back(neonavigation_metrics_msgs::metric(
+        metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
             "distance_map_static_init_dur", 0.0, "second"));
       }
 
@@ -2197,7 +2193,7 @@ protected:
           if (te[0] == g_orig[0] && te[1] == g_orig[1] && cm_[g_orig] < 100)
           {
             // Original goal is in the temporary escape range and reachable
-            ROS_INFO("Original goal is reachable. Back to the original goal.");
+            RCLCPP_INFO(this->get_logger(), "Original goal is reachable. Back to the original goal.");
             goal_ = goal_raw_ = goal_original_;
             escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
             createCostEstimCache();
@@ -2259,7 +2255,7 @@ protected:
       }
       if (cost_min == std::numeric_limits<float>::max())
       {
-        ROS_WARN("No valid temporary escape goal");
+        RCLCPP_WARN(this->get_logger(), "No valid temporary escape goal");
         return;
       }
 
@@ -2273,7 +2269,7 @@ protected:
         escape_status_ = TemporaryEscapeStatus::ESCAPING_WITHOUT_IMPROVEMENT;
       }
 
-      ROS_INFO("Temporary goal (%d, %d, %d)",
+      RCLCPP_INFO(this->get_logger(), "Temporary goal (%d, %d, %d)",
                te_out[0], te_out[1], te_out[2]);
       goal_raw_.pose = grid2MetricPose(te_out);
       goal_ = goal_raw_;
@@ -2282,9 +2278,9 @@ protected:
     }
   }
 
-  int getSwitchIndex(const nav_msgs::Path& path) const
+  int getSwitchIndex(const nav_msgs::msg::Path& path) const
   {
-    geometry_msgs::Pose p_prev;
+    geometry_msgs::msg::Pose p_prev;
     bool first(true);
     bool dir_set(false);
     bool dir_prev(false);
@@ -2319,23 +2315,23 @@ protected:
   {
     switch (status_.error)
     {
-      case planner_cspace_msgs::PlannerStatus::GOING_WELL:
-        stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Going well.");
+      case planner_cspace_msgs::msg::PlannerStatus::GOING_WELL:
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Going well.");
         break;
-      case planner_cspace_msgs::PlannerStatus::IN_ROCK:
-        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The robot is in rock.");
+      case planner_cspace_msgs::msg::PlannerStatus::IN_ROCK:
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "The robot is in rock.");
         break;
-      case planner_cspace_msgs::PlannerStatus::PATH_NOT_FOUND:
-        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Path not found.");
+      case planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND:
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Path not found.");
         break;
-      case planner_cspace_msgs::PlannerStatus::DATA_MISSING:
-        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Required data is missing.");
+      case planner_cspace_msgs::msg::PlannerStatus::DATA_MISSING:
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Required data is missing.");
         break;
-      case planner_cspace_msgs::PlannerStatus::INTERNAL_ERROR:
-        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Planner internal error.");
+      case planner_cspace_msgs::msg::PlannerStatus::INTERNAL_ERROR:
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Planner internal error.");
         break;
       default:
-        stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "Unknown error.");
+        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Unknown error.");
         break;
     }
     stat.addf("status", "%u", status_.status);
@@ -2347,7 +2343,7 @@ protected:
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "planner_3d");
+  rclcpp::init(argc, argv, "planner_3d");
 
   planner_cspace::planner_3d::Planner3dNode node;
   node.spin();

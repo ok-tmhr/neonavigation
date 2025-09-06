@@ -36,17 +36,17 @@
 #include <memory>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
 namespace costmap_cspace
 {
-class CSpace3DMsg : public costmap_cspace_msgs::CSpace3D
+class CSpace3DMsg : public costmap_cspace_msgs::msg::CSpace3D
 {
 public:
   using Ptr = std::shared_ptr<CSpace3DMsg>;
@@ -84,7 +84,7 @@ public:
     std::memcpy(to.data.data() + to.address(to_x, to_y, to_yaw),
                 from.data.data() + from.address(from_x, from_y, from_yaw), copy_cell_num * sizeof(int8_t));
   }
-  static void copyCells(costmap_cspace_msgs::CSpace3DUpdate& to, const int& to_x, const int& to_y, const int& to_yaw,
+  static void copyCells(costmap_cspace_msgs::msg::CSpace3DUpdate& to, const int& to_x, const int& to_y, const int& to_yaw,
                         const CSpace3DMsg& from, const int& from_x, const int& from_y, const int& from_yaw,
                         const int& copy_cell_num)
   {
@@ -104,7 +104,7 @@ class UpdatedRegion
 public:
   int x_, y_, yaw_;
   int width_, height_, angle_;
-  ros::Time stamp_;
+  rclcpp::Time stamp_;
 
   UpdatedRegion()
     : x_(0)
@@ -119,7 +119,7 @@ public:
   UpdatedRegion(
       const int& x, const int& y, const int& yaw,
       const int& width, const int& height, const int& angle,
-      const ros::Time& stamp = ros::Time())
+      const rclcpp::Time& stamp = rclcpp::Time())
     : x_(x)
     , y_(y)
     , yaw_(yaw)
@@ -265,7 +265,7 @@ protected:
   Costmap3dLayerBase::Ptr child_;
   UpdatedRegion region_;
   UpdatedRegion region_prev_;
-  nav_msgs::OccupancyGrid::ConstPtr map_updated_;
+  nav_msgs::msg::OccupancyGrid::ConstPtr map_updated_;
 
 public:
   Costmap3dLayerBase()
@@ -278,7 +278,7 @@ public:
   }
 
   virtual void loadConfig(XmlRpc::XmlRpcValue config) = 0;
-  virtual void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info) = 0;
+  virtual void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info) = 0;
 
   void setAngleResolution(
       const int ang_resolution)
@@ -296,7 +296,7 @@ public:
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  void setBaseMap(const nav_msgs::OccupancyGrid::ConstPtr& base_map)
+  void setBaseMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& base_map)
   {
     ROS_ASSERT(root_);
     ROS_ASSERT(ang_grid_ > 0);
@@ -346,7 +346,7 @@ public:
             0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
             base_map->header.stamp));
   }
-  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr& msg, const bool update_chain_entry)
+  void processMapOverlay(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg, const bool update_chain_entry)
   {
     ROS_ASSERT(!root_);
     ROS_ASSERT(ang_grid_ > 0);
@@ -372,7 +372,7 @@ public:
     }
     else
     {
-      ROS_DEBUG("update_chain_entry execution has been avoided.");
+      RCLCPP_DEBUG(this->get_logger(), "update_chain_entry execution has been avoided.");
     }
   }
   CSpace3DMsg::Ptr getMap()
@@ -395,7 +395,7 @@ public:
 protected:
   virtual bool updateChain(const bool output) = 0;
   virtual void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
       const UpdatedRegion& region) = 0;
   virtual int getRangeMax() const = 0;
 
@@ -417,7 +417,7 @@ protected:
       }
       else
       {
-        ROS_ERROR("map and map_overlay must have same frame_id. skipping");
+        RCLCPP_ERROR(this->get_logger(), "map and map_overlay must have same frame_id. skipping");
       }
     }
 

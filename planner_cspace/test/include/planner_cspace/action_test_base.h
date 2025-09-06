@@ -35,13 +35,14 @@
 
 #include <gtest/gtest.h>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <nav_msgs/GetPlan.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <nav_msgs/srv/get_plan.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <tf2/utils.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 constexpr const char ACTION_TOPIC_MOVE_BASE[] = "/move_base";
@@ -61,20 +62,20 @@ public:
   }
   void SetUp()
   {
-    if (!move_base_->waitForServer(ros::Duration(30.0)))
+    if (!move_base_->waitForServer(rclcpp::Duration(30.0)))
     {
       FAIL() << "Failed to connect move_base action";
     }
 
-    ros::ServiceClient srv_plan =
-        node_.serviceClient<nav_msgs::GetPlanRequest, nav_msgs::GetPlanResponse>(
+    rclcpp::ServiceClient srv_plan =
+        node_.serviceClient<nav_msgs::srv::GetPlanRequest, nav_msgs::srv::GetPlanResponse>(
             "/planner_3d/make_plan");
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(10.0);
-    while (ros::ok())
+    const rclcpp::Time deadline = this->now() + rclcpp::Duration(10.0);
+    while (rclcpp::ok())
     {
-      nav_msgs::GetPlanRequest req;
-      nav_msgs::GetPlanResponse res;
+      nav_msgs::srv::GetPlanRequest req;
+      nav_msgs::srv::GetPlanResponse res;
       req.tolerance = 10.0;
       req.start.header.frame_id = "map";
       req.start.pose.position.x = 1.24;
@@ -89,12 +90,12 @@ public:
         // Planner is ready.
         break;
       }
-      if (ros::Time::now() > deadline)
+      if (this->now() > deadline)
       {
         FAIL() << "planner_3d didn't receive map";
       }
-      ros::Duration(1).sleep();
-      ros::spinOnce();
+      rclcpp::Duration(1).sleep();
+      rclcpp::spin_some(shared_from_this());
     }
   }
   ~ActionTestBase()
@@ -105,7 +106,7 @@ protected:
   using ActionClient = actionlib::SimpleActionClient<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void cbStatus(const planner_cspace_msgs::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     planner_status_ = msg;
   }
@@ -120,10 +121,10 @@ protected:
            ", error: " + std::to_string(planner_status_->error) + ")";
   }
 
-  ros::NodeHandle node_;
-  ros::Subscriber sub_status_;
+  rclcpp::Node::SharedPtr node_;
+  rclcpp::Subscription<>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
-  planner_cspace_msgs::PlannerStatus::ConstPtr planner_status_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   bool map_ready_;

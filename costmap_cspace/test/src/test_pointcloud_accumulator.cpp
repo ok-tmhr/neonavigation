@@ -29,7 +29,7 @@
 
 #include <initializer_list>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -37,22 +37,22 @@
 
 #include <gtest/gtest.h>
 
-void fillInPointcloudMsg(sensor_msgs::PointCloud2& cloud, const std::initializer_list<float>& points)
+void fillInPointcloudMsg(sensor_msgs::msg::PointCloud2& cloud, const std::initializer_list<float>& points)
 {
-  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2Fields(
       3,
-      "x", 1, sensor_msgs::PointField::FLOAT32,
-      "y", 1, sensor_msgs::PointField::FLOAT32,
-      "z", 1, sensor_msgs::PointField::FLOAT32);
+      "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+      "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+      "z", 1, sensor_msgs::msg::PointField::FLOAT32);
   modifier.resize(points.size() / 3);
   cloud.height = 1;
   cloud.is_bigendian = false;
   cloud.is_dense = false;
   cloud.width = points.size();
-  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_z(cloud, "z");
 
   std::initializer_list<float>::iterator it;
   for (it = points.begin(); it != points.end(); it += 3)
@@ -68,17 +68,17 @@ void fillInPointcloudMsg(sensor_msgs::PointCloud2& cloud, const std::initializer
 
 TEST(PointcloudAccumulator, PushPointCloud)
 {
-  ros::Duration accum_duration(1.0);
-  costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2> accum(accum_duration);
+  rclcpp::Duration accum_duration(1.0);
+  costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum(accum_duration);
 
-  ros::Time stamp(0);
-  ros::Duration dt(0.25);
-  sensor_msgs::PointCloud2 cloud;
+  rclcpp::Time stamp(0);
+  rclcpp::Duration dt(0.25);
+  sensor_msgs::msg::PointCloud2 cloud;
   for (int i = 0; i < 10; i++)
   {
     fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});  // NOLINT
     cloud.header.stamp = stamp;
-    accum.push(costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2>::Points(cloud, stamp));
+    accum.push(costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>::Points(cloud, stamp));
     // check the number of clouds accumulated so far
     ASSERT_EQ(i < 5 ? i + 1 : 5, std::distance(accum.begin(), accum.end()));
     stamp += dt;
@@ -94,7 +94,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   int idx = 0;
   for (auto& pc : accum)
   {
-    sensor_msgs::PointCloud2Iterator<float> it_x(pc, "x");
+    sensor_msgs::msg::PointCloud2Iterator<float> it_x(pc, "x");
     ASSERT_EQ(expected_xs[idx++], *it_x);
   }
 
@@ -103,12 +103,12 @@ TEST(PointcloudAccumulator, PushPointCloud)
   ASSERT_EQ(0, std::distance(accum.begin(), accum.end()));
 
   // check the accumulation difference is properly updated after calling reset
-  accum.reset(ros::Duration(2.0));
+  accum.reset(rclcpp::Duration(2.0));
   for (int i = 0; i < 10; i++)
   {
     fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});  // NOLINT
     cloud.header.stamp = stamp;
-    accum.push(costmap_cspace::PointcloudAccumulator<sensor_msgs::PointCloud2>::Points(cloud, stamp));
+    accum.push(costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>::Points(cloud, stamp));
     stamp += dt;
   }
   ASSERT_EQ(9, std::distance(accum.begin(), accum.end()));
@@ -119,8 +119,8 @@ TEST(PointcloudAccumulator, BackwardCompatibility)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // check accumulator can be instantiated using the PointcloudAccumurator class
-  costmap_cspace::PointcloudAccumurator<sensor_msgs::PointCloud2> accum;
-  accum.reset(ros::Duration(1.0));
+  costmap_cspace::PointcloudAccumurator<sensor_msgs::msg::PointCloud2> accum;
+  accum.reset(rclcpp::Duration(1.0));
 #pragma GCC diagnostic pop
 }
 

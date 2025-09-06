@@ -33,18 +33,18 @@
 #include <gtest/gtest.h>
 
 #include <dynamic_reconfigure/client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/Odometry.h>
-#include <planner_cspace/Planner3DConfig.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <planner_cspace/action_test_base.h>
 
 class DynamicParameterChangeTest
-  : public ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>
+  : public ActionTestBase<nav2_msgs::action::NavigateToPose, ACTION_TOPIC_MOVE_BASE>
 {
 public:
   void SetUp() final
@@ -53,17 +53,17 @@ public:
     planner_3d_client_.reset(
         new dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>("/planner_3d/"));
     sub_path_ = node_.subscribe("path", 1, &DynamicParameterChangeTest::cbPath, this);
-    pub_map_overlay_ = node_.advertise<nav_msgs::OccupancyGrid>("map_overlay", 1, true);
-    pub_odom_ = node_.advertise<nav_msgs::Odometry>("odom", 1, true);  // not actually used
+    pub_map_overlay_ = node_.advertise<nav_msgs::msg::OccupancyGrid>("map_overlay", 1, true);
+    pub_odom_ = node_.advertise<nav_msgs::msg::Odometry>("odom", 1, true);  // not actually used
 
-    const ros::Time deadline = ros::Time::now() + ros::Duration(2);
-    while (sub_path_.getNumPublishers() < 1 || pub_map_overlay_.getNumSubscribers() < 1)
+    const rclcpp::Time deadline = this->now() + rclcpp::Duration(2);
+    while (sub_path_.getNumPublishers() < 1 || pub_map_overlay_->get_subscription_count() < 1)
     {
-      ros::Duration(0.1).sleep();
-      ASSERT_TRUE(ros::ok());
-      ASSERT_LT(ros::Time::now(), deadline);
+      rclcpp::Duration(0.1).sleep();
+      ASSERT_TRUE(rclcpp::ok());
+      ASSERT_LT(this->now(), deadline);
     }
-    ros::Duration(0.5).sleep();  // wait some more time to ensure tf topic connection
+    rclcpp::Duration(0.5).sleep();  // wait some more time to ensure tf topic connection
 
     map_overlay_.header.frame_id = "map";
     map_overlay_.info.resolution = 0.1;
@@ -78,7 +78,7 @@ public:
     map_overlay_.info.origin.orientation.w = 1.0;
     map_overlay_.data.resize(map_overlay_.info.width * map_overlay_.info.height, 0);
     publishMapAndRobot(0, 0, 0);
-    ActionTestBase<move_base_msgs::MoveBaseAction, ACTION_TOPIC_MOVE_BASE>::SetUp();
+    ActionTestBase<nav2_msgs::action::NavigateToPose, ACTION_TOPIC_MOVE_BASE>::SetUp();
 
     default_config_ = planner_cspace::Planner3DConfig::__getDefault__();
     default_config_.max_retry_num = 5;
@@ -97,17 +97,17 @@ public:
   }
 
 protected:
-  void cbPath(const nav_msgs::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
     path_ = msg;
     ++path_received_count_;
-    last_path_received_time_ = ros::Time::now();
+    last_path_received_time_ = this->now();
   }
 
-  move_base_msgs::MoveBaseGoal CreateGoalInFree()
+  nav2_msgs::action::NavigateToPose::Goal CreateGoalInFree()
   {
-    move_base_msgs::MoveBaseGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
+    nav2_msgs::action::NavigateToPose::Goal goal;
+    goal.target_pose.header.stamp = this->now();
     goal.target_pose.header.frame_id = "map";
     goal.target_pose.pose.position.x = 1.25;
     goal.target_pose.pose.position.y = 1.05;
@@ -136,7 +136,7 @@ protected:
     return false;
   }
 
-  ::testing::AssertionResult comparePath(const nav_msgs::Path& path1, const nav_msgs::Path& path2)
+  ::testing::AssertionResult comparePath(const nav_msgs::msg::Path& path1, const nav_msgs::msg::Path& path2)
   {
     if (path1.poses.size() != path2.poses.size())
     {
@@ -145,8 +145,8 @@ protected:
     }
     for (size_t i = 0; i < path1.poses.size(); ++i)
     {
-      const geometry_msgs::Point& pos1 = path1.poses[i].pose.position;
-      const geometry_msgs::Point& pos2 = path2.poses[i].pose.position;
+      const geometry_msgs::msg::Point& pos1 = path1.poses[i].pose.position;
+      const geometry_msgs::msg::Point& pos2 = path2.poses[i].pose.position;
       if (std::abs(pos1.x - pos2.x) > 1.0e-6)
       {
         return ::testing::AssertionFailure() << "X different at #" << i << ": " << pos1.x << " != " << pos2.x;
@@ -169,28 +169,28 @@ protected:
   {
     move_base_->sendGoal(CreateGoalInFree());
 
-    ros::spinOnce();  // Flush message buffer
+    rclcpp::spin_some(shared_from_this());  // Flush message buffer
     path_ = nullptr;
 
-    const ros::Time start_time = ros::Time::now();
-    ros::Time deadline = start_time + ros::Duration(1.0);
-    while (ros::ok())
+    const rclcpp::Time start_time = this->now();
+    rclcpp::Time deadline = start_time + rclcpp::Duration(1.0);
+    while (rclcpp::ok())
     {
-      ros::Duration(0.1).sleep();
-      ros::spinOnce();
+      rclcpp::Duration(0.1).sleep();
+      rclcpp::spin_some(shared_from_this());
       if (path_ && (path_->header.stamp > start_time) && (path_->poses.size() > 0))
       {
         break;
       }
-      ASSERT_LT(ros::Time::now(), deadline)
+      ASSERT_LT(this->now(), deadline)
           << "Failed to plan:" << move_base_->getState().toString() << statusString();
     }
   }
 
   void publishMapAndRobot(const double x, const double y, const double yaw)
   {
-    const ros::Time current_time = ros::Time::now();
-    geometry_msgs::TransformStamped trans;
+    const rclcpp::Time current_time = this->now();
+    geometry_msgs::msg::TransformStamped trans;
     trans.header.stamp = current_time;
     trans.header.frame_id = "odom";
     trans.child_frame_id = "base_link";
@@ -198,74 +198,74 @@ protected:
     trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
     tfb_.sendTransform(trans);
 
-    nav_msgs::Odometry odom;
+    nav_msgs::msg::Odometry odom;
     odom.header.frame_id = "odom";
     odom.header.stamp = current_time;
     odom.child_frame_id = "base_link";
     odom.pose.pose.position.x = x;
     odom.pose.pose.position.y = y;
     odom.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw));
-    pub_odom_.publish(odom);
+    pub_odom_->publish(odom);
 
-    pub_map_overlay_.publish(map_overlay_);
+    pub_map_overlay_->publish(map_overlay_);
   }
 
-  double getAveragePathInterval(const ros::Duration& costmap_publishing_interval)
+  double getAveragePathInterval(const rclcpp::Duration& costmap_publishing_interval)
   {
     publishMapAndRobot(2.55, 0.45, M_PI);
-    ros::Duration(0.3).sleep();
+    rclcpp::Duration(0.3).sleep();
     move_base_->sendGoal(CreateGoalInFree());
-    while (ros::ok() && (move_base_->getState() != actionlib::SimpleClientGoalState::ACTIVE))
+    while (rclcpp::ok() && (move_base_->getState() != actionlib::SimpleClientGoalState::ACTIVE))
     {
-      ros::spinOnce();
+      rclcpp::spin_some(shared_from_this());
     }
 
-    last_path_received_time_ = ros::Time();
+    last_path_received_time_ = rclcpp::Time();
     publishMapAndRobot(2.55, 0.45, M_PI);
-    ros::Time last_costmap_publishing_time = ros::Time::now();
-    ros::Rate r(100);
-    while (ros::ok() && (last_path_received_time_ == ros::Time()))
+    rclcpp::Time last_costmap_publishing_time = this->now();
+    rclcpp::Rate r(100);
+    while (rclcpp::ok() && (last_path_received_time_ == rclcpp::Time()))
     {
-      if ((ros::Time::now() - last_costmap_publishing_time) > costmap_publishing_interval)
+      if ((this->now() - last_costmap_publishing_time) > costmap_publishing_interval)
       {
         publishMapAndRobot(2.55, 0.45, M_PI);
-        last_costmap_publishing_time = ros::Time::now();
+        last_costmap_publishing_time = this->now();
       };
-      ros::spinOnce();
+      rclcpp::spin_some(shared_from_this());
       r.sleep();
     }
-    const ros::Time initial_path_received_time_ = last_path_received_time_;
+    const rclcpp::Time initial_path_received_time_ = last_path_received_time_;
     const int prev_path_received_count = path_received_count_;
-    while (ros::ok() && (path_received_count_ < prev_path_received_count + 10))
+    while (rclcpp::ok() && (path_received_count_ < prev_path_received_count + 10))
     {
-      if ((ros::Time::now() - last_costmap_publishing_time) > costmap_publishing_interval)
+      if ((this->now() - last_costmap_publishing_time) > costmap_publishing_interval)
       {
         publishMapAndRobot(2.55, 0.45, M_PI);
-        last_costmap_publishing_time = ros::Time::now();
+        last_costmap_publishing_time = this->now();
       }
-      ros::spinOnce();
+      rclcpp::spin_some(shared_from_this());
       r.sleep();
     }
-    return (last_path_received_time_ - initial_path_received_time_).toSec() /
+    return (last_path_received_time_ - initial_path_received_time_).seconds() /
            (path_received_count_ - prev_path_received_count);
   }
 
   tf2_ros::TransformBroadcaster tfb_;
-  ros::Subscriber sub_path_;
-  nav_msgs::Path::ConstPtr path_;
+  rclcpp::Subscription<>::SharedPtr sub_path_;
+  nav_msgs::msg::Path::ConstPtr path_;
   std::unique_ptr<dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>> planner_3d_client_;
-  ros::Publisher pub_map_overlay_;
-  ros::Publisher pub_odom_;
-  nav_msgs::OccupancyGrid map_overlay_;
+  rclcpp::Publisher<>::SharedPtr pub_map_overlay_;
+  rclcpp::Publisher<>::SharedPtr pub_odom_;
+  nav_msgs::msg::OccupancyGrid map_overlay_;
   planner_cspace::Planner3DConfig default_config_;
   int path_received_count_;
-  ros::Time last_path_received_time_;
+  rclcpp::Time last_path_received_time_;
 };
 
 TEST_F(DynamicParameterChangeTest, DisableCurves)
 {
   publishMapAndRobot(2.55, 0.45, M_PI);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
 
   sendGoalAndWaitForPath();
   // The default path is including curves.
@@ -284,14 +284,14 @@ TEST_F(DynamicParameterChangeTest, DisableCurves)
 TEST_F(DynamicParameterChangeTest, StartPosePrediction)
 {
   publishMapAndRobot(1.65, 0.65, M_PI);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
-  const nav_msgs::Path initial_path = *path_;
+  const nav_msgs::msg::Path initial_path = *path_;
 
   // The path is changed to keep distance from the obstacle.
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 100;
   publishMapAndRobot(1.65, 0.65, M_PI);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
   EXPECT_FALSE(comparePath(initial_path, *path_));
 
@@ -305,7 +305,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   // No obstacle and the path is same as the first one.
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
   publishMapAndRobot(1.65, 0.65, M_PI);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
   EXPECT_TRUE(comparePath(initial_path, *path_));
 
@@ -313,7 +313,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   // the obstacle.
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 100;
   publishMapAndRobot(1.65, 0.65, M_PI);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
   EXPECT_TRUE(comparePath(initial_path, *path_));
 
@@ -321,9 +321,9 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   move_base_->cancelAllGoals();
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
   publishMapAndRobot(1.25, 0.95, M_PI / 2);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
-  const nav_msgs::Path short_path = *path_;
+  const nav_msgs::msg::Path short_path = *path_;
   // In the second path planning after cancel, the exptected start pose is same as the goal.
   sendGoalAndWaitForPath();
   EXPECT_TRUE(comparePath(short_path, *path_));
@@ -332,10 +332,10 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
 TEST_F(DynamicParameterChangeTest, TriggerPlanByCostmapUpdate)
 {
   publishMapAndRobot(2.55, 0.45, M_PI);
-  ros::Duration(0.5).sleep();
+  rclcpp::Duration(0.5).sleep();
   sendGoalAndWaitForPath();
 
-  const ros::Duration costmap_publishing_interval(0.1);
+  const rclcpp::Duration costmap_publishing_interval(0.1);
   // The path planning frequency is 4.0 Hz (Designated by the "freq" paramteer)
   const double default_interval = getAveragePathInterval(costmap_publishing_interval);
   EXPECT_NEAR(default_interval, 1.0 / default_config_.freq, (1.0 / default_config_.freq) * 0.1);
@@ -348,17 +348,17 @@ TEST_F(DynamicParameterChangeTest, TriggerPlanByCostmapUpdate)
   // The path planning is trigger by the callback of CSpace3DUpdate, so its frequency is same as the frequency of
   // CSpace3DUpdate (10 Hz).
   const double interval_triggered_by_costmap = getAveragePathInterval(costmap_publishing_interval);
-  EXPECT_NEAR(interval_triggered_by_costmap, costmap_publishing_interval.toSec(),
-              costmap_publishing_interval.toSec() * 0.1);
+  EXPECT_NEAR(interval_triggered_by_costmap, costmap_publishing_interval.seconds(),
+              costmap_publishing_interval.seconds() * 0.1);
 
   // The path planning is trigger by costmap_watchdog_(0.5 seconds) when CSpace3DUpdate is not published.
-  const double interval_triggered_by_watchdog = getAveragePathInterval(ros::Duration(100));
+  const double interval_triggered_by_watchdog = getAveragePathInterval(rclcpp::Duration(100));
   EXPECT_NEAR(interval_triggered_by_watchdog, config.costmap_watchdog, config.costmap_watchdog * 0.1);
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_dynamic_parameter_change");
+  rclcpp::init(argc, argv, "test_dynamic_parameter_change");
   return RUN_ALL_TESTS();
 }

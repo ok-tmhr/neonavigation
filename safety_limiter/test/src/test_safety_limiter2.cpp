@@ -31,7 +31,7 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -45,15 +45,15 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
   const float dt = 0.02;
   const double ax = 2.0;  // [m/ss]
   double v = 0.0;         // [m/s]
-  ros::Rate wait(1.0 / dt);
+  rclcpp::Rate wait(1.0 / dt);
 
   const float velocities[] = {-0.8, -0.4, 0.4, 0.8};
   for (const float vel : velocities)
   {
     float x = 0;
     bool stopped = false;
-    const boost::function<void(const geometry_msgs::Twist::ConstPtr&)> cb_cmd_vel =
-        [dt, ax, &x, &v, &stopped](const geometry_msgs::Twist::ConstPtr& msg) -> void
+    const boost::function<void(const geometry_msgs::msg::Twist::ConstPtr&)> cb_cmd_vel =
+        [dt, ax, &x, &v, &stopped](const geometry_msgs::msg::Twist::ConstPtr& msg) -> void
     {
       if (msg->linear.x >= v)
       {
@@ -70,21 +70,21 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
         stopped = true;
       }
     };
-    ros::Subscriber sub_cmd_vel = nh_.subscribe("cmd_vel", 1, cb_cmd_vel);
+    rclcpp::Subscription<>::SharedPtr sub_cmd_vel = nh_->create_subscription("cmd_vel", 1, cb_cmd_vel);
 
     int count_after_stop = 10;
-    for (float t = 0; t < 10.0 && ros::ok() && count_after_stop > 0; t += dt)
+    for (float t = 0; t < 10.0 && rclcpp::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
-        publishSinglePointPointcloud2(1.5 - x, 0, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(1.5 - x, 0, 0, "base_link", this->now());
       else
-        publishSinglePointPointcloud2(-3.5 - x, 0, 0, "base_link", ros::Time::now());
+        publishSinglePointPointcloud2(-3.5 - x, 0, 0, "base_link", this->now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", x, 0.0);
 
       wait.sleep();
-      ros::spinOnce();
+      rclcpp::spin_some(shared_from_this());
       if (stopped)
       {
         count_after_stop--;
@@ -112,7 +112,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_safety_limiter");
+  rclcpp::init(argc, argv, "test_safety_limiter");
 
   return RUN_ALL_TESTS();
 }

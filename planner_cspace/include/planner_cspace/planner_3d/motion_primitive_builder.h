@@ -32,7 +32,7 @@
 
 #include <vector>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 
@@ -46,7 +46,7 @@ public:
   using Vec = CyclicVecInt<3, 2>;
   using Vecf = CyclicVecFloat<3, 2>;
 
-  static std::vector<std::vector<Vec>> build(const costmap_cspace_msgs::MapMetaData3D& map_info,
+  static std::vector<std::vector<Vec>> build(const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
                                              const CostCoeff& cc, const int range);
 
 private:

@@ -36,7 +36,7 @@
 
 #include <omp.h>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_3d/costmap_bbf.h>
 #include <planner_cspace/planner_3d/distance_map.h>
@@ -80,7 +80,7 @@ protected:
     const int local_range = 10;
     omp_set_num_threads(2);
 
-    costmap_cspace_msgs::MapMetaData3D map_info;
+    costmap_cspace_msgs::msg::MapMetaData3D map_info;
     map_info.width = w_;
     map_info.height = h_;
     map_info.angle = angle_;
@@ -330,7 +330,7 @@ protected:
     , bbf_costmap_(new CostmapBBFImpl())
     , dm_(cm_rough_, bbf_costmap_)
   {
-    costmap_cspace_msgs::MapMetaData3D map_info;
+    costmap_cspace_msgs::msg::MapMetaData3D map_info;
     map_info.width = w_;
     map_info.height = h_;
     map_info.angle = angle_;

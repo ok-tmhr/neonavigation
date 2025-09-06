@@ -30,7 +30,7 @@
 #ifndef NEONAVIGATION_COMMON_COMPATIBILITY_H
 #define NEONAVIGATION_COMMON_COMPATIBILITY_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <string>
 
@@ -57,7 +57,7 @@ STATIC_ASSERT(supported_level <= default_level && default_level <= current_level
 int getCompat()
 {
   int compat(default_level);
-  ros::NodeHandle("/").param("neonavigation_compatible", compat, compat);
+  rclcpp::Node::SharedPtr("/").param("neonavigation_compatible", compat, compat);
 
   return compat;
 }
@@ -66,17 +66,17 @@ void checkCompatMode()
   if (getCompat() < supported_level)
   {
     const std::string message =
-        "======= [Obsolated] your configuration for " + ros::this_node::getName() + " is outdated =======";
-    ROS_FATAL("%s", message.c_str());
-    ros::shutdown();
+        "======= [Obsolated] your configuration for " + rclcpp::this_node::getName() + " is outdated =======";
+    RCLCPP_FATAL(this->get_logger(), "%s", message.c_str());
+    rclcpp::shutdown();
     throw std::runtime_error(message);
   }
   else if (getCompat() > current_level)
   {
     const std::string message =
-        "======= [Unsupported] your configuration for " + ros::this_node::getName() + " is futuredated =======";
-    ROS_FATAL("%s", message.c_str());
-    ros::shutdown();
+        "======= [Unsupported] your configuration for " + rclcpp::this_node::getName() + " is futuredated =======";
+    RCLCPP_FATAL(this->get_logger(), "%s", message.c_str());
+    rclcpp::shutdown();
     throw std::runtime_error(message);
   }
   else if (getCompat() != current_level)
@@ -87,30 +87,30 @@ void checkCompatMode()
         "Set _compatible:=%d to switch to new topic namespaces.\n"
         "Compatible mode will be obsolated in the future update.\n"
         "=========================================================",
-        ros::this_node::getName().c_str(), current_level);
+        rclcpp::this_node::getName().c_str(), current_level);
   }
 }
-std::string getSimplifiedNamespace(ros::NodeHandle& nh)
+std::string getSimplifiedNamespace(rclcpp::Node::SharedPtr& nh)
 {
-  if (nh.getUnresolvedNamespace() == ros::this_node::getName())
+  if (nh.getUnresolvedNamespace() == rclcpp::this_node::getName())
     return std::string("~/");
   if (nh.getUnresolvedNamespace() == std::string())
     return std::string();
   return nh.getNamespace() + "/";
 }
 template <class M>
-ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+rclcpp::Subscription<>::SharedPtr subscribe(
+    rclcpp::Node::SharedPtr& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node::SharedPtr& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     void (*fp)(M),
-    const ros::TransportHints& transport_hints = ros::TransportHints())
+    const rclcpp::TransportHints& transport_hints = rclcpp::TransportHints())
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -124,19 +124,19 @@ ros::Subscriber subscribe(
   }
 }
 template <class M, class T>
-ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+rclcpp::Subscription<>::SharedPtr subscribe(
+    rclcpp::Node::SharedPtr& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node::SharedPtr& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     void (T::*fp)(M) const,
     T* obj,
-    const ros::TransportHints& transport_hints = ros::TransportHints())
+    const rclcpp::TransportHints& transport_hints = rclcpp::TransportHints())
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -150,19 +150,19 @@ ros::Subscriber subscribe(
   }
 }
 template <class M, class T>
-ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+rclcpp::Subscription<>::SharedPtr subscribe(
+    rclcpp::Node::SharedPtr& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node::SharedPtr& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     void (T::*fp)(M),
     T* obj,
-    const ros::TransportHints& transport_hints = ros::TransportHints())
+    const rclcpp::TransportHints& transport_hints = rclcpp::TransportHints())
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -176,19 +176,19 @@ ros::Subscriber subscribe(
   }
 }
 template <class M>
-ros::Subscriber subscribe(
-    ros::NodeHandle& nh_new,
+rclcpp::Subscription<>::SharedPtr subscribe(
+    rclcpp::Node::SharedPtr& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node::SharedPtr& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     const boost::function<void(const boost::shared_ptr<M const>&)>& callback,
-    const ros::VoidConstPtr& tracked_object = ros::VoidConstPtr(),
-    const ros::TransportHints& transport_hints = ros::TransportHints())
+    const rclcpp::VoidConstPtr& tracked_object = rclcpp::VoidConstPtr(),
+    const rclcpp::TransportHints& transport_hints = rclcpp::TransportHints())
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -202,17 +202,17 @@ ros::Subscriber subscribe(
   }
 }
 template <class M>
-ros::Publisher advertise(
-    ros::NodeHandle& nh_new,
+rclcpp::Publisher<>::SharedPtr advertise(
+    rclcpp::Node::SharedPtr& nh_new,
     const std::string& topic_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node::SharedPtr& nh_old,
     const std::string& topic_old,
     uint32_t queue_size,
     bool latch = false)
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use %s (%s%s) topic instead of %s (%s%s)",
         nh_new.resolveName(topic_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), topic_new.c_str(),
@@ -226,17 +226,17 @@ ros::Publisher advertise(
   }
 }
 template <class T, class MReq, class MRes>
-ros::ServiceServer advertiseService(
-    ros::NodeHandle& nh_new,
+rclcpp::Service<>::SharedPtr advertiseService(
+    rclcpp::Node::SharedPtr& nh_new,
     const std::string& service_new,
-    ros::NodeHandle& nh_old,
+    rclcpp::Node::SharedPtr& nh_old,
     const std::string& service_old,
     bool (T::*srv_func)(MReq&, MRes&),
     T* obj)
 {
   if (getCompat() != current_level)
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use %s (%s%s) service instead of %s (%s%s)",
         nh_new.resolveName(service_new, false).c_str(),
         getSimplifiedNamespace(nh_new).c_str(), service_new.c_str(),
@@ -252,14 +252,14 @@ ros::ServiceServer advertiseService(
 
 template <typename T>
 void deprecatedParam(
-    const ros::NodeHandle& nh,
+    const rclcpp::Node::SharedPtr& nh,
     const std::string& key,
     T& param,
     const T& default_value)
 {
   if (nh.hasParam(key))
   {
-    ROS_ERROR(
+    RCLCPP_ERROR(this->get_logger(),
         "Use of the parameter %s is deprecated. Don't use this.",
         nh.resolveName(key, false).c_str());
   }

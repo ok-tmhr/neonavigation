@@ -30,7 +30,7 @@
 #include <string>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <map_organizer_msgs/OccupancyGridArray.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -38,7 +38,7 @@
 
 #include <gtest/gtest.h>
 
-sensor_msgs::PointCloud2 generateMapCloud()
+sensor_msgs::msg::PointCloud2 generateMapCloud()
 {
   struct Point
   {
@@ -87,22 +87,22 @@ sensor_msgs::PointCloud2 generateMapCloud()
     points.push_back(Point(0.775, x, 2.5));
   }
 
-  sensor_msgs::PointCloud2 cloud;
+  sensor_msgs::msg::PointCloud2 cloud;
   cloud.header.frame_id = "map";
   cloud.is_bigendian = false;
   cloud.is_dense = false;
-  sensor_msgs::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2Fields(
       3,
-      "x", 1, sensor_msgs::PointField::FLOAT32,
-      "y", 1, sensor_msgs::PointField::FLOAT32,
-      "z", 1, sensor_msgs::PointField::FLOAT32);
+      "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+      "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+      "z", 1, sensor_msgs::msg::PointField::FLOAT32);
   modifier.resize(points.size());
   cloud.height = 1;
   cloud.width = points.size();
-  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::msg::PointCloud2Iterator<float> iter_z(cloud, "z");
   for (const Point& p : points)
   {
     *iter_x = p.x;
@@ -117,23 +117,23 @@ sensor_msgs::PointCloud2 generateMapCloud()
 
 TEST(PointcloudToMaps, Convert)
 {
-  ros::NodeHandle nh;
+  rclcpp::Node::SharedPtr nh;
 
-  map_organizer_msgs::OccupancyGridArray::ConstPtr maps;
-  const boost::function<void(const map_organizer_msgs::OccupancyGridArray::ConstPtr&)>
-      cb = [&maps](const map_organizer_msgs::OccupancyGridArray::ConstPtr& msg) -> void
+  map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
   {
     maps = msg;
   };
-  ros::Subscriber sub = nh.subscribe("maps", 1, cb);
-  ros::Publisher pub = nh.advertise<sensor_msgs::PointCloud2>("mapcloud", 1, true);
+  rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("maps", 1, cb);
+  rclcpp::Publisher<>::SharedPtr pub = nh.advertise<sensor_msgs::msg::PointCloud2>("mapcloud", 1, true);
 
-  pub.publish(generateMapCloud());
-  ros::Rate rate(10.0);
-  for (int i = 0; i < 50 && ros::ok(); ++i)
+  pub->publish(generateMapCloud());
+  rclcpp::Rate rate(10.0);
+  for (int i = 0; i < 50 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(shared_from_this());
     if (maps)
       break;
   }
@@ -192,7 +192,7 @@ TEST(PointcloudToMaps, Convert)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_pointcloud_to_maps");
+  rclcpp::init(argc, argv, "test_pointcloud_to_maps");
 
   return RUN_ALL_TESTS();
 }

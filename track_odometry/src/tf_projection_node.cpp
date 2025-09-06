@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,12 +27,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <string>
@@ -42,8 +43,8 @@
 class TfProjectionNode
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
+  rclcpp::Node::SharedPtr nh_;
+  rclcpp::Node::SharedPtr pnh_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::StaticTransformBroadcaster tf_static_broadcaster_;
@@ -71,7 +72,7 @@ public:
         pnh_.hasParam("target_frame") ||
         pnh_.hasParam("frame"))
     {
-      ROS_ERROR(
+      RCLCPP_ERROR(this->get_logger(),
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
           "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
@@ -102,20 +103,20 @@ public:
     try
     {
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, ros::Time(0), ros::Duration(0.1)),
+          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration(0.1)),
           trans);
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, ros::Duration(0.1)),
+          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, rclcpp::Duration(0.1)),
           trans_target);
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN_THROTTLE(1.0, "%s", e.what());
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "%s", e.what());
       return;
     }
 
     if (!trans.stamp_.isZero())
-      trans.stamp_ += ros::Duration(tf_tolerance_);
+      trans.stamp_ += rclcpp::Duration(tf_tolerance_);
 
     if (project_posture_)
     {
@@ -138,7 +139,7 @@ public:
         trans.stamp_,
         parent_frame_);
 
-    geometry_msgs::TransformStamped trans_out = tf2::toMsg(result);
+    geometry_msgs::msg::TransformStamped trans_out = tf2::toMsg(result);
     if (flat_)
     {
       const double yaw = tf2::getYaw(trans_out.transform.rotation);
@@ -155,21 +156,21 @@ public:
       tf_broadcaster_.sendTransform(trans_out);
     }
   }
-  void cbTimer(const ros::TimerEvent& event)
+  void cbTimer(const rclcpp::TimerEvent& event)
   {
     process();
   }
   void spin()
   {
-    ros::Timer timer = nh_.createTimer(
-        ros::Duration(1.0 / rate_), &TfProjectionNode::cbTimer, this);
-    ros::spin();
+    rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
+        rclcpp::Duration(1.0 / rate_), &TfProjectionNode::cbTimer, this);
+    rclcpp::spin();
   }
 };
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "tf_projection");
+  rclcpp::init(argc, argv, "tf_projection");
 
   TfProjectionNode proj;
   proj.spin();

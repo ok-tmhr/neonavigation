@@ -9,12 +9,12 @@ pointcloud_to_maps node detects floors from given pointcloud and publishes layer
 
 ### Subscribed topics
 
-* ~/map_cloud (new: mapcloud) [sensor_msgs::PointCloud2]
+* ~/map_cloud (new: mapcloud) [sensor_msgs::msg::PointCloud2]
 
 ### Published topics
 
-* maps [map_organizer_msgs::OccupancyGridArray]
-* map? [nav_msgs::OccupancyGrid]
+* maps [map_organizer_msgs::msg::OccupancyGridArray]
+* map? [nav_msgs::msg::OccupancyGrid]
 
 ### Services
 
@@ -49,8 +49,8 @@ tie_maps node loads maps from files and ties into layered OccupancyGrid.
 
 ### Published topics
 
-* maps [map_organizer_msgs::OccupancyGridArray]
-* map? [nav_msgs::OccupancyGrid]
+* maps [map_organizer_msgs::msg::OccupancyGridArray]
+* map? [nav_msgs::msg::OccupancyGrid]
 
 ### Services
 
@@ -71,7 +71,7 @@ save_maps saves layered OccupancyGrid to map files.
 
 ### Subscribed topics
 
-* ~/maps (new: maps) [map_organizer_msgs::OccupancyGridArray]
+* ~/maps (new: maps) [map_organizer_msgs::msg::OccupancyGridArray]
 
 ### Published topics
 
@@ -93,12 +93,12 @@ select_map node publishes the desired layer from layered OccupancyGrid.
 
 ### Subscribed topics
 
-* /maps (new: maps) [map_organizer_msgs::OccupancyGridArray]
-* ~/floor (new: floor) [std_msgs::Int32]
+* /maps (new: maps) [map_organizer_msgs::msg::OccupancyGridArray]
+* ~/floor (new: floor) [std_msgs::msg::Int32]
 
 ### Published topics
 
-* /map (new: map) [nav_msgs::OccupancyGrid]
+* /map (new: map) [nav_msgs::msg::OccupancyGrid]
 * /tf
 
 ### Services
@@ -119,12 +119,12 @@ This node is useful to convert rviz initialpose output to desired map frame.
 
 ### Subscribed topics
 
-* ~/pose_in (new: pose_in) [geometry_msgs::PoseWithCovarianceStamped]
+* ~/pose_in (new: pose_in) [geometry_msgs::msg::PoseWithCovarianceStamped]
 * /tf
 
 ### Published topics
 
-* ~/pose_out (new: pose_out) [geometry_msgs::PoseWithCovarianceStamped]
+* ~/pose_out (new: pose_out) [geometry_msgs::msg::PoseWithCovarianceStamped]
 
 ### Services
 

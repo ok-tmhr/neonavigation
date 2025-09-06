@@ -9,16 +9,16 @@ safety_limiter node limits vehicle velocity to avoid collisions based on the lin
 
 ### Subscribed topics
 
-* ~/cmd_vel_in (new: cmd_vel_in) [geometry_msgs::Twist]
-* ~/cloud (new: cloud) [sensor_msgs::PointCloud2]
-* ~/disable (new: disable_safety) [std_msgs::Bool]
-* ~/watchdog_reset (new: watchdog_reset) [std_msgs::Empty]
+* ~/cmd_vel_in (new: cmd_vel_in) [geometry_msgs::msg::Twist]
+* ~/cloud (new: cloud) [sensor_msgs::msg::PointCloud2]
+* ~/disable (new: disable_safety) [std_msgs::msg::Bool]
+* ~/watchdog_reset (new: watchdog_reset) [std_msgs::msg::Empty]
 * /tf
 
 ### Published topics
 
-* ~/cmd_vel_out (new: cmd_vel) [geometry_msgs::Twist]
-* ~/collision (new: collision) [sensor_msgs::PointCloud]
+* ~/cmd_vel_out (new: cmd_vel) [geometry_msgs::msg::Twist]
+* ~/collision (new: collision) [sensor_msgs::msg::PointCloud]
 
 ### Services
 

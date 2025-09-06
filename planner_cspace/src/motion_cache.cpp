@@ -33,7 +33,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
@@ -212,7 +212,7 @@ std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<Cyc
     const auto motion_it = find(*it_prev, *it);
     if (motion_it == end((*it)[2]))
     {
-      ROS_ERROR("Failed to find motion between [%d %d %d] and [%d %d %d]",
+      RCLCPP_ERROR(this->get_logger(), "Failed to find motion between [%d %d %d] and [%d %d %d]",
                 (*it_prev)[0], (*it_prev)[1], (*it_prev)[2], (*it)[0], (*it)[1], (*it)[2]);
       result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
     }

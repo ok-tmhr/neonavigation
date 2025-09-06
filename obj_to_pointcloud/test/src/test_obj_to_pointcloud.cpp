@@ -30,7 +30,7 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -60,21 +60,21 @@ bool isOnCorner(const float x, const float y, const float z)
 
 TEST(ObjToPointCloud, PointCloud)
 {
-  ros::NodeHandle nh;
-  sensor_msgs::PointCloud2::ConstPtr cloud;
+  rclcpp::Node::SharedPtr nh;
+  sensor_msgs::msg::PointCloud2::ConstPtr cloud;
 
-  const boost::function<void(const sensor_msgs::PointCloud2::ConstPtr&)> cb =
-      [&cloud](const sensor_msgs::PointCloud2::ConstPtr& msg) -> void
+  const boost::function<void(const sensor_msgs::msg::PointCloud2::ConstPtr&)> cb =
+      [&cloud](const sensor_msgs::msg::PointCloud2::ConstPtr& msg) -> void
   {
     cloud = msg;
   };
-  ros::Subscriber sub = nh.subscribe("mapcloud", 1, cb);
+  rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("mapcloud", 1, cb);
 
-  ros::Rate rate(10.0);
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  rclcpp::Rate rate(10.0);
+  for (int i = 0; i < 30 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(shared_from_this());
     if (cloud)
       break;
   }
@@ -84,7 +84,7 @@ TEST(ObjToPointCloud, PointCloud)
       std::lround((0.5 * 0.1 + 0.1 * 0.2) / (0.05 * 0.05)),
       10);
 
-  for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud, "x"), iter_y(*cloud, "y"), iter_z(*cloud, "z");
+  for (sensor_msgs::msg::PointCloud2ConstIterator<float> iter_x(*cloud, "x"), iter_y(*cloud, "y"), iter_z(*cloud, "z");
        iter_x != iter_x.end();
        ++iter_x, ++iter_y, ++iter_z)
   {
@@ -99,7 +99,7 @@ TEST(ObjToPointCloud, PointCloud)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_obj_to_pointcloud");
+  rclcpp::init(argc, argv, "test_obj_to_pointcloud");
 
   return RUN_ALL_TESTS();
 }

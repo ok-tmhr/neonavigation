@@ -31,7 +31,7 @@
 #define PLANNER_CSPACE_PLANNER_STATUS_H
 
 #include <ostream>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 
 namespace planner_cspace_msgs
 {

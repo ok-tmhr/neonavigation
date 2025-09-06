@@ -8,7 +8,7 @@ set(CATKIN_DEPENDS
   diagnostic_updater
   dynamic_reconfigure
   geometry_msgs
-  move_base_msgs
+  nav2_msgs
   nav_msgs
   sensor_msgs
   std_srvs

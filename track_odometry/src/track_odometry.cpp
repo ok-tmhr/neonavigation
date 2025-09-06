@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -35,7 +35,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
@@ -48,35 +48,35 @@
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <track_odometry/kalman_filter1.h>
 
-#include <neonavigation_common/compatibility.h>
 
-Eigen::Vector3d toEigen(const geometry_msgs::Vector3& a)
+Eigen::Vector3d toEigen(const geometry_msgs::msg::Vector3& a)
 {
   return Eigen::Vector3d(a.x, a.y, a.z);
 }
-Eigen::Vector3d toEigen(const geometry_msgs::Point& a)
+Eigen::Vector3d toEigen(const geometry_msgs::msg::Point& a)
 {
   return Eigen::Vector3d(a.x, a.y, a.z);
 }
-Eigen::Quaterniond toEigen(const geometry_msgs::Quaternion& a)
+Eigen::Quaterniond toEigen(const geometry_msgs::msg::Quaternion& a)
 {
   return Eigen::Quaterniond(a.w, a.x, a.y, a.z);
 }
-geometry_msgs::Point toPoint(const Eigen::Vector3d& a)
+geometry_msgs::msg::Point toPoint(const Eigen::Vector3d& a)
 {
-  geometry_msgs::Point b;
+  geometry_msgs::msg::Point b;
   b.x = a.x();
   b.y = a.y();
   b.z = a.z();
   return b;
 }
-geometry_msgs::Vector3 toVector3(const Eigen::Vector3d& a)
+geometry_msgs::msg::Vector3 toVector3(const Eigen::Vector3d& a)
 {
-  geometry_msgs::Vector3 b;
+  geometry_msgs::msg::Vector3 b;
   b.x = a.x();
   b.y = a.y();
   b.z = a.z();
@@ -87,29 +87,29 @@ class TrackOdometryNode
 {
 private:
   using SyncPolicy =
-      message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, sensor_msgs::Imu>;
+      message_filters::sync_policies::ApproximateTime<nav_msgs::msg::Odometry, sensor_msgs::msg::Imu>;
 
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
+  rclcpp::Node::SharedPtr nh_;
+  rclcpp::Node::SharedPtr pnh_;
 
-  ros::Subscriber sub_imu_raw_;
-  std::shared_ptr<message_filters::Subscriber<nav_msgs::Odometry>> sub_odom_;
-  std::shared_ptr<message_filters::Subscriber<sensor_msgs::Imu>> sub_imu_;
+  rclcpp::Subscription<>::SharedPtr sub_imu_raw_;
+  std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> sub_odom_;
+  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Imu>> sub_imu_;
   std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
 
-  ros::Subscriber sub_reset_z_;
-  ros::Publisher pub_odom_;
+  rclcpp::Subscription<>::SharedPtr sub_reset_z_;
+  rclcpp::Publisher<>::SharedPtr pub_odom_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
-  nav_msgs::Odometry odom_prev_;
-  nav_msgs::Odometry odomraw_prev_;
+  nav_msgs::msg::Odometry odom_prev_;
+  nav_msgs::msg::Odometry odomraw_prev_;
 
   std::string base_link_id_;
   std::string base_link_id_overwrite_;
   std::string odom_id_;
 
-  sensor_msgs::Imu imu_;
+  sensor_msgs::msg::Imu imu_;
   double gyro_zero_[3];
   double z_filter_timeconst_;
   double tf_tolerance_;
@@ -129,58 +129,58 @@ private:
   bool has_odom_;
   bool publish_tf_;
 
-  void cbResetZ(const std_msgs::Float32::Ptr& msg)
+  void cbResetZ(const std_msgs::msg::Float32::Ptr& msg)
   {
     odom_prev_.pose.pose.position.z = msg->data;
   }
-  void cbOdomImu(const nav_msgs::Odometry::ConstPtr& odom_msg, const sensor_msgs::Imu::ConstPtr& imu_msg)
+  void cbOdomImu(const nav_msgs::msg::Odometry::ConstPtr& odom_msg, const sensor_msgs::msg::Imu::ConstPtr& imu_msg)
   {
-    ROS_DEBUG(
+    RCLCPP_DEBUG(this->get_logger(),
         "Synchronized timestamp: odom %0.3f, imu %0.3f",
-        odom_msg->header.stamp.toSec(),
-        imu_msg->header.stamp.toSec());
+        odom_msg->header.stamp.seconds(),
+        imu_msg->header.stamp.seconds());
     cbImu(imu_msg);
     cbOdom(odom_msg);
   }
-  void cbImu(const sensor_msgs::Imu::ConstPtr& msg)
+  void cbImu(const sensor_msgs::msg::Imu::ConstPtr& msg)
   {
     if (base_link_id_.size() == 0)
     {
-      ROS_ERROR("base_link id is not specified.");
+      RCLCPP_ERROR(this->get_logger(), "base_link id is not specified.");
       return;
     }
 
     imu_.header = msg->header;
     try
     {
-      geometry_msgs::TransformStamped trans = tf_buffer_.lookupTransform(
-          base_link_id_, msg->header.frame_id, ros::Time(0), ros::Duration(0.1));
+      geometry_msgs::msg::TransformStamped trans = tf_buffer_.lookupTransform(
+          base_link_id_, msg->header.frame_id, rclcpp::Time(0), rclcpp::Duration(0.1));
 
-      geometry_msgs::Vector3Stamped vin, vout;
+      geometry_msgs::msg::Vector3Stamped vin, vout;
       vin.header = imu_.header;
-      vin.header.stamp = ros::Time(0);
+      vin.header.stamp = rclcpp::Time(0);
       vin.vector = msg->linear_acceleration;
       tf2::doTransform(vin, vout, trans);
       imu_.linear_acceleration = vout.vector;
 
       vin.header = imu_.header;
-      vin.header.stamp = ros::Time(0);
+      vin.header.stamp = rclcpp::Time(0);
       vin.vector = msg->angular_velocity;
       tf2::doTransform(vin, vout, trans);
       imu_.angular_velocity = vout.vector;
 
       tf2::Stamped<tf2::Quaternion> qin, qout;
-      geometry_msgs::QuaternionStamped qmin, qmout;
+      geometry_msgs::msg::QuaternionStamped qmin, qmout;
       qmin.header = imu_.header;
       qmin.quaternion = msg->orientation;
       tf2::fromMsg(qmin, qin);
 
       auto axis = qin.getAxis();
       auto angle = qin.getAngle();
-      geometry_msgs::Vector3Stamped axis2;
-      geometry_msgs::Vector3Stamped axis1;
+      geometry_msgs::msg::Vector3Stamped axis2;
+      geometry_msgs::msg::Vector3Stamped axis1;
       axis1.vector = tf2::toMsg(axis);
-      axis1.header.stamp = ros::Time(0);
+      axis1.header.stamp = rclcpp::Time(0);
       axis1.header.frame_id = qin.frame_id_;
       tf2::doTransform(axis1, axis2, trans);
 
@@ -191,7 +191,7 @@ private:
 
       qmout = tf2::toMsg(qout);
       imu_.orientation = qmout.quaternion;
-      // ROS_INFO("%0.3f %s -> %0.3f %s",
+      // RCLCPP_INFO(this->get_logger(), "%0.3f %s -> %0.3f %s",
       //   tf2::getYaw(qmin.quaternion), qmin.header.frame_id.c_str(),
       //   tf2::getYaw(qmout.quaternion), qmout.header.frame_id.c_str());
 
@@ -199,17 +199,17 @@ private:
     }
     catch (tf2::TransformException& e)
     {
-      ROS_ERROR("%s", e.what());
+      RCLCPP_ERROR(this->get_logger(), "%s", e.what());
       has_imu_ = false;
       return;
     }
   }
-  void cbOdom(const nav_msgs::Odometry::ConstPtr& msg)
+  void cbOdom(const nav_msgs::msg::Odometry::ConstPtr& msg)
   {
-    nav_msgs::Odometry odom = *msg;
+    nav_msgs::msg::Odometry odom = *msg;
     if (has_odom_)
     {
-      const double dt = (odom.header.stamp - odomraw_prev_.header.stamp).toSec();
+      const double dt = (odom.header.stamp - odomraw_prev_.header.stamp).seconds();
       if (base_link_id_overwrite_.size() == 0)
       {
         base_link_id_ = odom.child_frame_id;
@@ -222,7 +222,7 @@ private:
       }
 
       double slip_ratio = 1.0;
-      odom.header.stamp += ros::Duration(tf_tolerance_);
+      odom.header.stamp += rclcpp::Duration(tf_tolerance_);
       odom.twist.twist.angular = imu_.angular_velocity;
       odom.pose.pose.orientation = imu_.orientation;
 
@@ -275,9 +275,9 @@ private:
         odom.pose.pose.position.z *= 1.0 - (dt / z_filter_timeconst_);
 
       odom.child_frame_id = base_link_id_;
-      pub_odom_.publish(odom);
+      pub_odom_->publish(odom);
 
-      geometry_msgs::TransformStamped odom_trans;
+      geometry_msgs::msg::TransformStamped odom_trans;
 
       odom_trans.header = odom.header;
       odom_trans.child_frame_id = base_link_id_;
@@ -301,8 +301,8 @@ public:
 
     bool enable_tcp_no_delay;
     pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, true);
-    const ros::TransportHints transport_hints =
-        enable_tcp_no_delay ? ros::TransportHints().reliable().tcpNoDelay(true) : ros::TransportHints();
+    const rclcpp::TransportHints transport_hints =
+        enable_tcp_no_delay ? rclcpp::TransportHints().reliable().tcpNoDelay(true) : rclcpp::TransportHints();
 
     pnh_.param("without_odom", without_odom_, false);
     if (without_odom_)
@@ -316,16 +316,16 @@ public:
     else
     {
       sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::Odometry>(nh_, "odom_raw", 50, transport_hints));
+          new message_filters::Subscriber<nav_msgs::msg::Odometry>(nh_, "odom_raw", 50, transport_hints));
       if (neonavigation_common::compat::getCompat() == neonavigation_common::compat::current_level)
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu/data", 50, transport_hints));
+            new message_filters::Subscriber<sensor_msgs::msg::Imu>(nh_, "imu/data", 50, transport_hints));
       }
       else
       {
         sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::Imu>(nh_, "imu", 50, transport_hints));
+            new message_filters::Subscriber<sensor_msgs::msg::Imu>(nh_, "imu", 50, transport_hints));
       }
 
       int sync_window;
@@ -341,7 +341,7 @@ public:
     sub_reset_z_ = neonavigation_common::compat::subscribe(
         nh_, "reset_odometry_z",
         pnh_, "reset_z", 1, &TrackOdometryNode::cbResetZ, this);
-    pub_odom_ = nh_.advertise<nav_msgs::Odometry>("odom", 8);
+    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
     if (pnh_.hasParam("z_filter"))
     {
@@ -353,7 +353,7 @@ public:
         if (0.0 < z_filter && z_filter < 1.0)
           z_filter_timeconst_ = (1.0 / odom_freq) / (1.0 - z_filter);
       }
-      ROS_ERROR(
+      RCLCPP_ERROR(this->get_logger(),
           "track_odometry: ~z_filter parameter (exponential filter (1 - alpha) value) is deprecated. "
           "Use ~z_filter_timeconst (in seconds) instead. "
           "Treated as z_filter_timeconst=%0.6f. (negative value means disabled)",
@@ -387,10 +387,10 @@ public:
     dist_ = 0;
     slip_.set(0.0, 0.1);
   }
-  void cbTimer(const ros::TimerEvent& event)
+  void cbTimer(const rclcpp::TimerEvent& event)
   {
-    nav_msgs::Odometry::Ptr odom(new nav_msgs::Odometry);
-    odom->header.stamp = ros::Time::now();
+    nav_msgs::msg::Odometry::Ptr odom(new nav_msgs::msg::Odometry);
+    odom->header.stamp = this->now();
     odom->header.frame_id = odom_id_;
     odom->child_frame_id = base_link_id_;
     odom->pose.pose.orientation.w = 1.0;
@@ -400,20 +400,20 @@ public:
   {
     if (!without_odom_)
     {
-      ros::spin();
+      rclcpp::spin();
     }
     else
     {
-      ros::Timer timer = nh_.createTimer(
-          ros::Duration(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
-      ros::spin();
+      rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
+          rclcpp::Duration(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
+      rclcpp::spin();
     }
   }
 };
 
 int main(int argc, char* argv[])
 {
-  ros::init(argc, argv, "track_odometry");
+  rclcpp::init(argc, argv, "track_odometry");
 
   TrackOdometryNode odom;
 
