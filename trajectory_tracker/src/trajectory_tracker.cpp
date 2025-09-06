@@ -80,8 +80,6 @@ public:
   void spin();
 
 private:
-  std::string topic_path_;
-  std::string topic_cmd_vel_;
   std::string frame_robot_;
   std::string frame_odom_;
   double hz_;
@@ -192,8 +190,6 @@ TrackerNode::TrackerNode()
 {
   pnh_->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
   pnh_->get_parameter_or("frame_odom", frame_odom_, std::string("odom"));
-  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
-  neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
   pnh_->get_parameter_or("hz", hz_, 50.0);
   pnh_->get_parameter_or("use_odom", use_odom_, false);
   pnh_->get_parameter_or("predict_odom", predict_odom_, true);

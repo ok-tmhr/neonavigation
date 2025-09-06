@@ -59,7 +59,6 @@ private:
   bool clearPath(std_srvs::srv::Empty::Request& req,
                  std_srvs::srv::Empty::Response& res);
 
-  std::string topic_path_;
   std::string frame_robot_;
   std::string frame_global_;
   double dist_interval_;
@@ -83,7 +82,6 @@ RecorderNode::RecorderNode()
 {
   pnh_->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
   pnh_->get_parameter_or("frame_global", frame_global_, std::string("map"));
-  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
   pnh_->get_parameter_or("dist_interval", dist_interval_, 0.3);
   pnh_->get_parameter_or("ang_interval", ang_interval_, 1.0);
   pnh_->get_parameter_or("store_time", store_time_, false);

@@ -68,7 +68,6 @@ private:
   interactive_markers::InteractiveMarkerServer srv_im_fb_;
 
   nav_msgs::msg::Path path_;
-  std::string topic_path_;
   trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
   double hz_;
   boost::shared_array<uint8_t> buffer_;
@@ -98,7 +97,6 @@ ServerNode::ServerNode()
   , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
-  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   pnh_->get_parameter_or("file", req_path_.filename, std::string("a.path"));
   pnh_->get_parameter_or("hz", hz_, 5.0);
   pnh_->get_parameter_or("filter_step", filter_step_, 0.0);

@@ -57,7 +57,6 @@ private:
   rclcpp::Node::SharedPtr pnh_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
 
-  std::string topic_path_;
   std::string filename_;
   bool saved_;
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg);
@@ -68,7 +67,6 @@ SaverNode::SaverNode()
   , pnh_("~")
   , saved_(false)
 {
-  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
   pnh_->get_parameter_or("file", filename_, std::string("a.path"));
 
   sub_path_ = this->create_subscription(
