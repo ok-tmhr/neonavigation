@@ -90,12 +90,6 @@ pcl::PointXYZ operator*(const pcl::PointXYZ& a, const float& b)
   c.z *= b;
   return c;
 }
-bool XmlRpc_isNumber(XmlRpc::XmlRpcValue& value)
-{
-  return value.getType() == XmlRpc::XmlRpcValue::TypeInt ||
-         value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
-}
-
 class SafetyLimiterNode : public rclcpp::Node
 {
 protected:
@@ -247,12 +241,12 @@ public:
   void spin()
   {
     rclcpp::TimerBase::SharedPtr predict_timer =
-        nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &SafetyLimiterNode::cbPredictTimer, this);
+        this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&SafetyLimiterNode::cbPredictTimer, this));
 
     if (watchdog_interval_ != rclcpp::Duration::from_seconds(0.0))
     {
       watchdog_timer_ =
-          nh_->create_wall_timer(watchdog_interval_, &SafetyLimiterNode::cbWatchdogTimer, this);
+          this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::seconds>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     }
 
     rclcpp::spin();
@@ -261,7 +255,7 @@ public:
 protected:
   void cbWatchdogReset(const std_msgs::msg::Empty::ConstPtr& msg)
   {
-    watchdog_timer_.setPeriod(watchdog_interval_, true);
+    watchdog_timer_ = this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::seconds>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     watchdog_stop_ = false;
   }
   void cbWatchdogTimer()
@@ -729,7 +723,7 @@ protected:
     const bool can_transform = tfbuf_.canTransform(
         fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
     const rclcpp::Time stamp =
-        can_transform ? msg->header.stamp : rclcpp::Time(0);
+        can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0);
 
     sensor_msgs::msg::PointCloud2 cloud_msg_fixed;
     try

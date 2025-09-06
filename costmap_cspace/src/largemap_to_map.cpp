@@ -104,7 +104,7 @@ public:
 
     double hz;
     this->get_parameter_or("hz", hz, 1.0);
-    timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
   }
 
 private:

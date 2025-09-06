@@ -159,7 +159,7 @@ public:
   void spin()
   {
     rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
-        rclcpp::Duration::from_seconds(1.0 / rate_), std::bind(&TfProjectionNode::cbTimer, this));
+        std::chrono::duration<double>(1.0 / rate_), std::bind(&TfProjectionNode::cbTimer, this));
     rclcpp::spin(shared_from_this());
   }
 };

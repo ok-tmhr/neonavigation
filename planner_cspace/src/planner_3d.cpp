@@ -951,7 +951,7 @@ protected:
   {
     planPath(e.current_real);
     no_map_update_timer_ =
-        this->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+        this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this), true);
   }
   void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
   {
@@ -967,7 +967,7 @@ protected:
       if (costmap_watchdog_ > rclcpp::Duration::from_seconds(0))
       {
         no_map_update_timer_ =
-            this->create_wall_timer(costmap_watchdog_, &Planner3dNode::cbNoMapUpdateTimer, this, true);
+            this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this), true);
       }
     }
     else

@@ -301,12 +301,12 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
   {
     if (odom_timeout_timer_)
     {
-      odom_timeout_timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), true);
+      odom_timeout_timer_ = this->create_wall_timer(std::chrono::duration<double>(odom_timeout_sec_), std::bind(&TrackerNode::cbOdomTimeout, this));
     }
     else
     {
       odom_timeout_timer_ =
-          this->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), &TrackerNode::cbOdomTimeout, this, true, true);
+          this->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), std::bind(&TrackerNode::cbOdomTimeout, this), true, true);
     }
   }
 
@@ -386,7 +386,7 @@ void TrackerNode::spin()
   rclcpp::TimerBase::SharedPtr timer;
   if (!use_odom_)
   {
-    timer = this->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), std::bind(&TrackerNode::cbTimer, this));
+    timer = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&TrackerNode::cbTimer, this));
   }
   rclcpp::spin(shared_from_this());
 }

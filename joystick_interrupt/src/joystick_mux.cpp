@@ -114,7 +114,7 @@ public:
     this->get_parameter_or("timeout", timeout_, 0.5);
     last_joy_msg_ = this->now();
 
-    timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(0.1), std::bind(&JoystickMux::cbTimer, this));
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(0.1), std::bind(&JoystickMux::cbTimer, this));
 
     advertised_ = false;
     selected_ = 0;

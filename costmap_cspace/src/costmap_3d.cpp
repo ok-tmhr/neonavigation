@@ -377,8 +377,8 @@ public:
 
     const geometry_msgs::msg::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = this->create_wall_timer(
-        rclcpp::Duration::from_seconds(1.0),
-        boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, _1, footprint_msg));
+        std::chrono::duration<double>(1.0),
+        boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, footprint_msg));
   }
 };
 
