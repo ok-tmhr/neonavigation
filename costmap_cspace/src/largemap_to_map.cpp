@@ -123,7 +123,7 @@ private:
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0)), trans);
+      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
     }
     catch (tf2::TransformException& e)
     {

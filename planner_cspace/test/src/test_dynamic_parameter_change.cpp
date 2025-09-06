@@ -220,11 +220,11 @@ protected:
       rclcpp::spin_some(shared_from_this());
     }
 
-    last_path_received_time_ = rclcpp::Time();
+    last_path_received_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
     publishMapAndRobot(2.55, 0.45, M_PI);
     rclcpp::Time last_costmap_publishing_time = this->now();
     rclcpp::Rate r(100);
-    while (rclcpp::ok() && (last_path_received_time_ == rclcpp::Time()))
+    while (rclcpp::ok() && (last_path_received_time_ == rclcpp::Time(0, 0, RCL_ROS_TIME)))
     {
       if ((this->now() - last_costmap_publishing_time) > costmap_publishing_interval)
       {

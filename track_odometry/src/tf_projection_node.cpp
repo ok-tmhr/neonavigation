@@ -99,7 +99,7 @@ public:
     try
     {
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1)),
+          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1)),
           trans);
       tf2::fromMsg(
           tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, rclcpp::Duration::from_seconds(0.1)),

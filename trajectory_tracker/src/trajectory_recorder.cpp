@@ -111,7 +111,7 @@ void RecorderNode::spin()
 
   while (rclcpp::ok())
   {
-    rclcpp::Time now = rclcpp::Time(0);
+    rclcpp::Time now = rclcpp::Time(0, 0, RCL_ROS_TIME);
     if (store_time_)
       now = this->now();
     tf2::Stamped<tf2::Transform> transform;

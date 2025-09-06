@@ -62,7 +62,7 @@ protected:
   bool updateChain(const bool output)
   {
     region_ = UpdatedRegion(
-        0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, rclcpp::Time(0));
+        0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, rclcpp::Time(0, 0, RCL_ROS_TIME));
     for (auto& c : map_overlay_->data)
       c = -1;
     return false;

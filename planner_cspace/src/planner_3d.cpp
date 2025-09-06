@@ -1119,7 +1119,7 @@ protected:
   {
     geometry_msgs::msg::PoseStamped start;
     start.header.frame_id = robot_frame_;
-    start.header.stamp = rclcpp::Time(0);
+    start.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
     start.pose.orientation.x = 0.0;
     start.pose.orientation.y = 0.0;
     start.pose.orientation.z = 0.0;
@@ -1130,7 +1130,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(), rclcpp::Duration::from_seconds(0.1));
+          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)

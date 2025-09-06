@@ -310,7 +310,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
     }
   }
 
-  if (prev_odom_stamp_ != rclcpp::Time())
+  if (prev_odom_stamp_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
   {
     const double dt = std::min(max_dt_, (odom->header.stamp - prev_odom_stamp_).seconds());
     nav_msgs::msg::Odometry odom_compensated = *odom;
@@ -345,7 +345,7 @@ void TrackerNode::cbTimer()
   {
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_odom_, frame_robot_, rclcpp::Time(0)), transform);
+        tfbuf_.lookupTransform(frame_odom_, frame_robot_, rclcpp::Time(0, 0, RCL_ROS_TIME)), transform);
     control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
   }
   catch (tf2::TransformException& e)
@@ -511,7 +511,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   {
     tf2::Stamped<tf2::Transform> path_to_odom;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0)), path_to_odom);
+        tfbuf_.lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0, 0, RCL_ROS_TIME)), path_to_odom);
     const tf2::Transform path_to_robot = path_to_odom * odom_to_robot;
     transform_delay = (this->now() - path_to_odom.stamp_).seconds();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)

@@ -179,7 +179,7 @@ private:
     has_joint_states_ = true;
 
     if ((replan_prev_ + replan_interval_ < this->now() ||
-         replan_prev_ == rclcpp::Time(0)) &&
+         replan_prev_ == rclcpp::Time(0, 0, RCL_ROS_TIME)) &&
         replan_interval_ > rclcpp::Duration::from_seconds(0))
     {
       replan();
@@ -281,7 +281,7 @@ private:
 
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0);
+      out.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -347,7 +347,7 @@ private:
     {
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0);
+      out.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -393,7 +393,7 @@ public:
     double interval;
     this->get_parameter_or("replan_interval", interval, 0.2);
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
-    replan_prev_ = rclcpp::Time(0);
+    replan_prev_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     int queue_size_limit;
     nh_group->get_parameter_or("queue_size_limit", queue_size_limit, 0);
@@ -570,7 +570,7 @@ private:
       path.push_back(eg);
       if (s == e)
       {
-        replan_prev_ = rclcpp::Time(0);
+        replan_prev_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
       }
       return true;
     }

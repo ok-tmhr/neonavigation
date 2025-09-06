@@ -90,16 +90,16 @@ private:
     {
       RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
                 msg->buttons.size(), interrupt_button_);
-      last_joy_msg_ = rclcpp::Time(0);
+      last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
       return;
     }
     if (!msg->buttons[interrupt_button_])
     {
-      if (last_joy_msg_ != rclcpp::Time(0))
+      if (last_joy_msg_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
       {
         pub_twist_->publish(last_input_twist_);
       }
-      last_joy_msg_ = rclcpp::Time(0);
+      last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
       return;
     }
 
@@ -138,7 +138,7 @@ private:
     last_input_twist_ = *msg;
     std_msgs::msg::Bool status;
     if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
-        (rclcpp::Time::isSimTime() && last_joy_msg_ == rclcpp::Time(0)))
+        (rclcpp::Time::isSimTime() && last_joy_msg_ == rclcpp::Time(0, 0, RCL_ROS_TIME)))
     {
       pub_twist_->publish(last_input_twist_);
       status.data = true;
@@ -178,7 +178,7 @@ public:
     this->get_parameter_or("linear_y_axis", linear_y_axis_, -1);
     this->get_parameter_or("linear_y_axis2", linear_y_axis2_, -1);
 
-    last_joy_msg_ = rclcpp::Time(0);
+    last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     if (interrupt_button_ < 0)
     {

@@ -157,7 +157,7 @@ public:
     , has_cloud_(false)
     , has_twist_(true)
     , has_collision_at_now_(false)
-    , stuck_started_since_(rclcpp::Time(0))
+    , stuck_started_since_(rclcpp::Time(0, 0, RCL_ROS_TIME))
   {
       pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
@@ -352,7 +352,7 @@ protected:
         base_frame_id_, cloud_accum_->header.frame_id,
         pcl_conversions::fromPCL(cloud_accum_->header.stamp));
     const rclcpp::Time stamp =
-        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0);
+        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     geometry_msgs::msg::TransformStamped fixed_to_base;
     try
@@ -495,13 +495,13 @@ protected:
 
     if (has_collision_at_now_)
     {
-      if (stuck_started_since_ == rclcpp::Time(0))
+      if (stuck_started_since_ == rclcpp::Time(0, 0, RCL_ROS_TIME))
         stuck_started_since_ = this->now();
     }
     else
     {
-      if (stuck_started_since_ != rclcpp::Time(0))
-        stuck_started_since_ = rclcpp::Time(0);
+      if (stuck_started_since_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
+        stuck_started_since_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
     }
 
     if (!has_collision)
@@ -723,7 +723,7 @@ protected:
     const bool can_transform = tfbuf_.canTransform(
         fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
     const rclcpp::Time stamp =
-        can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0);
+        can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     sensor_msgs::msg::PointCloud2 cloud_msg_fixed;
     try

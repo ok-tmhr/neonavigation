@@ -120,7 +120,7 @@ public:
   UpdatedRegion(
       const int& x, const int& y, const int& yaw,
       const int& width, const int& height, const int& angle,
-      const rclcpp::Time& stamp = rclcpp::Time())
+      const rclcpp::Time& stamp = rclcpp::Time(0, 0, RCL_ROS_TIME))
     : x_(x)
     , y_(y)
     , yaw_(yaw)
