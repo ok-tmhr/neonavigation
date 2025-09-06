@@ -38,8 +38,8 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/point_cloud2_iterator.h>
-#include <std_msgs/Empty.h>
-#include <safety_limiter_msgs/SafetyLimiterStatus.h>
+#include <std_msgs/msg/empty.hpp>
+#include <safety_limiter_msgs/msg/safety_limiter_status.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 

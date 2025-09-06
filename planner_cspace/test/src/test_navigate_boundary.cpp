@@ -38,7 +38,7 @@
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
-#include <std_msgs/Empty.h>
+#include <std_msgs/msg/empty.hpp>
 
 #include <gtest/gtest.h>
 

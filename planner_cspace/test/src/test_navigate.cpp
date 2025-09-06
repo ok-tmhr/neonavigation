@@ -41,7 +41,7 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
-#include <std_msgs/Empty.h>
+#include <std_msgs/msg/empty.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>

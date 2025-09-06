@@ -30,7 +30,7 @@
 #include <cstdlib>
 
 #include <rclcpp/rclcpp.hpp>
-#include <std_msgs/Bool.h>
+#include <std_msgs/msg/bool.hpp>
 #include <std_srvs/srv/empty.hpp>
 
 #include <gtest/gtest.h>

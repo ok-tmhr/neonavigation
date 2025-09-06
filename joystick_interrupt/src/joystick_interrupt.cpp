@@ -34,7 +34,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/Joy.h>
-#include <std_msgs/Bool.h>
+#include <std_msgs/msg/bool.hpp>
 
 
 class JoystickInterrupt
