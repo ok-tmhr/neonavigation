@@ -47,7 +47,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   const rclcpp::Time start = this->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration(10.0))
+    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -108,7 +108,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     const rclcpp::Time start = this->now();
     while (rclcpp::ok())
     {
-      if (this->now() > start + rclcpp::Duration(10.0))
+      if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -169,7 +169,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     const rclcpp::Time start = this->now();
     while (rclcpp::ok())
     {
-      if (this->now() > start + rclcpp::Duration(5.0 + path_length / vel))
+      if (this->now() > start + rclcpp::Duration::from_seconds(5.0 + path_length / vel))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -226,7 +226,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   const rclcpp::Time start = this->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration(10.0))
+    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -294,7 +294,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   const rclcpp::Time start = this->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration(20.0))
+    if (this->now() > start + rclcpp::Duration::from_seconds(20.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -369,7 +369,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         const rclcpp::Time start = this->now();
         for (int i = 0; rclcpp::ok(); ++i)
         {
-          if (this->now() > start + rclcpp::Duration(10.0))
+          if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
           {
             FAIL()
                 << condition_name.str()
@@ -445,7 +445,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   const rclcpp::Time start = this->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration(10.0))
+    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -507,7 +507,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
   const rclcpp::Time start = this->now();
   for (int i = 0; rclcpp::ok(); i++)
   {
-    if (this->now() > start + rclcpp::Duration(15.0))
+    if (this->now() > start + rclcpp::Duration::from_seconds(15.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -576,7 +576,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
   const rclcpp::Time start = this->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration(10.0))
+    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl

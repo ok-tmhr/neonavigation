@@ -87,7 +87,7 @@ protected:
   {
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
-    srv_forget_.waitForExistence(rclcpp::Duration(10.0));
+    srv_forget_.waitForExistence(rclcpp::Duration::from_seconds(10.0));
     rclcpp::Rate rate(10.0);
 
     geometry_msgs::msg::PoseWithCovarianceStamped pose;
@@ -97,7 +97,7 @@ protected:
     pose.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
     pub_initial_pose_->publish(pose);
 
-    const rclcpp::Time deadline = this->now() + rclcpp::Duration(15);
+    const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(15);
 
     while (rclcpp::ok())
     {
@@ -108,7 +108,7 @@ protected:
       {
         FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
       }
-      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration(0.5)))
+      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }
@@ -129,7 +129,7 @@ protected:
     std_srvs::srv::Empty::Response res;
     srv_forget_.call(req, res);
 
-    rclcpp::Duration(1.0).sleep();
+    rclcpp::Duration::from_seconds(1.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
@@ -165,7 +165,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration(0.5));
+        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);
@@ -197,10 +197,10 @@ protected:
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
     rclcpp::spin_some(shared_from_this());
-    rclcpp::Duration(0.2).sleep();
+    rclcpp::Duration::from_seconds(0.2).sleep();
 
     rclcpp::Rate wait(10);
-    rclcpp::Time deadline = this->now() + rclcpp::Duration(10);
+    rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
     while (rclcpp::ok())
     {
       rclcpp::spin_some(shared_from_this());
@@ -228,7 +228,7 @@ protected:
 TEST_F(NavigateWithRememberUpdates, Navigate)
 {
   rclcpp::spin_some(shared_from_this());
-  rclcpp::Duration(0.2).sleep();
+  rclcpp::Duration::from_seconds(0.2).sleep();
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);
@@ -243,7 +243,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(120);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(120);
   while (rclcpp::ok())
   {
     rclcpp::spin_some(shared_from_this());
@@ -277,7 +277,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      rclcpp::Duration(2.0).sleep();
+      rclcpp::Duration::from_seconds(2.0).sleep();
       return;
     }
   }

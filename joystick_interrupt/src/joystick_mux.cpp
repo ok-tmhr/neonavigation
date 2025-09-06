@@ -98,7 +98,7 @@ private:
   };
   void cbTimer()
   {
-    if (this->now() - last_joy_msg_ > rclcpp::Duration(timeout_))
+    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_))
     {
       selected_ = 0;
     }
@@ -122,7 +122,7 @@ public:
     pnh_.param("timeout", timeout_, 0.5);
     last_joy_msg_ = this->now();
 
-    timer_ = nh_->create_wall_timer(rclcpp::Duration(0.1), &JoystickMux::cbTimer, this);
+    timer_ = nh_->create_wall_timer(rclcpp::Duration::from_seconds(0.1), &JoystickMux::cbTimer, this);
 
     advertised_ = false;
     selected_ = 0;

@@ -42,7 +42,7 @@
 /**
  * @brief Map generation node.
  */
-class MapGeneratorNode
+class MapGeneratorNode : public rclcpp::Node
 {
 protected:
   rclcpp::Node::SharedPtr nh_;

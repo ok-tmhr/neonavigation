@@ -64,7 +64,7 @@ protected:
   virtual void SetUp()
   {
     // Wait planner
-    ASSERT_TRUE(waitStatus(rclcpp::Duration(5))) << "planner_3d is not up";
+    ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(5))) << "planner_3d is not up";
   }
 
   bool waitStatus(const rclcpp::Duration timeout)
@@ -72,7 +72,7 @@ protected:
     const rclcpp::Time deadline = this->now() + timeout;
     while (rclcpp::ok())
     {
-      rclcpp::Duration(0.1).sleep();
+      rclcpp::Duration::from_seconds(0.1).sleep();
       rclcpp::spin_some(shared_from_this());
 
       if (cnt_status_ > 5)
@@ -131,98 +131,98 @@ TEST_F(Planner3DMapSize, OutOfRangeX)
 {
   const rclcpp::Time now = this->now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x80, 4));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeY)
 {
   const rclcpp::Time now = this->now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x81, 4));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAngle)
 {
   const rclcpp::Time now = this->now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x80, 0x80, 8));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 TEST_F(Planner3DMapSize, OutOfRangeAll)
 {
   const rclcpp::Time now = this->now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 0, 0, 0, 0x81, 0x81, 8));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 TEST_F(Planner3DMapSize, ZeroSizeUpdate)
 {
   const rclcpp::Time now = this->now();
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
   pub_map_update_->publish(generateCSpace3DUpdateMsg(now, 1, 1, 0, 0, 0, 0));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdate)
 {
   const rclcpp::Time now = this->now();
-  const rclcpp::Time next = now + rclcpp::Duration(0.1);
+  const rclcpp::Time next = now + rclcpp::Duration::from_seconds(0.1);
 
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
 
   pub_map_update_->publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
 
   pub_map_->publish(generateCSpace3DMsg(next, 0x81, 0x81, 8));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
 
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 TEST_F(Planner3DMapSize, IllOrderedUpdateShrink)
 {
   const rclcpp::Time now = this->now();
-  const rclcpp::Time next = now + rclcpp::Duration(0.1);
+  const rclcpp::Time next = now + rclcpp::Duration::from_seconds(0.1);
 
   pub_map_->publish(generateCSpace3DMsg(now, 0x80, 0x80, 4));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
 
   pub_map_update_->publish(generateCSpace3DUpdateMsg(next, 0, 0, 0, 0x81, 0x81, 8));
-  rclcpp::Duration(0.1).sleep();
+  rclcpp::Duration::from_seconds(0.1).sleep();
 
   pub_map_->publish(generateCSpace3DMsg(next, 0x40, 0x40, 4));
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
 
   rclcpp::spin_some(shared_from_this());
   cnt_status_ = 0;
-  ASSERT_TRUE(waitStatus(rclcpp::Duration(2)));
+  ASSERT_TRUE(waitStatus(rclcpp::Duration::from_seconds(2)));
 }
 
 int main(int argc, char** argv)

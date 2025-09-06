@@ -70,7 +70,7 @@ TEST(Planner2DOFSerialJoints, Plan)
   cmd.points.push_back(p);
 
   rclcpp::Rate rate(1);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(10);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
   int cnt = 0;
   while (rclcpp::ok())
   {
@@ -173,7 +173,7 @@ TEST(Planner2DOFSerialJoints, NoPath)
   cmd.points.push_back(p);
 
   rclcpp::Rate rate(1);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(10);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
   int cnt = 0;
   while (rclcpp::ok())
   {

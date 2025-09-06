@@ -103,7 +103,7 @@ public:
 
 TEST_F(JoystickInterruptTest, NoInterrupt)
 {
-  rclcpp::Duration(1.0).sleep();
+  rclcpp::Duration::from_seconds(1.0).sleep();
   rclcpp::Rate rate(20);
   for (size_t i = 0; i < 25; ++i)
   {
@@ -131,7 +131,7 @@ TEST_F(JoystickInterruptTest, NoInterrupt)
 
 TEST_F(JoystickInterruptTest, Interrupt)
 {
-  rclcpp::Duration(1.0).sleep();
+  rclcpp::Duration::from_seconds(1.0).sleep();
   rclcpp::Rate rate(20);
   for (size_t i = 0; i < 25; ++i)
   {
@@ -172,7 +172,7 @@ TEST_F(JoystickInterruptTest, Interrupt)
 
 TEST_F(JoystickInterruptTest, InterruptNoTwistInput)
 {
-  rclcpp::Duration(1.0).sleep();
+  rclcpp::Duration::from_seconds(1.0).sleep();
   // make sure the internal state of the joystick interrupt node
   // (i.e. last_input_twist_) is set back to a zero twist.
   publishCmdVel(0, 0);
@@ -213,7 +213,7 @@ TEST_F(JoystickInterruptTest, InterruptNoTwistInput)
 
 TEST_F(JoystickInterruptTest, InterruptHighSpeed)
 {
-  rclcpp::Duration(1.0).sleep();
+  rclcpp::Duration::from_seconds(1.0).sleep();
   rclcpp::Rate rate(20);
   for (size_t i = 0; i < 25; ++i)
   {
@@ -287,7 +287,7 @@ public:
 
 TEST_F(JoystickInterruptOmniTest, Interrupt)
 {
-  rclcpp::Duration(1.0).sleep();
+  rclcpp::Duration::from_seconds(1.0).sleep();
   rclcpp::Rate rate(20);
   for (size_t i = 0; i < 25; ++i)
   {
@@ -437,7 +437,7 @@ TEST_F(JoystickMuxTest, Interrupt)
   for (int btn = 0; btn < 2; ++btn)
   {
     publishJoy(btn);
-    rclcpp::Duration(1.0).sleep();
+    rclcpp::Duration::from_seconds(1.0).sleep();
     rclcpp::Rate rate(20);
     for (int i = 0; i < 15; ++i)
     {

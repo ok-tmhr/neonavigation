@@ -61,7 +61,7 @@ private:
       in.header.stamp = rclcpp::Time(0);
       in.pose = msg->pose.pose;
       geometry_msgs::msg::TransformStamped trans = tfbuf_.lookupTransform(
-          to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration(0.5));
+          to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(in, out, trans);
       out_msg = *msg;
       out_msg.header = out.header;

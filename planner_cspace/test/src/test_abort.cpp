@@ -75,11 +75,11 @@ protected:
 
 TEST_F(AbortTest, AbortByGoalInRock)
 {
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(10);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
   const rclcpp::Duration wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration(0.5).sleep();
+  rclcpp::Duration::from_seconds(0.5).sleep();
   // Send a goal which is in Rock
   move_base_->sendGoal(createGoalInRock());
   while (move_base_->getState().state_ !=

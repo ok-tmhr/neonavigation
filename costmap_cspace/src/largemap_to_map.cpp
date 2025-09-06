@@ -109,11 +109,11 @@ public:
 
     double hz;
     pnh_.param("hz", hz, 1.0);
-    timer_ = nh_->create_wall_timer(rclcpp::Duration(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
+    timer_ = nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
   }
 
 private:
-  void cbTimer(const rclcpp::TimerEvent& event)
+  void cbTimer()
   {
     publishMap();
   }

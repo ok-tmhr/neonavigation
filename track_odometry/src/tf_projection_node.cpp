@@ -103,10 +103,10 @@ public:
     try
     {
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration(0.1)),
+          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1)),
           trans);
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, rclcpp::Duration(0.1)),
+          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, rclcpp::Duration::from_seconds(0.1)),
           trans_target);
     }
     catch (tf2::TransformException& e)
@@ -116,7 +116,7 @@ public:
     }
 
     if (!trans.stamp_.isZero())
-      trans.stamp_ += rclcpp::Duration(tf_tolerance_);
+      trans.stamp_ += rclcpp::Duration::from_seconds(tf_tolerance_);
 
     if (project_posture_)
     {
@@ -156,14 +156,14 @@ public:
       tf_broadcaster_.sendTransform(trans_out);
     }
   }
-  void cbTimer(const rclcpp::TimerEvent& event)
+  void cbTimer()
   {
     process();
   }
   void spin()
   {
     rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
-        rclcpp::Duration(1.0 / rate_), &TfProjectionNode::cbTimer, this);
+        rclcpp::Duration::from_seconds(1.0 / rate_), &TfProjectionNode::cbTimer, this);
     rclcpp::spin();
   }
 };

@@ -139,7 +139,7 @@ private:
   {
     last_input_twist_ = *msg;
     std_msgs::msg::Bool status;
-    if (this->now() - last_joy_msg_ > rclcpp::Duration(timeout_) ||
+    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
         (rclcpp::Time::isSimTime() && last_joy_msg_ == rclcpp::Time(0)))
     {
       pub_twist_->publish(last_input_twist_);

@@ -82,7 +82,7 @@ public:
 
     double accum_duration;
     pnh_.param("accum_duration", accum_duration, 1.0);
-    accum_.reset(rclcpp::Duration(accum_duration));
+    accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
     pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
@@ -103,7 +103,7 @@ public:
 
     double hz;
     pnh_.param("hz", hz, 1.0);
-    publish_interval_ = rclcpp::Duration(1.0 / hz);
+    publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
   }
 
 private:
@@ -115,7 +115,7 @@ private:
     try
     {
       geometry_msgs::msg::TransformStamped trans = tfbuf_.lookupTransform(
-          global_frame_, cloud.header.frame_id, cloud.header.stamp, rclcpp::Duration(0.5));
+          global_frame_, cloud.header.frame_id, cloud.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(cloud, cloud_global, trans);
     }
     catch (tf2::TransformException& e)

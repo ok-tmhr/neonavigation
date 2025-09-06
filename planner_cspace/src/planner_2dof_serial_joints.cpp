@@ -183,7 +183,7 @@ private:
 
     if ((replan_prev_ + replan_interval_ < this->now() ||
          replan_prev_ == rclcpp::Time(0)) &&
-        replan_interval_ > rclcpp::Duration(0, 0))
+        replan_interval_ > rclcpp::Duration::from_seconds(0))
     {
       replan();
     }
@@ -268,7 +268,7 @@ private:
             pos_sum += diff_max;
           }
         }
-        if (traj_prev_.points[0].time_from_start <= rclcpp::Duration(0, 0))
+        if (traj_prev_.points[0].time_from_start <= rclcpp::Duration::from_seconds(0))
         {
           avg_vel_ = std::min(links_[0].vmax_, links_[1].vmax_);
         }
@@ -339,7 +339,7 @@ private:
           p.velocities[0] = dir[0] / t;
           p.velocities[1] = dir[1] / t;
         }
-        p.time_from_start = rclcpp::Duration(pos_sum / avg_vel_);
+        p.time_from_start = rclcpp::Duration::from_seconds(pos_sum / avg_vel_);
         p.positions[0] = (*it)[0];
         p.positions[1] = (*it)[1];
         out.points.push_back(p);
@@ -397,7 +397,7 @@ public:
 
     double interval;
     pnh_.param("replan_interval", interval, 0.2);
-    replan_interval_ = rclcpp::Duration(interval);
+    replan_interval_ = rclcpp::Duration::from_seconds(interval);
     replan_prev_ = rclcpp::Time(0);
 
     int queue_size_limit;
@@ -582,7 +582,7 @@ private:
     std::list<Astar::Vec> path_grid;
     // const auto ts = std::chrono::high_resolution_clock::now();
     float cancel = std::numeric_limits<float>::max();
-    if (replan_interval_ >= rclcpp::Duration(0, 0))
+    if (replan_interval_ >= rclcpp::Duration::from_seconds(0))
       cancel = replan_interval_.seconds();
     if (!as_.search(
             starts, e, path_grid, model_,

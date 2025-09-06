@@ -126,7 +126,7 @@ void RecorderNode::spin()
     try
     {
       tf2::fromMsg(
-          tfbuf_.lookupTransform(frame_global_, frame_robot_, now, rclcpp::Duration(0.2)), transform);
+          tfbuf_.lookupTransform(frame_global_, frame_robot_, now, rclcpp::Duration::from_seconds(0.2)), transform);
     }
     catch (tf2::TransformException& e)
     {

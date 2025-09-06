@@ -316,12 +316,12 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
   {
     if (odom_timeout_timer_.isValid())
     {
-      odom_timeout_timer_.setPeriod(rclcpp::Duration(odom_timeout_sec_), true);
+      odom_timeout_timer_.setPeriod(rclcpp::Duration::from_seconds(odom_timeout_sec_), true);
     }
     else
     {
       odom_timeout_timer_ =
-          nh_->create_wall_timer(rclcpp::Duration(odom_timeout_sec_), &TrackerNode::cbOdomTimeout, this, true, true);
+          nh_->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), &TrackerNode::cbOdomTimeout, this, true, true);
     }
   }
 
@@ -354,7 +354,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
   prev_odom_stamp_ = odom->header.stamp;
 }
 
-void TrackerNode::cbTimer(const rclcpp::TimerEvent& event)
+void TrackerNode::cbTimer()
 {
   try
   {
@@ -377,7 +377,7 @@ void TrackerNode::cbTimer(const rclcpp::TimerEvent& event)
   }
 }
 
-void TrackerNode::cbOdomTimeout(const rclcpp::TimerEvent& event)
+void TrackerNode::cbOdomTimeout()
 {
   ROS_WARN_STREAM("Odometry timeout. Last odometry stamp: " << prev_odom_stamp_);
   v_lim_.clear();
@@ -401,7 +401,7 @@ void TrackerNode::spin()
   rclcpp::TimerBase::SharedPtr timer;
   if (!use_odom_)
   {
-    timer = nh_->create_wall_timer(rclcpp::Duration(1.0 / hz_), &TrackerNode::cbTimer, this);
+    timer = nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &TrackerNode::cbTimer, this);
   }
   rclcpp::spin();
 }

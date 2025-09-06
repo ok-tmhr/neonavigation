@@ -134,7 +134,7 @@ public:
 
     double delay;
     pnh_.param("odom_delay", delay, 0.0);
-    delay_ = rclcpp::Duration(delay);
+    delay_ = rclcpp::Duration::from_seconds(delay);
     pnh_.param("error_lin", error_lin_, 0.01);
     pnh_.param("error_large_lin", error_large_lin_, 0.1);
     pnh_.param("error_ang", error_ang_, 0.01);
@@ -174,7 +174,7 @@ public:
           << "trajectory_tracker status timeout, status: "
           << (status_ ? std::to_string(static_cast<int>(status_->status)) : "none");
     }
-    rclcpp::Duration(0.5).sleep();
+    rclcpp::Duration::from_seconds(0.5).sleep();
   }
   void initState(const Eigen::Vector2d& pos, const float yaw)
   {
@@ -250,7 +250,7 @@ public:
       path.poses.push_back(pose);
     }
     // needs sleep to prevent that the empty path from initState arrives later.
-    rclcpp::Duration(0.5).sleep();
+    rclcpp::Duration::from_seconds(0.5).sleep();
     pub_path_vel_->publish(path);
     last_path_header_ = path.header;
   }
@@ -289,7 +289,7 @@ public:
       {
         geometry_msgs::msg::TransformStamped trans;
         trans.header = odom.header;
-        trans.header.stamp += rclcpp::Duration(0.1);
+        trans.header.stamp += rclcpp::Duration::from_seconds(0.1);
         trans.child_frame_id = odom.child_frame_id;
         trans.transform.translation.x = odom.pose.pose.position.x;
         trans.transform.translation.y = odom.pose.pose.position.y;
@@ -315,7 +315,7 @@ public:
     const rclcpp::WallTime time_limit = rclcpp::WallTime::now() + rclcpp::WallDuration(10.0);
     while (time_limit > rclcpp::WallTime::now())
     {
-      if (dynamic_reconfigure_client_->getCurrentConfiguration(config, rclcpp::Duration(0.1)))
+      if (dynamic_reconfigure_client_->getCurrentConfiguration(config, rclcpp::Duration::from_seconds(0.1)))
       {
         return true;
       }

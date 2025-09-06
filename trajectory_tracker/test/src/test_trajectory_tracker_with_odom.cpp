@@ -45,7 +45,7 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   const rclcpp::Time start = this->now();
   while (rclcpp::ok())
   {
-    ASSERT_LT(this->now() - start, rclcpp::Duration(10.0));
+    ASSERT_LT(this->now() - start, rclcpp::Duration::from_seconds(10.0));
 
     publishTransform();
     rate.sleep();
@@ -86,7 +86,7 @@ TEST_F(TrajectoryTrackerTest, Timeout)
     rclcpp::spin_some(shared_from_this());
   }
   // Wait until odometry timeout
-  rclcpp::Duration(0.2).sleep();
+  rclcpp::Duration::from_seconds(0.2).sleep();
   rclcpp::spin_some(shared_from_this());
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);

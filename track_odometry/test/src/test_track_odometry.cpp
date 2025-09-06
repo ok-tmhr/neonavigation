@@ -55,13 +55,13 @@ public:
       nav_msgs::msg::Odometry& odom_raw,
       sensor_msgs::msg::Imu& imu)
   {
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     rclcpp::Rate rate(100);
     odom_ = nullptr;
     for (int i = 0; i < 1000 && rclcpp::ok(); ++i)
     {
       odom_raw.header.stamp = this->now();
-      imu.header.stamp = odom_raw.header.stamp + rclcpp::Duration(0.0001);
+      imu.header.stamp = odom_raw.header.stamp + rclcpp::Duration::from_seconds(0.0001);
       pub_odom_->publish(odom_raw);
       pub_imu_->publish(imu);
       rate.sleep();
@@ -114,8 +114,8 @@ public:
       sensor_msgs::msg::Imu& imu,
       const double dt)
   {
-    odom_raw.header.stamp += rclcpp::Duration(dt);
-    imu.header.stamp += rclcpp::Duration(dt);
+    odom_raw.header.stamp += rclcpp::Duration::from_seconds(dt);
+    imu.header.stamp += rclcpp::Duration::from_seconds(dt);
     pub_imu_->publish(imu);
 
     // Buffer odom message to add delay and jitter.
@@ -141,7 +141,7 @@ public:
     nav_msgs::msg::Odometry::ConstPtr odom_prev = odom_;
     while (true)
     {
-      rclcpp::Duration(0.1).sleep();
+      rclcpp::Duration::from_seconds(0.1).sleep();
       rclcpp::spin_some(shared_from_this());
       if (odom_prev == odom_)
       {

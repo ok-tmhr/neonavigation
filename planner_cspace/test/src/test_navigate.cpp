@@ -111,7 +111,7 @@ protected:
 
     rclcpp::Rate rate(10.0);
 
-    const rclcpp::Time deadline = this->now() + rclcpp::Duration(15.0);
+    const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(15.0);
     while (rclcpp::ok())
     {
       rate.sleep();
@@ -137,7 +137,7 @@ protected:
         break;
       }
     }
-    ASSERT_TRUE(srv_forget_.waitForExistence(rclcpp::Duration(10.0)));
+    ASSERT_TRUE(srv_forget_.waitForExistence(rclcpp::Duration::from_seconds(10.0)));
 
     geometry_msgs::msg::PoseWithCovarianceStamped pose;
     pose.header.frame_id = "map";
@@ -152,7 +152,7 @@ protected:
       rate.sleep();
       const rclcpp::Time now = this->now();
       ASSERT_LT(now, deadline) << test_scope_ << "Initial transform timeout";
-      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration(0.5)))
+      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }
@@ -185,14 +185,14 @@ protected:
     std_srvs::srv::Empty::Response res;
     srv_forget_.call(req, res);
 
-    rclcpp::Duration(1.0).sleep();
+    rclcpp::Duration::from_seconds(1.0).sleep();
   }
   void TearDown() override
   {
     // Clear goal
     nav_msgs::msg::Path path;
     pub_patrol_nodes_->publish(path);
-    rclcpp::Duration(2.0).sleep();
+    rclcpp::Duration::from_seconds(2.0).sleep();
   }
   void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
@@ -280,7 +280,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration(0.5));
+        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);
@@ -315,10 +315,10 @@ protected:
     ASSERT_TRUE(static_cast<bool>(map_));
     ASSERT_TRUE(static_cast<bool>(map_local_));
     pubMapLocal();
-    rclcpp::Duration(0.2).sleep();
+    rclcpp::Duration::from_seconds(0.2).sleep();
 
     rclcpp::Rate wait(10);
-    rclcpp::Time deadline = this->now() + rclcpp::Duration(10);
+    rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
     while (rclcpp::ok())
     {
       pubMapLocal();
@@ -366,7 +366,7 @@ TEST_F(Navigate, Navigate)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(60);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(60);
   while (rclcpp::ok())
   {
     rclcpp::spin_some(shared_from_this());
@@ -430,7 +430,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
   pubMapLocal();
-  rclcpp::Duration(0.2).sleep();
+  rclcpp::Duration::from_seconds(0.2).sleep();
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);
@@ -445,7 +445,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(60);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(60);
   while (rclcpp::ok())
   {
     pubMapLocal();
@@ -579,7 +579,7 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
   pubMapLocal();
-  rclcpp::Duration(0.2).sleep();
+  rclcpp::Duration::from_seconds(0.2).sleep();
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);
@@ -594,7 +594,7 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(10);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
   while (rclcpp::ok())
   {
     pubMapLocal();
@@ -728,7 +728,7 @@ TEST_F(Navigate, CrowdEscapeOnSurrounded)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(60);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(60);
   while (rclcpp::ok())
   {
     pubMapLocal();
@@ -810,7 +810,7 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
 
   rclcpp::Rate wait(10);
   bool unreachable = false;
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(60);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(60);
   rclcpp::Time check_until = deadline;
   while (rclcpp::ok())
   {
@@ -840,7 +840,7 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
     if (planner_status_->error == planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND && !unreachable)
     {
       unreachable = true;
-      check_until = now + rclcpp::Duration(2);  // Check another 2 seconds that state is not changed
+      check_until = now + rclcpp::Duration::from_seconds(2);  // Check another 2 seconds that state is not changed
     }
     if (unreachable)
     {
@@ -878,7 +878,7 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
 
   rclcpp::Rate wait(10);
   bool unreachable = false;
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(60);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(60);
   rclcpp::Time check_until = deadline;
   while (rclcpp::ok())
   {
@@ -912,7 +912,7 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
     if (planner_status_->error == planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND && !unreachable)
     {
       unreachable = true;
-      check_until = now + rclcpp::Duration(2);  // Check another 2 seconds that state is not changed
+      check_until = now + rclcpp::Duration::from_seconds(2);  // Check another 2 seconds that state is not changed
     }
     if (unreachable)
     {
@@ -950,7 +950,7 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
 
   rclcpp::Rate wait(10);
   bool unreachable = false;
-  const rclcpp::Time check_until = this->now() + rclcpp::Duration(2);
+  const rclcpp::Time check_until = this->now() + rclcpp::Duration::from_seconds(2);
   int cnt_planning = 0;
   while (rclcpp::ok())
   {
@@ -1016,7 +1016,7 @@ TEST_F(Navigate, ForceTemporaryEscape)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(2);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration(60);
+  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(60);
   while (rclcpp::ok())
   {
     const size_t data_size = map_local_->data.size();

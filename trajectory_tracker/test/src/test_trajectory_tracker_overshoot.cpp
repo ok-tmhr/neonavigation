@@ -73,14 +73,14 @@ protected:
 
     rclcpp::Rate rate(50);
     const rclcpp::Time initial_time = this->now();
-    const rclcpp::Time time_limit = initial_time + rclcpp::Duration(5.0);
+    const rclcpp::Time time_limit = initial_time + rclcpp::Duration::from_seconds(5.0);
     while (rclcpp::ok() && time_limit > this->now())
     {
       odom.header.stamp = this->now();
       publishTransform(odom);
       rate.sleep();
       rclcpp::spin_some(shared_from_this());
-      if ((status_->header.stamp > initial_time + rclcpp::Duration(0.5)) && (status_->status == expected_status))
+      if ((status_->header.stamp > initial_time + rclcpp::Duration::from_seconds(0.5)) && (status_->status == expected_status))
       {
         return;
       }

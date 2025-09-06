@@ -52,7 +52,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
       const std::string test_condition =
           "with_watchdog_reset: " + std::to_string(with_watchdog_reset) +
           ", with_cloud: " + std::to_string(with_cloud);
-      rclcpp::Duration(0.3).sleep();
+      rclcpp::Duration::from_seconds(0.3).sleep();
 
       cmd_vel_.reset();
       for (int i = 0; i < 20; ++i)

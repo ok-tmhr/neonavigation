@@ -154,7 +154,7 @@ private:
     try
     {
       geometry_msgs::msg::TransformStamped trans = tf_buffer_.lookupTransform(
-          base_link_id_, msg->header.frame_id, rclcpp::Time(0), rclcpp::Duration(0.1));
+          base_link_id_, msg->header.frame_id, rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1));
 
       geometry_msgs::msg::Vector3Stamped vin, vout;
       vin.header = imu_.header;
@@ -222,7 +222,7 @@ private:
       }
 
       double slip_ratio = 1.0;
-      odom.header.stamp += rclcpp::Duration(tf_tolerance_);
+      odom.header.stamp += rclcpp::Duration::from_seconds(tf_tolerance_);
       odom.twist.twist.angular = imu_.angular_velocity;
       odom.pose.pose.orientation = imu_.orientation;
 
@@ -387,7 +387,7 @@ public:
     dist_ = 0;
     slip_.set(0.0, 0.1);
   }
-  void cbTimer(const rclcpp::TimerEvent& event)
+  void cbTimer()
   {
     nav_msgs::msg::Odometry::Ptr odom(new nav_msgs::msg::Odometry);
     odom->header.stamp = this->now();
@@ -405,7 +405,7 @@ public:
     else
     {
       rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
-          rclcpp::Duration(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
+          rclcpp::Duration::from_seconds(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
       rclcpp::spin();
     }
   }

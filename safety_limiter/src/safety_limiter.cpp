@@ -97,7 +97,7 @@ bool XmlRpc_isNumber(XmlRpc::XmlRpcValue& value)
          value.getType() == XmlRpc::XmlRpcValue::TypeDouble;
 }
 
-class SafetyLimiterNode
+class SafetyLimiterNode : public rclcpp::Node
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
@@ -207,7 +207,7 @@ public:
     pnh_.param("fixed_frame", fixed_frame_id_, std::string("odom"));
     double watchdog_interval_d;
     pnh_.param("watchdog_interval", watchdog_interval_d, 0.0);
-    watchdog_interval_ = rclcpp::Duration(watchdog_interval_d);
+    watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
     pnh_.param("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
     pnh_.param("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
 
@@ -255,9 +255,9 @@ public:
   void spin()
   {
     rclcpp::TimerBase::SharedPtr predict_timer =
-        nh_->create_wall_timer(rclcpp::Duration(1.0 / hz_), &SafetyLimiterNode::cbPredictTimer, this);
+        nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &SafetyLimiterNode::cbPredictTimer, this);
 
-    if (watchdog_interval_ != rclcpp::Duration(0.0))
+    if (watchdog_interval_ != rclcpp::Duration::from_seconds(0.0))
     {
       watchdog_timer_ =
           nh_->create_wall_timer(watchdog_interval_, &SafetyLimiterNode::cbWatchdogTimer, this);
@@ -272,7 +272,7 @@ protected:
     watchdog_timer_.setPeriod(watchdog_interval_, true);
     watchdog_stop_ = false;
   }
-  void cbWatchdogTimer(const rclcpp::TimerEvent& event)
+  void cbWatchdogTimer()
   {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "safety_limiter: Watchdog timed-out");
     watchdog_stop_ = true;
@@ -282,14 +282,14 @@ protected:
 
     diag_updater_.force_update();
   }
-  void cbPredictTimer(const rclcpp::TimerEvent& event)
+  void cbPredictTimer()
   {
     if (!has_twist_)
       return;
     if (!has_cloud_)
       return;
 
-    if (this->now() - last_cloud_stamp_ > rclcpp::Duration(timeout_))
+    if (this->now() - last_cloud_stamp_ > rclcpp::Duration::from_seconds(timeout_))
     {
       RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "safety_limiter: PointCloud timed-out");
       geometry_msgs::msg::Twist cmd_vel;
@@ -336,7 +336,7 @@ protected:
     yaw_margin_ = config.yaw_margin;
     yaw_escape_ = config.yaw_escape;
     downsample_grid_ = config.downsample_grid;
-    hold_ = rclcpp::Duration(std::max(config.hold, 1.0 / hz_));
+    hold_ = rclcpp::Duration::from_seconds(std::max(config.hold, 1.0 / hz_));
     allow_empty_cloud_ = config.allow_empty_cloud;
 
     tmax_ = 0.0;
@@ -713,7 +713,7 @@ protected:
     twist_ = *msg;
     has_twist_ = true;
 
-    if (now - last_disable_cmd_ < rclcpp::Duration(disable_timeout_))
+    if (now - last_disable_cmd_ < rclcpp::Duration::from_seconds(disable_timeout_))
     {
       pub_twist_->publish(limitMaxVelocities(twist_));
     }

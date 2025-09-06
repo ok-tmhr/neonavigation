@@ -37,7 +37,7 @@
 #include <nav_msgs/msg/path.hpp>
 
 
-class PatrolActionNode
+class PatrolActionNode : public rclcpp::Node
 {
 protected:
   using MoveBaseClient = actionlib::SimpleActionClient<nav2_msgs::action::NavigateToPose>;

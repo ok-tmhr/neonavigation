@@ -28,7 +28,7 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
 
@@ -41,17 +41,17 @@
 
 #include <costmap_cspace/costmap_3d.h>
 
-class Costmap3DOFNode
+class Costmap3DOFNode : public rclcpp::Node
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Subscription<>::SharedPtr sub_map_;
-  std::vector<rclcpp::Subscription<>::SharedPtr> sub_map_overlay_;
-  rclcpp::Publisher<>::SharedPtr pub_costmap_;
-  rclcpp::Publisher<>::SharedPtr pub_costmap_update_;
-  rclcpp::Publisher<>::SharedPtr pub_footprint_;
-  rclcpp::Publisher<>::SharedPtr pub_debug_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_map_;
+  std::vector<rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr> sub_map_overlay_;
+  rclcpp::Publisher<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr pub_costmap_;
+  rclcpp::Publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>::SharedPtr pub_costmap_update_;
+  rclcpp::Publisher<geometry_msgs::msg::PolygonStamped>::SharedPtr pub_footprint_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_debug_;
   rclcpp::TimerBase::SharedPtr timer_footprint_;
 
   costmap_cspace::Costmap3d::Ptr costmap_;
@@ -118,14 +118,14 @@ protected:
       pub_costmap_update_->publish(*update);
       if (update->width * update->height * update->angle == 0)
       {
-        ROS_WARN_THROTTLE(
-            5, "Updated region of the costmap is empty. "
+        RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(),
+            5000, "Updated region of the costmap is empty. "
                "The position may be out-of-boundary, or input map is wrong.");
       }
     }
     else
     {
-      ROS_WARN_THROTTLE(5, "Failed to update the costmap.");
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Failed to update the costmap.");
     }
     return true;
   }
@@ -153,7 +153,7 @@ protected:
     }
     pub_debug_->publish(pc);
   }
-  void cbPublishFootprint(const rclcpp::TimerEvent& event, const geometry_msgs::msg::PolygonStamped msg)
+  void cbPublishFootprint(const geometry_msgs::msg::PolygonStamped msg)
   {
     auto footprint = msg;
     footprint.header.stamp = this->now();
@@ -381,7 +381,7 @@ public:
 
     const geometry_msgs::msg::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = nh_->create_wall_timer(
-        rclcpp::Duration(1.0),
+        rclcpp::Duration::from_seconds(1.0),
         boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, _1, footprint_msg));
   }
 };

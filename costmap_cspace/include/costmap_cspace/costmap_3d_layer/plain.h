@@ -34,7 +34,7 @@
 
 #include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
-#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>

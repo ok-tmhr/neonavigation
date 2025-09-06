@@ -103,7 +103,7 @@ int main(int argc, char** argv)
       }
       floor_prev = floor_cur;
     }
-    trans.header.stamp = this->now() + rclcpp::Duration(0.15);
+    trans.header.stamp = this->now() + rclcpp::Duration::from_seconds(0.15);
     tfb.sendTransform(trans);
   }
 

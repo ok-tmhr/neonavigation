@@ -134,7 +134,7 @@ TEST(NeonavigationCompat, Subscribe)
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cb, &cls);
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     rclcpp::spin_some(shared_from_this());
     ASSERT_TRUE(static_cast<bool>(cls.msg_));
     ASSERT_EQ(false, static_cast<bool>(cls.msg_->data));
@@ -148,7 +148,7 @@ TEST(NeonavigationCompat, Subscribe)
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cb, &cls);
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     rclcpp::spin_some(shared_from_this());
     ASSERT_TRUE(static_cast<bool>(cls.msg_));
     ASSERT_EQ(true, static_cast<bool>(cls.msg_->data));
@@ -162,7 +162,7 @@ TEST(NeonavigationCompat, Subscribe)
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cbConst, &cls);
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     rclcpp::spin_some(shared_from_this());
     ASSERT_TRUE(static_cast<bool>(cls.msg_const_));
     ASSERT_EQ(false, static_cast<bool>(cls.msg_const_->data));
@@ -176,7 +176,7 @@ TEST(NeonavigationCompat, Subscribe)
         cls.pnh_, "test_old",
         1,
         &NeonavigationCompatCallbacks::cbConst, &cls);
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     rclcpp::spin_some(shared_from_this());
     ASSERT_TRUE(static_cast<bool>(cls.msg_const_));
     ASSERT_EQ(true, static_cast<bool>(cls.msg_const_->data));
@@ -203,7 +203,7 @@ TEST(NeonavigationCompat, AdvertiseService)
         cls.nh_, "srv_new",
         cls.pnh_, "srv_old",
         &NeonavigationCompatCallbacks::cbSrv, &cls);
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     std_srvs::srv::Empty empty;
     ASSERT_TRUE(cli_old.call(empty.request, empty.response));
   }
@@ -215,7 +215,7 @@ TEST(NeonavigationCompat, AdvertiseService)
         cls.nh_, "srv_new",
         cls.pnh_, "srv_old",
         &NeonavigationCompatCallbacks::cbSrv, &cls);
-    rclcpp::Duration(0.1).sleep();
+    rclcpp::Duration::from_seconds(0.1).sleep();
     std_srvs::srv::Empty empty;
     ASSERT_TRUE(cli_new.call(empty.request, empty.response));
   }

@@ -38,7 +38,7 @@
 #include <tf2_ros/transform_listener.h>
 
 
-class DummyRobotNode
+class DummyRobotNode : public rclcpp::Node
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
@@ -70,7 +70,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(1.0));
+          tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(1.0));
       tf2::doTransform(pose_in, pose_out, trans);
     }
     catch (tf2::TransformException& e)
