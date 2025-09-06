@@ -30,6 +30,7 @@
 #ifndef COSTMAP_CSPACE_POLYGON_H
 #define COSTMAP_CSPACE_POLYGON_H
 
+#include <cassert>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -47,12 +48,12 @@ public:
   float c[2];
   float& operator[](const int& i)
   {
-    ROS_ASSERT(i < 2);
+    assert(i < 2);
     return c[i];
   }
   const float& operator[](const int& i) const
   {
-    ROS_ASSERT(i < 2);
+    assert(i < 2);
     return c[i];
   }
   Vec operator-(const Vec& a) const

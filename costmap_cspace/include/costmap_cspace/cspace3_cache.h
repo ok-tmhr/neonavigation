@@ -30,6 +30,7 @@
 #ifndef COSTMAP_CSPACE_CSPACE3_CACHE_H
 #define COSTMAP_CSPACE_CSPACE3_CACHE_H
 
+#include <cassert>
 #include <memory>
 
 #include <rclcpp/rclcpp.hpp>
@@ -73,14 +74,14 @@ public:
   char& e(const int& x, const int& y, const int& yaw)
   {
     const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
+    assert(addr < array_size_);
 
     return c_[addr];
   }
   const char& e(const int& x, const int& y, const int& yaw) const
   {
     const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
+    assert(addr < array_size_);
 
     return c_[addr];
   }

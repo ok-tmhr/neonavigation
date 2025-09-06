@@ -30,6 +30,7 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_H
 #define COSTMAP_CSPACE_COSTMAP_3D_H
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
@@ -58,7 +59,7 @@ public:
   {
     ang_resolution_ = ang_resolution;
 
-    ROS_ASSERT(ang_resolution_ > 0);
+    assert(ang_resolution_ > 0);
   }
   template <typename T>
   typename T::Ptr addRootLayer()

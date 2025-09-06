@@ -31,6 +31,7 @@
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <map>
 #include <memory>
@@ -57,23 +58,23 @@ public:
   }
   const int8_t& getCost(const int& x, const int& y, const int& yaw) const
   {
-    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
-    ROS_ASSERT(static_cast<size_t>(x) < info.width);
-    ROS_ASSERT(static_cast<size_t>(y) < info.height);
+    assert(static_cast<size_t>(yaw) < info.angle);
+    assert(static_cast<size_t>(x) < info.width);
+    assert(static_cast<size_t>(y) < info.height);
 
     const size_t addr = address(x, y, yaw);
-    ROS_ASSERT(addr < data.size());
+    assert(addr < data.size());
 
     return data[addr];
   }
   int8_t& getCost(const int& x, const int& y, const int& yaw)
   {
-    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
-    ROS_ASSERT(static_cast<size_t>(x) < info.width);
-    ROS_ASSERT(static_cast<size_t>(y) < info.height);
+    assert(static_cast<size_t>(yaw) < info.angle);
+    assert(static_cast<size_t>(x) < info.width);
+    assert(static_cast<size_t>(y) < info.height);
 
     const size_t addr = address(x, y, yaw);
-    ROS_ASSERT(addr < data.size());
+    assert(addr < data.size());
 
     return data[addr];
   }
@@ -169,7 +170,7 @@ public:
   }
   void expand(const int& ex)
   {
-    ROS_ASSERT(ex >= 0);
+    assert(ex >= 0);
     x_ -= ex;
     y_ -= ex;
     width_ += 2 * ex;
@@ -215,9 +216,9 @@ public:
   }
   void bitblt(const CSpace3DMsg::Ptr& dest, const CSpace3DMsg::ConstPtr& src)
   {
-    ROS_ASSERT(dest->info.angle == src->info.angle);
-    ROS_ASSERT(dest->info.width == src->info.width);
-    ROS_ASSERT(dest->info.height == src->info.height);
+    assert(dest->info.angle == src->info.angle);
+    assert(dest->info.width == src->info.width);
+    assert(dest->info.height == src->info.height);
 
     normalize(src->info.width, src->info.height);
     if (width_ == 0 || height_ == 0)
@@ -298,9 +299,9 @@ public:
   }
   void setBaseMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& base_map)
   {
-    ROS_ASSERT(root_);
-    ROS_ASSERT(ang_grid_ > 0);
-    ROS_ASSERT(base_map->data.size() >= base_map->info.width * base_map->info.height);
+    assert(root_);
+    assert(ang_grid_ > 0);
+    assert(base_map->data.size() >= base_map->info.width * base_map->info.height);
 
     const size_t xy_size = base_map->info.width * base_map->info.height;
     map_->header = base_map->header;
@@ -348,8 +349,8 @@ public:
   }
   void processMapOverlay(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg, const bool update_chain_entry)
   {
-    ROS_ASSERT(!root_);
-    ROS_ASSERT(ang_grid_ > 0);
+    assert(!root_);
+    assert(ang_grid_ > 0);
     const int ox =
         std::lround((msg->info.origin.position.x - map_->info.origin.position.x) /
                     map_->info.linear_resolution);

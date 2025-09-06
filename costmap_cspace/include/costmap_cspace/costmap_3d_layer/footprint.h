@@ -31,6 +31,7 @@
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <memory>
 #include <vector>
@@ -106,12 +107,12 @@ public:
     linear_spread_ = linear_spread;
     linear_spread_min_cost_ = linear_spread_min_cost;
 
-    ROS_ASSERT(linear_expand >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_expand));
-    ROS_ASSERT(linear_spread >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_spread));
-    ROS_ASSERT(linear_spread_min_cost_ >= 0);
-    ROS_ASSERT(linear_spread_min_cost_ < 100);
+    assert(linear_expand >= 0.0);
+    assert(std::isfinite(linear_expand));
+    assert(linear_spread >= 0.0);
+    assert(std::isfinite(linear_spread));
+    assert(linear_spread_min_cost_ >= 0);
+    assert(linear_spread_min_cost_ < 100);
   }
   void setFootprint(const Polygon footprint)
   {
@@ -141,7 +142,7 @@ public:
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
   {
-    ROS_ASSERT(footprint_p_.v.size() > 2);
+    assert(footprint_p_.v.size() > 2);
 
     range_max_ =
         std::ceil((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
@@ -212,7 +213,7 @@ protected:
       const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
       const UpdatedRegion& region)
   {
-    ROS_ASSERT(ang_grid_ > 0);
+    assert(ang_grid_ > 0);
     clearTravelableArea(map, msg);
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
