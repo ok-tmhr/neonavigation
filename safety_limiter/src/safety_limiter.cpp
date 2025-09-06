@@ -153,8 +153,8 @@ protected:
   diagnostic_updater::Updater diag_updater_;
 
 public:
-  SafetyLimiterNode()
-    : nh_()
+  SafetyLimiterNode() : Node()
+    , nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
     , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)

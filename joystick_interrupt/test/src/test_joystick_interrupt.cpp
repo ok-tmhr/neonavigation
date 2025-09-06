@@ -32,7 +32,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/joy.hpp>
-#include <std_msgs/Int32.h>
+#include <std_msgs/msg/int32.hpp>
 
 #include <gtest/gtest.h>
 

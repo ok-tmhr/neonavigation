@@ -30,9 +30,9 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/GetMap.h>
+#include <nav_msgs/srv/get_map.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
-#include <geometry_msgs/Quaternion.h>
+#include <geometry_msgs/msg/quaternion.hpp>
 
 #include <cstdio>
 #include <string>
@@ -47,7 +47,7 @@ class MapGeneratorNode : public rclcpp::Node
 protected:
   rclcpp::Node::SharedPtr nh_;
   std::string mapname_;
-  rclcpp::Subscription<>::SharedPtr map_sub_;
+  rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr map_sub_;
   bool saved_map_;
 
 public:

@@ -50,9 +50,9 @@ void fillInPointcloudMsg(sensor_msgs::msg::PointCloud2& cloud, const std::initia
   cloud.is_bigendian = false;
   cloud.is_dense = false;
   cloud.width = points.size();
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
 
   std::initializer_list<float>::iterator it;
   for (it = points.begin(); it != points.end(); it += 3)
@@ -94,7 +94,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   int idx = 0;
   for (auto& pc : accum)
   {
-    sensor_msgs::msg::PointCloud2Iterator<float> it_x(pc, "x");
+    sensor_msgs::PointCloud2Iterator<float> it_x(pc, "x");
     ASSERT_EQ(expected_xs[idx++], *it_x);
   }
 

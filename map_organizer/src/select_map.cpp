@@ -30,7 +30,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
-#include <std_msgs/Int32.h>
+#include <std_msgs/msg/int32.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 

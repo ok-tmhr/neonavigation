@@ -39,7 +39,8 @@
 #include <string>
 #include <vector>
 
-#include <map_server/image_loader.h>
+#include <nav2_map_server/map_io.hpp>
+// #include <map_server/image_loader.h>
 #include <yaml-cpp/yaml.h>
 
 #ifdef HAVE_NEW_YAMLCPP
@@ -57,12 +58,12 @@ class TieMapNode : public rclcpp::Node
 private:
   rclcpp::Node::SharedPtr pnh_;
   rclcpp::Node::SharedPtr nh_;
-  rclcpp::Publisher<>::SharedPtr pub_map_array_;
-  std::vector<rclcpp::Publisher<>::SharedPtr> pub_map_;
+  rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
+  std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
 
 public:
-  TieMapNode()
-    : pnh_("~")
+  TieMapNode() : Node()
+    , pnh_("~")
     , nh_()
   {
     pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, true);

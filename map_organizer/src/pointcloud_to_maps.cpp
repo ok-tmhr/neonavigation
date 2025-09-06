@@ -58,8 +58,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
 
 public:
-  PointcloudToMapsNode()
-    : pnh_("~")
+  PointcloudToMapsNode() : Node()
+    , pnh_("~")
     , nh_()
   {
       sub_points_ = this->create_subscription(

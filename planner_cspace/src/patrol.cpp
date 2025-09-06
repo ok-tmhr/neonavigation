@@ -31,7 +31,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <actionlib/client/simple_action_client.h>
+#include <rclcpp_action/client.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <planner_cspace_msgs/action/move_with_tolerance.hpp>
 #include <nav_msgs/msg/path.hpp>
@@ -40,8 +40,8 @@
 class PatrolActionNode : public rclcpp::Node
 {
 protected:
-  using MoveBaseClient = actionlib::SimpleActionClient<nav2_msgs::action::NavigateToPose>;
-  using MoveWithToleranceClient = actionlib::SimpleActionClient<planner_cspace_msgs::action::MoveWithTolerance>;
+  using MoveBaseClient = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>;
+  using MoveWithToleranceClient = rclcpp_action::Client<planner_cspace_msgs::action::MoveWithTolerance>;
 
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
@@ -76,8 +76,8 @@ protected:
   }
 
 public:
-  PatrolActionNode()
-    : nh_()
+  PatrolActionNode() : Node()
+    , nh_()
     , pnh_("~")
   {
       sub_path_ = this->create_subscription(
@@ -112,7 +112,7 @@ public:
 
     if (with_tolerance_)
     {
-      planner_cspace_msgs::action::MoveWithToleranceGoal goal;
+      planner_cspace_msgs::action::MoveWithTolerance::Goal goal;
 
       goal.target_pose.header = path_.poses[pos_].header;
       goal.target_pose.header.stamp = this->now();

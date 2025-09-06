@@ -28,10 +28,10 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
-#include <laser_geometry/laser_geometry.h>
+#include <laser_geometry/laser_geometry.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <sensor_msgs/point_cloud2_iterator.h>
-#include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -47,8 +47,8 @@ class LaserscanToMapNode : public rclcpp::Node
 private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Publisher<>::SharedPtr pub_map_;
-  rclcpp::Subscription<>::SharedPtr sub_scan_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
   nav_msgs::msg::OccupancyGrid map;
   tf2_ros::Buffer tfbuf_;
@@ -69,8 +69,8 @@ private:
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
-  LaserscanToMapNode()
-    : nh_()
+  LaserscanToMapNode() : Node()
+    , nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
   {
@@ -156,9 +156,9 @@ private:
 
     for (auto& pc : accum_)
     {
-      auto itr_x = sensor_msgs::msg::PointCloud2ConstIterator<float>(pc, "x");
-      auto itr_y = sensor_msgs::msg::PointCloud2ConstIterator<float>(pc, "y");
-      auto itr_z = sensor_msgs::msg::PointCloud2ConstIterator<float>(pc, "z");
+      auto itr_x = sensor_msgs::PointCloud2ConstIterator<float>(pc, "x");
+      auto itr_y = sensor_msgs::PointCloud2ConstIterator<float>(pc, "y");
+      auto itr_z = sensor_msgs::PointCloud2ConstIterator<float>(pc, "z");
       for (; itr_x != itr_x.end(); ++itr_x, ++itr_y)
       {
         if (*itr_z - robot_z < z_min_ || z_max_ < *itr_z - robot_z)

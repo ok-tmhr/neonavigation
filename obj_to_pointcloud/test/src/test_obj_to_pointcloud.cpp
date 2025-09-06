@@ -84,7 +84,7 @@ TEST(ObjToPointCloud, PointCloud)
       std::lround((0.5 * 0.1 + 0.1 * 0.2) / (0.05 * 0.05)),
       10);
 
-  for (sensor_msgs::msg::PointCloud2ConstIterator<float> iter_x(*cloud, "x"), iter_y(*cloud, "y"), iter_z(*cloud, "z");
+  for (sensor_msgs::PointCloud2ConstIterator<float> iter_x(*cloud, "x"), iter_y(*cloud, "y"), iter_z(*cloud, "z");
        iter_x != iter_x.end();
        ++iter_x, ++iter_y, ++iter_z)
   {

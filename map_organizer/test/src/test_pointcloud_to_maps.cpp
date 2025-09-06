@@ -100,9 +100,9 @@ sensor_msgs::msg::PointCloud2 generateMapCloud()
   modifier.resize(points.size());
   cloud.height = 1;
   cloud.width = points.size();
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
   for (const Point& p : points)
   {
     *iter_x = p.x;

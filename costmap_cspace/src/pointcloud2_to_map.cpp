@@ -46,9 +46,9 @@ class Pointcloud2ToMapNode : public rclcpp::Node
 private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Publisher<>::SharedPtr pub_map_;
-  rclcpp::Subscription<>::SharedPtr sub_cloud_;
-  rclcpp::Subscription<>::SharedPtr sub_cloud_single_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
 
   nav_msgs::msg::OccupancyGrid map_;
   tf2_ros::Buffer tfbuf_;
@@ -68,8 +68,8 @@ private:
   std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>> accums_;
 
 public:
-  Pointcloud2ToMapNode()
-    : nh_()
+  Pointcloud2ToMapNode() : Node()
+    , nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
     , accums_(2)
@@ -166,9 +166,9 @@ private:
     {
       for (auto& pc : accum)
       {
-        sensor_msgs::msg::PointCloud2Iterator<float> iter_x(pc, "x");
-        sensor_msgs::msg::PointCloud2Iterator<float> iter_y(pc, "y");
-        sensor_msgs::msg::PointCloud2Iterator<float> iter_z(pc, "z");
+        sensor_msgs::PointCloud2Iterator<float> iter_x(pc, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(pc, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(pc, "z");
         for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z)
         {
           if (*iter_z - robot_z < z_min_ || z_max_ < *iter_z - robot_z)

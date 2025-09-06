@@ -176,8 +176,8 @@ protected:
   };
 
 public:
-  Costmap3DOFNode()
-    : nh_()
+  Costmap3DOFNode() : Node()
+    , nh_()
     , pnh_("~")
   {
       pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(

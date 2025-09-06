@@ -86,8 +86,8 @@ std::vector<std::string> split(const std::string& input, char delimiter)
 class ObjToPointcloudNode : public rclcpp::Node
 {
 public:
-  ObjToPointcloudNode()
-    : nh_()
+  ObjToPointcloudNode() : Node()
+    , nh_()
     , pnh_("~")
     , engine_(seed_gen_())
   {

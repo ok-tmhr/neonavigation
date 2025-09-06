@@ -41,8 +41,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <planner_cspace_msgs/msg/planner_status.hpp>
-#include <trajectory_msgs/JointTrajectory.h>
-#include <sensor_msgs/JointState.h>
+#include <trajectory_msgs/msg/joint_trajectory.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -64,10 +64,10 @@ private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
 
-  rclcpp::Publisher<>::SharedPtr pub_status_;
-  rclcpp::Publisher<>::SharedPtr pub_trajectory_;
-  rclcpp::Subscription<>::SharedPtr sub_trajectory_;
-  rclcpp::Subscription<>::SharedPtr sub_joint_;
+  rclcpp::Publisher<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr pub_status_;
+  rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_trajectory_;
+  rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr sub_trajectory_;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_;
 
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
@@ -391,7 +391,7 @@ public:
 
     pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
 
-    nh_group.param("resolution", resolution_, 128);
+    nh_group->get_parameter_or("resolution", resolution_, 128);
     pnh_->get_parameter_or("debug_aa", debug_aa_, false);
 
     double interval;
@@ -400,7 +400,7 @@ public:
     replan_prev_ = rclcpp::Time(0);
 
     int queue_size_limit;
-    nh_group.param("queue_size_limit", queue_size_limit, 0);
+    nh_group->get_parameter_or("queue_size_limit", queue_size_limit, 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
@@ -409,24 +409,24 @@ public:
     as_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     cm_.clear(0);
 
-    nh_group.param("link0_name", links_[0].name_, std::string("link0"));
-    nh_group.param("link0_joint_radius", links_[0].radius_[0], 0.07f);
-    nh_group.param("link0_end_radius", links_[0].radius_[1], 0.07f);
-    nh_group.param("link0_length", links_[0].length_, 0.135f);
-    nh_group.param("link0_x", links_[0].origin_.x_, 0.22f);
-    nh_group.param("link0_y", links_[0].origin_.y_, 0.0f);
-    nh_group.param("link0_th", links_[0].origin_.th_, 0.0f);
-    nh_group.param("link0_gain_th", links_[0].gain_.th_, -1.0f);
-    nh_group.param("link0_vmax", links_[0].vmax_, 0.5f);
-    nh_group.param("link1_name", links_[1].name_, std::string("link1"));
-    nh_group.param("link1_joint_radius", links_[1].radius_[0], 0.07f);
-    nh_group.param("link1_end_radius", links_[1].radius_[1], 0.07f);
-    nh_group.param("link1_length", links_[1].length_, 0.27f);
-    nh_group.param("link1_x", links_[1].origin_.x_, -0.22f);
-    nh_group.param("link1_y", links_[1].origin_.y_, 0.0f);
-    nh_group.param("link1_th", links_[1].origin_.th_, 0.0f);
-    nh_group.param("link1_gain_th", links_[1].gain_.th_, 1.0f);
-    nh_group.param("link1_vmax", links_[1].vmax_, 0.5f);
+    nh_group->get_parameter_or("link0_name", links_[0].name_, std::string("link0"));
+    nh_group->get_parameter_or("link0_joint_radius", links_[0].radius_[0], 0.07f);
+    nh_group->get_parameter_or("link0_end_radius", links_[0].radius_[1], 0.07f);
+    nh_group->get_parameter_or("link0_length", links_[0].length_, 0.135f);
+    nh_group->get_parameter_or("link0_x", links_[0].origin_.x_, 0.22f);
+    nh_group->get_parameter_or("link0_y", links_[0].origin_.y_, 0.0f);
+    nh_group->get_parameter_or("link0_th", links_[0].origin_.th_, 0.0f);
+    nh_group->get_parameter_or("link0_gain_th", links_[0].gain_.th_, -1.0f);
+    nh_group->get_parameter_or("link0_vmax", links_[0].vmax_, 0.5f);
+    nh_group->get_parameter_or("link1_name", links_[1].name_, std::string("link1"));
+    nh_group->get_parameter_or("link1_joint_radius", links_[1].radius_[0], 0.07f);
+    nh_group->get_parameter_or("link1_end_radius", links_[1].radius_[1], 0.07f);
+    nh_group->get_parameter_or("link1_length", links_[1].length_, 0.27f);
+    nh_group->get_parameter_or("link1_x", links_[1].origin_.x_, -0.22f);
+    nh_group->get_parameter_or("link1_y", links_[1].origin_.y_, 0.0f);
+    nh_group->get_parameter_or("link1_th", links_[1].origin_.th_, 0.0f);
+    nh_group->get_parameter_or("link1_gain_th", links_[1].gain_.th_, 1.0f);
+    nh_group->get_parameter_or("link1_vmax", links_[1].vmax_, 0.5f);
 
     links_[0].current_th_ = 0.0;
     links_[1].current_th_ = 0.0;
@@ -438,15 +438,15 @@ public:
     RCLCPP_INFO(this->get_logger(), " - link1: %s", links_[1].name_.c_str());
 
     Astar::Vecf euclid_cost_coef;
-    nh_group.param("link0_coef", euclid_cost_coef[0], 1.0f);
-    nh_group.param("link1_coef", euclid_cost_coef[1], 1.5f);
+    nh_group->get_parameter_or("link0_coef", euclid_cost_coef[0], 1.0f);
+    nh_group->get_parameter_or("link1_coef", euclid_cost_coef[1], 1.5f);
 
     CostCoeff cc;
-    nh_group.param("weight_cost", cc.weight_cost_, 4.0f);
-    nh_group.param("expand", cc.expand_, 0.1f);
+    nh_group->get_parameter_or("weight_cost", cc.weight_cost_, 4.0f);
+    nh_group->get_parameter_or("expand", cc.expand_, 0.1f);
 
     std::string point_vel_mode;
-    nh_group.param("point_vel_mode", point_vel_mode, std::string("prev"));
+    nh_group->get_parameter_or("point_vel_mode", point_vel_mode, std::string("prev"));
     std::transform(point_vel_mode.begin(), point_vel_mode.end(), point_vel_mode.begin(), ::tolower);
     if (point_vel_mode.compare("prev") == 0)
       point_vel_ = VEL_PREV;
@@ -501,7 +501,7 @@ public:
     }
 
     int range;
-    nh_group.param("range", range, 8);
+    nh_group->get_parameter_or("range", range, 8);
 
     model_.reset(new GridAstarModel2DoFSerialJoint(
         euclid_cost_coef,
@@ -511,7 +511,7 @@ public:
         range));
 
     int num_threads;
-    nh_group.param("num_threads", num_threads, 1);
+    nh_group->get_parameter_or("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
   }
 
@@ -672,11 +672,11 @@ int main(int argc, char* argv[])
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
   int n;
-  pnh.param("num_groups", n, 1);
+  pnh->get_parameter_or("num_groups", n, 1);
   for (int i = 0; i < n; i++)
   {
     std::string name;
-    pnh.param("group" + std::to_string(i) + "_name",
+    pnh->get_parameter_or("group" + std::to_string(i) + "_name",
               name, std::string("group") + std::to_string(i));
     planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr jy;
 

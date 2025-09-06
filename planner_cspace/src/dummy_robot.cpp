@@ -29,7 +29,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/twist.hpp>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -50,9 +50,9 @@ protected:
   float v_;
   float w_;
 
-  rclcpp::Publisher<>::SharedPtr pub_odom_;
-  rclcpp::Subscription<>::SharedPtr sub_twist_;
-  rclcpp::Subscription<>::SharedPtr sub_init_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_init_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformBroadcaster tfb_;
   tf2_ros::TransformListener tfl_;
@@ -87,8 +87,8 @@ protected:
   }
 
 public:
-  DummyRobotNode()
-    : nh_()
+  DummyRobotNode() : Node()
+    , nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
   {

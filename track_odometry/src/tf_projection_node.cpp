@@ -62,8 +62,8 @@ private:
   std::string projected_frame_;
 
 public:
-  TfProjectionNode()
-    : nh_()
+  TfProjectionNode() : Node()
+    , nh_()
     , pnh_("~")
     , tf_listener_(tf_buffer_)
   {

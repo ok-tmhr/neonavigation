@@ -68,10 +68,10 @@ private:
 
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Publisher<>::SharedPtr pub_path_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
-  rclcpp::Service<>::SharedPtr srs_clear_path_;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srs_clear_path_;
 
   nav_msgs::msg::Path path_;
 };

@@ -48,9 +48,9 @@ class TolerantActionTest
   : public ActionTestBase<planner_cspace_msgs::action::MoveWithTolerance, ACTION_TOPIC_TOLERANT_MOVE>
 {
 protected:
-  planner_cspace_msgs::action::MoveWithToleranceGoal createGoalInFree()
+  planner_cspace_msgs::action::MoveWithTolerance::Goal createGoalInFree()
   {
-    planner_cspace_msgs::action::MoveWithToleranceGoal goal;
+    planner_cspace_msgs::action::MoveWithTolerance::Goal goal;
     goal.target_pose.header.stamp = this->now();
     goal.target_pose.header.frame_id = "map";
     goal.target_pose.pose.position.x = 2.1;
@@ -67,7 +67,7 @@ protected:
     return goal;
   }
 
-  double getDistBetweenRobotAndGoal(const planner_cspace_msgs::action::MoveWithToleranceGoal& goal)
+  double getDistBetweenRobotAndGoal(const planner_cspace_msgs::action::MoveWithTolerance::Goal& goal)
   {
     try
     {
@@ -90,7 +90,7 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
 
   // Assure that goal is received after map in planner_3d.
   rclcpp::Duration::from_seconds(0.5).sleep();
-  const planner_cspace_msgs::action::MoveWithToleranceGoal goal = createGoalInFree();
+  const planner_cspace_msgs::action::MoveWithTolerance::Goal goal = createGoalInFree();
   move_base_->sendGoal(goal);
 
   while (rclcpp::ok() && move_base_->getState().state_ != actionlib::SimpleClientGoalState::ACTIVE)
@@ -110,7 +110,7 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
   }
 
   const double dist_to_goal = getDistBetweenRobotAndGoal(goal);
-  // distance_remains is less than updated goal_tolerance_lin (set in planner_cspace_msgs::action::MoveWithToleranceGoal).
+  // distance_remains is less than updated goal_tolerance_lin (set in planner_cspace_msgs::action::MoveWithTolerance::Goal).
   EXPECT_LT(dist_to_goal, goal.goal_tolerance_lin);
   // distance_remains is greater than default goal_tolerance_lin (set in actionlib_common_rostest.test).
   EXPECT_GT(dist_to_goal, 0.05);

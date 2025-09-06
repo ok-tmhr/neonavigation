@@ -42,12 +42,12 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
-#include <interactive_markers/interactive_marker_server.h>
+#include <interactive_markers/interactive_marker_server.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <trajectory_tracker_msgs/ChangePath.h>
-#include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
-#include <visualization_msgs/InteractiveMarkerUpdate.h>
+#include <trajectory_tracker_msgs/srv/change_path.hpp>
+#include <trajectory_tracker_msgs/msg/trajectory_server_status.hpp>
+#include <visualization_msgs/msg/interactive_marker_update.hpp>
 
 #include <trajectory_tracker/filter.h>
 
@@ -62,14 +62,14 @@ public:
 private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Publisher<>::SharedPtr pub_path_;
-  rclcpp::Publisher<>::SharedPtr pub_status_;
-  rclcpp::Service<>::SharedPtr srv_change_path_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
+  rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>::SharedPtr pub_status_;
+  rclcpp::Service<trajectory_tracker_msgs::srv::ChangePath>::SharedPtr srv_change_path_;
   interactive_markers::InteractiveMarkerServer srv_im_fb_;
 
   nav_msgs::msg::Path path_;
   std::string topic_path_;
-  trajectory_tracker_msgs::msg::ChangePath::Request req_path_;
+  trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
   double hz_;
   boost::shared_array<uint8_t> buffer_;
   int serial_size_;
@@ -78,10 +78,10 @@ private:
 
   bool loadFile();
   void loadPath();
-  bool change(trajectory_tracker_msgs::msg::ChangePath::Request& req,
-              trajectory_tracker_msgs::msg::ChangePath::Response& res);
+  bool change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
+              trajectory_tracker_msgs::srv::ChangePath::Response& res);
   void processFeedback(
-      const visualization_msgs::msg::InteractiveMarkerFeedbackConstPtr& feedback);
+      const visualization_msgs::msg::InteractiveMarkerFeedback::ConstPtr& feedback);
   void updateIM();
   enum
   {
@@ -134,7 +134,7 @@ bool ServerNode::loadFile()
 }
 
 void ServerNode::processFeedback(
-    const visualization_msgs::msg::InteractiveMarkerFeedbackConstPtr& feedback)
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstPtr& feedback)
 {
   int id = std::atoi(feedback->marker_name.c_str());
   switch (feedback->event_type)
@@ -230,8 +230,8 @@ void ServerNode::updateIM()
   srv_im_fb_.applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker_msgs::msg::ChangePath::Request& req,
-                        trajectory_tracker_msgs::msg::ChangePath::Response& res)
+bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
+                        trajectory_tracker_msgs::srv::ChangePath::Response& res)
 {
   req_path_ = req;
   res.success = false;

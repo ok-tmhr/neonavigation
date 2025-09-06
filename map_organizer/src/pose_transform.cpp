@@ -31,7 +31,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -47,8 +47,8 @@ private:
 
   std::string to_;
 
-  rclcpp::Publisher<>::SharedPtr pub_pose_;
-  rclcpp::Subscription<>::SharedPtr sub_pose_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_;
 
   void cbPose(const geometry_msgs::msg::PoseWithCovarianceStamped::Ptr& msg)
   {
@@ -75,8 +75,8 @@ private:
   }
 
 public:
-  PoseTransformNode()
-    : pnh_("~")
+  PoseTransformNode() : Node()
+    , pnh_("~")
     , tfl_(tfbuf_)
   {
       sub_pose_ = this->create_subscription(

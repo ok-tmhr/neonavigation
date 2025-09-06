@@ -292,8 +292,8 @@ private:
   }
 
 public:
-  TrackOdometryNode()
-    : nh_()
+  TrackOdometryNode() : Node()
+    , nh_()
     , pnh_("~")
     , tf_listener_(tf_buffer_)
   {

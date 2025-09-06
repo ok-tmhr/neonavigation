@@ -55,7 +55,7 @@ public:
 private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Subscription<>::SharedPtr sub_path_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
 
   std::string topic_path_;
   std::string filename_;

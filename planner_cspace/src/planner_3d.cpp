@@ -1143,11 +1143,10 @@ protected:
   }
 
 public:
-  Planner3dNode()
-    : nh_()
+  Planner3dNode() : Node()
+    , nh_()
     , pnh_("~")
     , tfl_(tfbuf_)
-    , parameter_server_(pnh_)
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))

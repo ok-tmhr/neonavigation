@@ -63,8 +63,8 @@ private:
   std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
-  LargeMapToMapNode()
-    : pnh_("~")
+  LargeMapToMapNode() : Node()
+    , pnh_("~")
     , nh_()
     , tfl_(tfbuf_)
   {

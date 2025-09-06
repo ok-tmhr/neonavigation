@@ -68,9 +68,9 @@ inline void GenerateSinglePointPointcloud2(
   cloud.is_dense = false;
   sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2FieldsByString(1, "xyz");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_x(cloud, "x");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_y(cloud, "y");
-  sensor_msgs::msg::PointCloud2Iterator<float> iter_z(cloud, "z");
+  sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z(cloud, "z");
   modifier.resize(1);
   *iter_x = x;
   *iter_y = y;
