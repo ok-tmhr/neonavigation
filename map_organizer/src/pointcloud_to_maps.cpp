@@ -84,13 +84,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    pnh_.param("grid", grid, 0.05);
-    pnh_.param("points_thresh_rate", points_thresh_rate, 0.5);
-    pnh_.param("robot_height", robot_height_f, 1.0);
-    pnh_.param("floor_height", floor_height_f, 0.1);
-    pnh_.param("floor_tolerance", floor_tolerance_f, 0.2);
-    pnh_.param("min_floor_area", min_floor_area, 100.0);
-    pnh_.param("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
+    pnh_->get_parameter_or("grid", grid, 0.05);
+    pnh_->get_parameter_or("points_thresh_rate", points_thresh_rate, 0.5);
+    pnh_->get_parameter_or("robot_height", robot_height_f, 1.0);
+    pnh_->get_parameter_or("floor_height", floor_height_f, 0.1);
+    pnh_->get_parameter_or("floor_tolerance", floor_tolerance_f, 0.2);
+    pnh_->get_parameter_or("min_floor_area", min_floor_area, 100.0);
+    pnh_->get_parameter_or("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
     robot_height = std::lround(robot_height_f / grid);
     floor_height = std::lround(floor_height_f / grid);
     floor_tolerance = std::lround(floor_tolerance_f / grid);

@@ -190,7 +190,7 @@ public:
     pub_debug_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("debug", 1, true);
 
     int ang_resolution;
-    pnh_.param("ang_resolution", ang_resolution, 16);
+    pnh_->get_parameter_or("ang_resolution", ang_resolution, 16);
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!pnh_.hasParam("footprint"))
@@ -215,10 +215,10 @@ public:
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
     float linear_expand;
     float linear_spread;
-    pnh_.param("linear_expand", linear_expand, 0.2f);
-    pnh_.param("linear_spread", linear_spread, 0.5f);
+    pnh_->get_parameter_or("linear_expand", linear_expand, 0.2f);
+    pnh_->get_parameter_or("linear_spread", linear_spread, 0.5f);
     int linear_spread_min_cost;
-    pnh_.param("linear_spread_min_cost", linear_spread_min_cost, 0);
+    pnh_->get_parameter_or("linear_spread_min_cost", linear_spread_min_cost, 0);
     root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
@@ -351,7 +351,7 @@ public:
       // Single layer mode for backward-compatibility
       costmap_cspace::MapOverlayMode overlay_mode;
       std::string overlay_mode_str;
-      pnh_.param("overlay_mode", overlay_mode_str, std::string("max"));
+      pnh_->get_parameter_or("overlay_mode", overlay_mode_str, std::string("max"));
       if (overlay_mode_str.compare("overwrite") == 0)
         overlay_mode = costmap_cspace::MapOverlayMode::OVERWRITE;
       else if (overlay_mode_str.compare("max") == 0)

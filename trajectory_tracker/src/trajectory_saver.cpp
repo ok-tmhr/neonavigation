@@ -69,7 +69,7 @@ SaverNode::SaverNode()
   , saved_(false)
 {
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
-  pnh_.param("file", filename_, std::string("a.path"));
+  pnh_->get_parameter_or("file", filename_, std::string("a.path"));
 
   sub_path_ = this->create_subscription(
       nh_, "path",

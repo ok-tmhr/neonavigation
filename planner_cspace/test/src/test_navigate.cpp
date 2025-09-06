@@ -623,7 +623,7 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
 
 TEST_F(Navigate, GoalIsInRockRecovered)
 {
-  if (pnh_.param("enable_crowd_mode", false))
+  if (pnh_->get_parameter_or("enable_crowd_mode", false))
   {
     GTEST_SKIP() << "enable_crowd_mode is set";
   }
@@ -706,7 +706,7 @@ TEST_F(Navigate, RobotIsInRockOnRecovered)
 
 TEST_F(Navigate, CrowdEscapeOnSurrounded)
 {
-  if (!pnh_.param("enable_crowd_mode", false))
+  if (!pnh_->get_parameter_or("enable_crowd_mode", false))
   {
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
@@ -787,7 +787,7 @@ TEST_F(Navigate, CrowdEscapeOnSurrounded)
 
 TEST_F(Navigate, CrowdEscapeOnPathNotFound)
 {
-  if (!pnh_.param("enable_crowd_mode", false))
+  if (!pnh_->get_parameter_or("enable_crowd_mode", false))
   {
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
@@ -855,7 +855,7 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
 
 TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
 {
-  if (!pnh_.param("enable_crowd_mode", false))
+  if (!pnh_->get_parameter_or("enable_crowd_mode", false))
   {
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
@@ -927,7 +927,7 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
 
 TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
 {
-  if (!pnh_.param("enable_crowd_mode", false))
+  if (!pnh_->get_parameter_or("enable_crowd_mode", false))
   {
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
@@ -992,7 +992,7 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
 
 TEST_F(Navigate, ForceTemporaryEscape)
 {
-  if (!pnh_.param("enable_crowd_mode", false))
+  if (!pnh_->get_parameter_or("enable_crowd_mode", false))
   {
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }

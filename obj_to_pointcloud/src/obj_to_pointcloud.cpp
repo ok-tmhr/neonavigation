@@ -95,20 +95,20 @@ public:
         nh_, "mapcloud",
         pnh_, "cloud", 1, true);
 
-    pnh_.param("frame_id", frame_id_, std::string("map"));
-    pnh_.param("objs", file_, std::string(""));
+    pnh_->get_parameter_or("frame_id", frame_id_, std::string("map"));
+    pnh_->get_parameter_or("objs", file_, std::string(""));
     if (file_.compare("") == 0)
     {
       RCLCPP_ERROR(this->get_logger(), "OBJ file not specified");
       rclcpp::shutdown();
       return;
     }
-    pnh_.param("points_per_meter_sq", ppmsq_, 600.0);
-    pnh_.param("downsample_grid", downsample_grid_, 0.05);
-    pnh_.param("offset_x", offset_x_, 0.0);
-    pnh_.param("offset_y", offset_y_, 0.0);
-    pnh_.param("offset_z", offset_z_, 0.0);
-    pnh_.param("scale", scale_, 1.0);
+    pnh_->get_parameter_or("points_per_meter_sq", ppmsq_, 600.0);
+    pnh_->get_parameter_or("downsample_grid", downsample_grid_, 0.05);
+    pnh_->get_parameter_or("offset_x", offset_x_, 0.0);
+    pnh_->get_parameter_or("offset_y", offset_y_, 0.0);
+    pnh_->get_parameter_or("offset_z", offset_z_, 0.0);
+    pnh_->get_parameter_or("scale", scale_, 1.0);
 
     auto pc = convertObj(split(file_, ','));
     pub_cloud_->publish(pc);

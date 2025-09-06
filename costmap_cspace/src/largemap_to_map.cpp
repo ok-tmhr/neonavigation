@@ -68,17 +68,17 @@ public:
     , nh_()
     , tfl_(tfbuf_)
   {
-      pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+      pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
         pnh_, "map", 1, true);
     sub_largemap_ = nh_->create_subscription("map", 2, &LargeMapToMapNode::cbLargeMap, this);
 
-    pnh_.param("width", width_, 30);
-    pnh_.param("round_local_map", round_local_map_, false);
-    pnh_.param("simulate_occlusion", simulate_occlusion_, false);
-    pnh_.param("simulate_surrounded", simulate_surrounded_, false);
+    pnh_->get_parameter_or("width", width_, 30);
+    pnh_->get_parameter_or("round_local_map", round_local_map_, false);
+    pnh_->get_parameter_or("simulate_occlusion", simulate_occlusion_, false);
+    pnh_->get_parameter_or("simulate_surrounded", simulate_surrounded_, false);
 
     for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
     {
@@ -107,7 +107,7 @@ public:
     }
 
     double hz;
-    pnh_.param("hz", hz, 1.0);
+    pnh_->get_parameter_or("hz", hz, 1.0);
     timer_ = nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz), &LargeMapToMapNode::cbTimer, this);
   }
 

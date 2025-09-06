@@ -76,25 +76,25 @@ public:
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
           "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
-      pnh_.param("base_link_frame", source_frame_, std::string("base_link"));
-      pnh_.param("projection_frame", projection_surface_frame_, std::string("map"));
-      pnh_.param("target_frame", parent_frame_, std::string("map"));
-      pnh_.param("frame", projected_frame_, std::string("base_link_projected"));
+      pnh_->get_parameter_or("base_link_frame", source_frame_, std::string("base_link"));
+      pnh_->get_parameter_or("projection_frame", projection_surface_frame_, std::string("map"));
+      pnh_->get_parameter_or("target_frame", parent_frame_, std::string("map"));
+      pnh_->get_parameter_or("frame", projected_frame_, std::string("base_link_projected"));
     }
     else
     {
-      pnh_.param("source_frame", source_frame_, std::string("base_link"));
-      pnh_.param("projection_surface_frame", projection_surface_frame_, std::string("map"));
-      pnh_.param("parent_frame", parent_frame_, std::string("map"));
-      pnh_.param("projected_frame", projected_frame_, std::string("base_link_projected"));
+      pnh_->get_parameter_or("source_frame", source_frame_, std::string("base_link"));
+      pnh_->get_parameter_or("projection_surface_frame", projection_surface_frame_, std::string("map"));
+      pnh_->get_parameter_or("parent_frame", parent_frame_, std::string("map"));
+      pnh_->get_parameter_or("projected_frame", projected_frame_, std::string("base_link_projected"));
     }
 
-    pnh_.param("hz", rate_, 10.0);
-    pnh_.param("tf_tolerance", tf_tolerance_, 0.1);
-    pnh_.param("flat", flat_, false);
+    pnh_->get_parameter_or("hz", rate_, 10.0);
+    pnh_->get_parameter_or("tf_tolerance", tf_tolerance_, 0.1);
+    pnh_->get_parameter_or("flat", flat_, false);
 
-    pnh_.param("project_posture", project_posture_, false);
-    pnh_.param("align_all_posture_to_source", align_all_posture_to_source_, false);
+    pnh_->get_parameter_or("project_posture", project_posture_, false);
+    pnh_->get_parameter_or("align_all_posture_to_source", align_all_posture_to_source_, false);
   }
   void process()
   {

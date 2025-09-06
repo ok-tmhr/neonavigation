@@ -117,8 +117,8 @@ public:
         nh_, "mux_input1",
         pnh_, "input1", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
 
-    pnh_.param("interrupt_button", interrupt_button_, 5);
-    pnh_.param("timeout", timeout_, 0.5);
+    pnh_->get_parameter_or("interrupt_button", interrupt_button_, 5);
+    pnh_->get_parameter_or("timeout", timeout_, 0.5);
     last_joy_msg_ = this->now();
 
     timer_ = nh_->create_wall_timer(rclcpp::Duration::from_seconds(0.1), &JoystickMux::cbTimer, this);

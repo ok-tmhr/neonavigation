@@ -84,10 +84,10 @@ public:
         nh_, "patrol_nodes",
         pnh_, "path", 1, &PatrolActionNode::cbPath, this);
 
-    pnh_.param("with_tolerance", with_tolerance_, false);
-    pnh_.param("tolerance_lin", tolerance_lin_, 0.1);
-    pnh_.param("tolerance_ang", tolerance_ang_, 0.1);
-    pnh_.param("tolerance_ang_finish", tolerance_ang_finish_, 0.05);
+    pnh_->get_parameter_or("with_tolerance", with_tolerance_, false);
+    pnh_->get_parameter_or("tolerance_lin", tolerance_lin_, 0.1);
+    pnh_->get_parameter_or("tolerance_ang", tolerance_ang_, 0.1);
+    pnh_->get_parameter_or("tolerance_ang_finish", tolerance_ang_finish_, 0.05);
 
     if (with_tolerance_)
     {

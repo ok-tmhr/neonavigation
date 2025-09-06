@@ -392,10 +392,10 @@ public:
     pub_status_ = nh_group.advertise<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
 
     nh_group.param("resolution", resolution_, 128);
-    pnh_.param("debug_aa", debug_aa_, false);
+    pnh_->get_parameter_or("debug_aa", debug_aa_, false);
 
     double interval;
-    pnh_.param("replan_interval", interval, 0.2);
+    pnh_->get_parameter_or("replan_interval", interval, 0.2);
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
     replan_prev_ = rclcpp::Time(0);
 

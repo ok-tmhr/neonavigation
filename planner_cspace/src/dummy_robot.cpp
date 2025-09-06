@@ -92,9 +92,9 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
   {
-      pnh_.param("initial_x", x_, 0.0);
-    pnh_.param("initial_y", y_, 0.0);
-    pnh_.param("initial_yaw", yaw_, 0.0);
+      pnh_->get_parameter_or("initial_x", x_, 0.0);
+    pnh_->get_parameter_or("initial_y", y_, 0.0);
+    pnh_->get_parameter_or("initial_yaw", yaw_, 0.0);
     v_ = 0.0;
     w_ = 0.0;
 

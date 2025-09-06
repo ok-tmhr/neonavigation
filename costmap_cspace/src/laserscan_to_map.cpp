@@ -74,13 +74,13 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
   {
-      pnh_.param("z_min", z_min_, std::numeric_limits<double>::lowest());
-    pnh_.param("z_max", z_max_, std::numeric_limits<double>::max());
-    pnh_.param("global_frame", global_frame_, std::string("map"));
-    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+      pnh_->get_parameter_or("z_min", z_min_, std::numeric_limits<double>::lowest());
+    pnh_->get_parameter_or("z_max", z_max_, std::numeric_limits<double>::max());
+    pnh_->get_parameter_or("global_frame", global_frame_, std::string("map"));
+    pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     double accum_duration;
-    pnh_.param("accum_duration", accum_duration, 1.0);
+    pnh_->get_parameter_or("accum_duration", accum_duration, 1.0);
     accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
@@ -89,19 +89,19 @@ public:
     sub_scan_ = nh_->create_subscription("scan", 2, &LaserscanToMapNode::cbScan, this);
 
     int width_param;
-    pnh_.param("width", width_param, 30);
+    pnh_->get_parameter_or("width", width_param, 30);
     height_ = width_ = width_param;
     map.header.frame_id = global_frame_;
 
     double resolution;
-    pnh_.param("resolution", resolution, 0.1);
+    pnh_->get_parameter_or("resolution", resolution, 0.1);
     map.info.resolution = resolution;
     map.info.width = width_;
     map.info.height = height_;
     map.data.resize(map.info.width * map.info.height);
 
     double hz;
-    pnh_.param("hz", hz, 1.0);
+    pnh_->get_parameter_or("hz", hz, 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
   }
 

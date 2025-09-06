@@ -74,13 +74,13 @@ public:
     , tfl_(tfbuf_)
     , accums_(2)
   {
-      pnh_.param("z_min", z_min_, 0.1);
-    pnh_.param("z_max", z_max_, 1.0);
-    pnh_.param("global_frame", global_frame_, std::string("map"));
-    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+      pnh_->get_parameter_or("z_min", z_min_, 0.1);
+    pnh_->get_parameter_or("z_max", z_max_, 1.0);
+    pnh_->get_parameter_or("global_frame", global_frame_, std::string("map"));
+    pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     double accum_duration;
-    pnh_.param("accum_duration", accum_duration, 1.0);
+    pnh_->get_parameter_or("accum_duration", accum_duration, 1.0);
     accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
 
@@ -95,19 +95,19 @@ public:
         boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, true));
 
     int width_param;
-    pnh_.param("width", width_param, 30);
+    pnh_->get_parameter_or("width", width_param, 30);
     height_ = width_ = width_param;
     map_.header.frame_id = global_frame_;
 
     double resolution;
-    pnh_.param("resolution", resolution, 0.1);
+    pnh_->get_parameter_or("resolution", resolution, 0.1);
     map_.info.resolution = resolution;
     map_.info.width = width_;
     map_.info.height = height_;
     map_.data.resize(map_.info.width * map_.info.height);
 
     double hz;
-    pnh_.param("hz", hz, 1.0);
+    pnh_->get_parameter_or("hz", hz, 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
   }
 

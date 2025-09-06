@@ -99,9 +99,9 @@ ServerNode::ServerNode()
   , buffer_(new uint8_t[1024])
 {
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
-  pnh_.param("file", req_path_.filename, std::string("a.path"));
-  pnh_.param("hz", hz_, 5.0);
-  pnh_.param("filter_step", filter_step_, 0.0);
+  pnh_->get_parameter_or("file", req_path_.filename, std::string("a.path"));
+  pnh_->get_parameter_or("hz", hz_, 5.0);
+  pnh_->get_parameter_or("filter_step", filter_step_, 0.0);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       nh_, "path",

@@ -182,7 +182,7 @@ public:
         pnh_, "watchdog_reset", 1, &SafetyLimiterNode::cbWatchdogReset, this);
 
     int num_input_clouds;
-    pnh_.param("num_input_clouds", num_input_clouds, 1);
+    pnh_->get_parameter_or("num_input_clouds", num_input_clouds, 1);
     if (num_input_clouds == 1)
     {
       sub_clouds_.push_back(this->create_subscription(
@@ -200,13 +200,13 @@ public:
 
     if (pnh_.hasParam("t_margin"))
       RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
-    pnh_.param("base_frame", base_frame_id_, std::string("base_link"));
-    pnh_.param("fixed_frame", fixed_frame_id_, std::string("odom"));
+    pnh_->get_parameter_or("base_frame", base_frame_id_, std::string("base_link"));
+    pnh_->get_parameter_or("fixed_frame", fixed_frame_id_, std::string("odom"));
     double watchdog_interval_d;
-    pnh_.param("watchdog_interval", watchdog_interval_d, 0.0);
+    pnh_->get_parameter_or("watchdog_interval", watchdog_interval_d, 0.0);
     watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
-    pnh_.param("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
-    pnh_.param("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
+    pnh_->get_parameter_or("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
+    pnh_->get_parameter_or("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
 
     parameter_server_.reset(
         new dynamic_reconfigure::Server<SafetyLimiterConfig>(parameter_server_mutex_, pnh_));

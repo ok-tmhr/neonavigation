@@ -77,8 +77,8 @@ public:
     double occ_th, free_th;
     MapMode mode;
     std::string frame_id;
-    pnh_.param("map_files", files_str, std::string(""));
-    pnh_.param("frame_id", frame_id, std::string("map"));
+    pnh_->get_parameter_or("map_files", files_str, std::string(""));
+    pnh_->get_parameter_or("frame_id", frame_id, std::string("map"));
 
     int i = 0;
     std::string file;

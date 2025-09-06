@@ -81,12 +81,12 @@ RecorderNode::RecorderNode()
   , pnh_("~")
   , tfl_(tfbuf_)
 {
-  pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
-  pnh_.param("frame_global", frame_global_, std::string("map"));
+  pnh_->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
+  pnh_->get_parameter_or("frame_global", frame_global_, std::string("map"));
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
-  pnh_.param("dist_interval", dist_interval_, 0.3);
-  pnh_.param("ang_interval", ang_interval_, 1.0);
-  pnh_.param("store_time", store_time_, false);
+  pnh_->get_parameter_or("dist_interval", dist_interval_, 0.3);
+  pnh_->get_parameter_or("ang_interval", ang_interval_, 1.0);
+  pnh_->get_parameter_or("store_time", store_time_, false);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       nh_, "path",

@@ -85,7 +85,7 @@ public:
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
         nh_, "pose_out",
         pnh_, "pose_out", 1, false);
-    pnh_.param("to_frame", to_, std::string("map"));
+    pnh_->get_parameter_or("to_frame", to_, std::string("map"));
   }
 };
 

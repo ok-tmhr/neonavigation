@@ -299,18 +299,18 @@ public:
   {
 
     bool enable_tcp_no_delay;
-    pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, true);
+    pnh_->get_parameter_or("enable_tcp_no_delay", enable_tcp_no_delay, true);
     const rclcpp::TransportHints transport_hints =
         enable_tcp_no_delay ? rclcpp::TransportHints().reliable().tcpNoDelay(true) : rclcpp::TransportHints();
 
-    pnh_.param("without_odom", without_odom_, false);
+    pnh_->get_parameter_or("without_odom", without_odom_, false);
     if (without_odom_)
     {
       sub_imu_raw_ = this->create_subscription(
           nh_, "imu/data",
           nh_, "imu", 64, &TrackOdometryNode::cbImu, this);
-      pnh_.param("base_link_id", base_link_id_, std::string("base_link"));
-      pnh_.param("odom_id", odom_id_, std::string("odom"));
+      pnh_->get_parameter_or("base_link_id", base_link_id_, std::string("base_link"));
+      pnh_->get_parameter_or("odom_id", odom_id_, std::string("odom"));
     }
     else
     {
@@ -328,13 +328,13 @@ public:
       }
 
       int sync_window;
-      pnh_.param("sync_window", sync_window, 50);
+      pnh_->get_parameter_or("sync_window", sync_window, 50);
       sync_.reset(
           new message_filters::Synchronizer<SyncPolicy>(
               SyncPolicy(sync_window), *sub_odom_, *sub_imu_));
       sync_->registerCallback(boost::bind(&TrackOdometryNode::cbOdomImu, this, _1, _2));
 
-      pnh_.param("base_link_id", base_link_id_overwrite_, std::string(""));
+      pnh_->get_parameter_or("base_link_id", base_link_id_overwrite_, std::string(""));
     }
 
     sub_reset_z_ = this->create_subscription(
@@ -360,13 +360,13 @@ public:
     }
     else
     {
-      pnh_.param("z_filter_timeconst", z_filter_timeconst_, -1.0);
+      pnh_->get_parameter_or("z_filter_timeconst", z_filter_timeconst_, -1.0);
     }
-    pnh_.param("tf_tolerance", tf_tolerance_, 0.01);
-    pnh_.param("use_kf", use_kf_, true);
-    pnh_.param("enable_negative_slip", negative_slip_, false);
-    pnh_.param("debug", debug_, false);
-    pnh_.param("publish_tf", publish_tf_, true);
+    pnh_->get_parameter_or("tf_tolerance", tf_tolerance_, 0.01);
+    pnh_->get_parameter_or("use_kf", use_kf_, true);
+    pnh_->get_parameter_or("enable_negative_slip", negative_slip_, false);
+    pnh_->get_parameter_or("debug", debug_, false);
+    pnh_->get_parameter_or("publish_tf", publish_tf_, true);
 
     if (base_link_id_overwrite_.size() > 0)
     {
@@ -374,11 +374,11 @@ public:
     }
 
     // sigma_odom_ [rad/s]: standard deviation of odometry angular vel on straight running
-    pnh_.param("sigma_odom", sigma_odom_, 0.005);
+    pnh_->get_parameter_or("sigma_odom", sigma_odom_, 0.005);
     // sigma_predict_ [sigma/second]: prediction sigma of kalman filter
-    pnh_.param("sigma_predict", sigma_predict_, 0.5);
+    pnh_->get_parameter_or("sigma_predict", sigma_predict_, 0.5);
     // predict_filter_tc_ [sec.]: LPF time-constant to forget estimated slip_ ratio
-    pnh_.param("predict_filter_tc", predict_filter_tc_, 1.0);
+    pnh_->get_parameter_or("predict_filter_tc", predict_filter_tc_, 1.0);
 
     has_imu_ = false;
     has_odom_ = false;

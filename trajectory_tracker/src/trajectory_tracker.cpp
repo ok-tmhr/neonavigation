@@ -190,15 +190,15 @@ TrackerNode::TrackerNode()
   , tfl_(tfbuf_)
   , is_path_updated_(false)
 {
-  pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
-  pnh_.param("frame_odom", frame_odom_, std::string("odom"));
+  pnh_->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
+  pnh_->get_parameter_or("frame_odom", frame_odom_, std::string("odom"));
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
   neonavigation_common::compat::deprecatedParam(pnh_, "cmd_vel", topic_cmd_vel_, std::string("cmd_vel"));
-  pnh_.param("hz", hz_, 50.0);
-  pnh_.param("use_odom", use_odom_, false);
-  pnh_.param("predict_odom", predict_odom_, true);
-  pnh_.param("max_dt", max_dt_, 0.1);
-  pnh_.param("odom_timeout_sec", odom_timeout_sec_, 0.1);
+  pnh_->get_parameter_or("hz", hz_, 50.0);
+  pnh_->get_parameter_or("use_odom", use_odom_, false);
+  pnh_->get_parameter_or("predict_odom", predict_odom_, true);
+  pnh_->get_parameter_or("max_dt", max_dt_, 0.1);
+  pnh_->get_parameter_or("odom_timeout_sec", odom_timeout_sec_, 0.1);
 
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       nh_, "path",
