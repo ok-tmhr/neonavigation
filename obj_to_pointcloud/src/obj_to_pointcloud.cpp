@@ -91,8 +91,7 @@ public:
     , pnh_("~")
     , engine_(seed_gen_())
   {
-    neonavigation_common::compat::checkCompatMode();
-    pub_cloud_ = neonavigation_common::compat::advertise<sensor_msgs::msg::PointCloud2>(
+      pub_cloud_ = neonavigation_common::compat::advertise<sensor_msgs::msg::PointCloud2>(
         nh_, "mapcloud",
         pnh_, "cloud", 1, true);
 

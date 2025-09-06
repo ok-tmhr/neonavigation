@@ -51,12 +51,12 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <std_msgs/Float32.h>
-#include <std_msgs/Header.h>
+#include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/header.hpp>
 
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -64,9 +64,8 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
-#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
+#include <trajectory_tracker_msgs/msg/trajectory_tracker_status.hpp>
 
-#include <trajectory_tracker/TrajectoryTrackerConfig.h>
 #include <trajectory_tracker/basic_control.h>
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
@@ -118,13 +117,13 @@ private:
   double goal_tolerance_lin_vel_;
   double goal_tolerance_ang_vel_;
 
-  rclcpp::Subscription<>::SharedPtr sub_path_;
-  rclcpp::Subscription<>::SharedPtr sub_path_velocity_;
-  rclcpp::Subscription<>::SharedPtr sub_vel_;
-  rclcpp::Subscription<>::SharedPtr sub_odom_;
-  rclcpp::Publisher<>::SharedPtr pub_vel_;
-  rclcpp::Publisher<>::SharedPtr pub_status_;
-  rclcpp::Publisher<>::SharedPtr pub_tracking_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::Subscription<trajectory_tracker_msgs::msg::PathWithVelocity>::SharedPtr sub_path_velocity_;
+  rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_vel_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_vel_;
+  rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr pub_status_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
   tf2_ros::Buffer tfbuf_;
@@ -135,9 +134,6 @@ private:
   trajectory_tracker::Path2D path_;
   std_msgs::msg::Header path_header_;
   bool is_path_updated_;
-
-  mutable boost::recursive_mutex parameter_server_mutex_;
-  dynamic_reconfigure::Server<TrajectoryTrackerConfig> parameter_server_;
 
   bool use_odom_;
   bool predict_odom_;
@@ -181,12 +177,11 @@ private:
   void cbPath(const typename MSG_TYPE::ConstPtr&);
   void cbSpeed(const std_msgs::msg::Float32::ConstPtr&);
   void cbOdometry(const nav_msgs::msg::Odometry::ConstPtr&);
-  void cbTimer(const rclcpp::TimerEvent&);
-  void cbOdomTimeout(const rclcpp::TimerEvent&);
+  void cbTimer();
+  void cbOdomTimeout();
   void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
   TrackingResult getTrackingResult(
       const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double) const;
-  void cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */);
 };
 
 TrackerNode::TrackerNode()
@@ -195,7 +190,6 @@ TrackerNode::TrackerNode()
   , tfl_(tfbuf_)
   , is_path_updated_(false)
 {
-  neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
   pnh_.param("frame_odom", frame_odom_, std::string("odom"));
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
@@ -227,13 +221,10 @@ TrackerNode::TrackerNode()
                                                   rclcpp::TransportHints().reliable().tcpNoDelay(true));
   }
 
-  boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
-  parameter_server_.setCallback(boost::bind(&TrackerNode::cbParameter, this, _1, _2));
 }
 
 void TrackerNode::cbParameter(const TrajectoryTrackerConfig& config, const uint32_t /* level */)
 {
-  boost::recursive_mutex::scoped_lock lock(parameter_server_mutex_);
   look_forward_ = config.look_forward;
   curv_forward_ = config.curv_forward;
   k_[0] = config.k_dist;
@@ -314,7 +305,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
   }
   if (odom_timeout_sec_ != 0.0)
   {
-    if (odom_timeout_timer_.isValid())
+    if (odom_timeout_timer_)
     {
       odom_timeout_timer_.setPeriod(rclcpp::Duration::from_seconds(odom_timeout_sec_), true);
     }
@@ -365,7 +356,7 @@ void TrackerNode::cbTimer()
   }
   catch (tf2::TransformException& e)
   {
-    ROS_WARN_THROTTLE(1, "TF exception: %s", e.what());
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "TF exception: %s", e.what());
     trajectory_tracker_msgs::msg::TrajectoryTrackerStatus status;
     status.header.stamp = this->now();
     status.distance_remains = 0.0;
@@ -379,7 +370,7 @@ void TrackerNode::cbTimer()
 
 void TrackerNode::cbOdomTimeout()
 {
-  ROS_WARN_STREAM("Odometry timeout. Last odometry stamp: " << prev_odom_stamp_);
+  RCLCPP_WARN_STREAM(this->get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_);
   v_lim_.clear();
   w_lim_.clear();
   geometry_msgs::msg::Twist cmd_vel;
@@ -531,8 +522,8 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     transform_delay = (this->now() - path_to_odom.stamp_).seconds();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)
     {
-      ROS_ERROR_THROTTLE(
-          1.0, "Timestamp of the transform is too old %f %f",
+      RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(),
+          1000, "Timestamp of the transform is too old %f %f",
           this->now().seconds(), path_to_odom.stamp_.seconds());
     }
     const float robot_yaw = tf2::getYaw(path_to_robot.getRotation());
@@ -633,7 +624,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   {
     if (large_angle_error)
     {
-      ROS_INFO_THROTTLE(1.0, "Stop and rotate due to large angular error: %0.3f", angle_remains);
+      RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Stop and rotate due to large angular error: %0.3f", angle_remains);
     }
 
     if (path_length < min_track_path_ ||

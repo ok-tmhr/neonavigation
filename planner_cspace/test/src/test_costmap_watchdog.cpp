@@ -32,7 +32,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_msgs/DiagnosticArray.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
 
 #include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>

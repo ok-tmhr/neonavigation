@@ -56,27 +56,23 @@ TEST(NeonavigationCompat, CompatMode)
   rclcpp::Node::SharedPtr("/").setParam("neonavigation_compatible", 2);
   ASSERT_NO_THROW(
       {
-        neonavigation_common::compat::checkCompatMode();
-      });  // NOLINT(whitespace/braces)
+            });  // NOLINT(whitespace/braces)
 
   rclcpp::Node::SharedPtr("/").setParam("neonavigation_compatible", 3);
   ASSERT_NO_THROW(
       {
-        neonavigation_common::compat::checkCompatMode();
-      });  // NOLINT(whitespace/braces)
+            });  // NOLINT(whitespace/braces)
 
   rclcpp::Node::SharedPtr("/").setParam("neonavigation_compatible", 4);
   ASSERT_THROW(
       {
-        neonavigation_common::compat::checkCompatMode();
-      },  // NOLINT(whitespace/braces)
+            },  // NOLINT(whitespace/braces)
       std::runtime_error);
 
   rclcpp::Node::SharedPtr("/").setParam("neonavigation_compatible", 1);
   ASSERT_THROW(
       {
-        neonavigation_common::compat::checkCompatMode();
-      },  // NOLINT(whitespace/braces)
+            },  // NOLINT(whitespace/braces)
       std::runtime_error);
 }
 

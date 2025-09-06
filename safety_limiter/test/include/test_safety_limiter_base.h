@@ -35,7 +35,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_msgs/DiagnosticArray.h>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Empty.h>

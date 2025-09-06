@@ -28,9 +28,9 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <nav_msgs/Odometry.h>
+#include <nav_msgs/msg/odometry.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -92,8 +92,7 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
-    pnh_.param("initial_x", x_, 0.0);
+      pnh_.param("initial_x", x_, 0.0);
     pnh_.param("initial_y", y_, 0.0);
     pnh_.param("initial_yaw", yaw_, 0.0);
     v_ = 0.0;

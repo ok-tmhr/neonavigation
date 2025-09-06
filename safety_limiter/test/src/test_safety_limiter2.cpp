@@ -33,7 +33,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/PointCloud2.h>
 
 #include <test_safety_limiter_base.h>

@@ -40,7 +40,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
@@ -81,7 +81,6 @@ RecorderNode::RecorderNode()
   , pnh_("~")
   , tfl_(tfbuf_)
 {
-  neonavigation_common::compat::checkCompatMode();
   pnh_.param("frame_robot", frame_robot_, std::string("base_link"));
   pnh_.param("frame_global", frame_global_, std::string("map"));
   neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));

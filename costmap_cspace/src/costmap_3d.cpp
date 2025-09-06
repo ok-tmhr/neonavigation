@@ -180,8 +180,7 @@ public:
     : nh_()
     , pnh_("~")
   {
-    neonavigation_common::compat::checkCompatMode();
-    pub_costmap_ = neonavigation_common::compat::advertise<costmap_cspace_msgs::msg::CSpace3D>(
+      pub_costmap_ = neonavigation_common::compat::advertise<costmap_cspace_msgs::msg::CSpace3D>(
         nh_, "costmap",
         pnh_, "costmap", 1, true);
     pub_costmap_update_ = neonavigation_common::compat::advertise<costmap_cspace_msgs::msg::CSpace3DUpdate>(

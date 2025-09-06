@@ -74,8 +74,7 @@ public:
     , pnh_("~")
     , tfl_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
-    pnh_.param("z_min", z_min_, std::numeric_limits<double>::lowest());
+      pnh_.param("z_min", z_min_, std::numeric_limits<double>::lowest());
     pnh_.param("z_max", z_max_, std::numeric_limits<double>::max());
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("robot_frame", robot_frame_, std::string("base_link"));

@@ -79,8 +79,7 @@ public:
     : pnh_("~")
     , tfl_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_pose_ = neonavigation_common::compat::subscribe(
+      sub_pose_ = neonavigation_common::compat::subscribe(
         nh_, "pose_in",
         pnh_, "pose_in", 1, &PoseTransformNode::cbPose, this);
     pub_pose_ = neonavigation_common::compat::advertise<geometry_msgs::msg::PoseWithCovarianceStamped>(

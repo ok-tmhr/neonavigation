@@ -109,8 +109,7 @@ public:
     : nh_("")
     , pnh_("~")
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_joy_ = nh_->create_subscription("joy", 1, &JoystickMux::cbJoy, this);
+      sub_joy_ = nh_->create_subscription("joy", 1, &JoystickMux::cbJoy, this);
     sub_topics_[0] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
         nh_, "mux_input0",
         pnh_, "input0", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));

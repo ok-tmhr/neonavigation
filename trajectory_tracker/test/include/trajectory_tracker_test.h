@@ -45,17 +45,16 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <dynamic_reconfigure/client.h>
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <rosgraph_msgs/Clock.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/utils.h>
 
-#include <trajectory_tracker/TrajectoryTrackerConfig.h>
 #include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
-#include <trajectory_tracker_msgs/TrajectoryTrackerStatus.h>
+#include <trajectory_tracker_msgs/msg/trajectory_tracker_status.hpp>
 
 #include <gtest/gtest.h>
 

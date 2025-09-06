@@ -32,7 +32,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/Joy.h>
 #include <std_msgs/Bool.h>
 
@@ -157,8 +157,7 @@ public:
     : nh_("")
     , pnh_("~")
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_joy_ = nh_->create_subscription("joy", 1, &JoystickInterrupt::cbJoy, this);
+      sub_joy_ = nh_->create_subscription("joy", 1, &JoystickInterrupt::cbJoy, this);
     sub_twist_ = neonavigation_common::compat::subscribe(
         nh_, "cmd_vel_input",
         pnh_, "cmd_vel_input", 1, &JoystickInterrupt::cbTwist, this);

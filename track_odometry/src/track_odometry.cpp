@@ -37,10 +37,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/Imu.h>
-#include <std_msgs/Float32.h>
+#include <std_msgs/msg/float32.hpp>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -297,7 +297,6 @@ public:
     , pnh_("~")
     , tf_listener_(tf_buffer_)
   {
-    neonavigation_common::compat::checkCompatMode();
 
     bool enable_tcp_no_delay;
     pnh_.param("enable_tcp_no_delay", enable_tcp_no_delay, true);

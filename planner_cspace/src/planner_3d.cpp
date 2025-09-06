@@ -1154,8 +1154,7 @@ public:
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_map_ = neonavigation_common::compat::subscribe(
+      sub_map_ = neonavigation_common::compat::subscribe(
         nh_, "costmap",
         pnh_, "costmap", 1, &Planner3dNode::cbMap, this);
     sub_map_update_ = neonavigation_common::compat::subscribe(

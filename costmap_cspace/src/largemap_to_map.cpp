@@ -68,8 +68,7 @@ public:
     , nh_()
     , tfl_(tfbuf_)
   {
-    neonavigation_common::compat::checkCompatMode();
-    pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
+      pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
     pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",

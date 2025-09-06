@@ -63,7 +63,6 @@ int main(int argc, char** argv)
   rclcpp::Node::SharedPtr pnh("~");
   rclcpp::Node::SharedPtr nh("");
 
-  neonavigation_common::compat::checkCompatMode();
   auto subMaps = neonavigation_common::compat::subscribe(
       nh, "maps",
       nh, "/maps", 1, cbMaps);

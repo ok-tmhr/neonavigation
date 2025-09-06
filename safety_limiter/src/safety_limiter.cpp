@@ -44,7 +44,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_updater/diagnostic_updater.hpp>
-#include <geometry_msgs/Twist.h>
+#include <geometry_msgs/msg/twist.hpp>
 #include <safety_limiter_msgs/SafetyLimiterStatus.h>
 #include <sensor_msgs/msg/point_cloud.hpp>
 #include <sensor_msgs/PointCloud2.h>
@@ -168,8 +168,7 @@ public:
     , has_collision_at_now_(false)
     , stuck_started_since_(rclcpp::Time(0))
   {
-    neonavigation_common::compat::checkCompatMode();
-    pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::msg::Twist>(
+      pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::msg::Twist>(
         nh_, "cmd_vel",
         pnh_, "cmd_vel_out", 1, true);
     pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud>("collision", 1, true);

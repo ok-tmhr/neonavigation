@@ -376,8 +376,7 @@ public:
     , tfl_(tfbuf_)
     , has_joint_states_(false)
   {
-    neonavigation_common::compat::checkCompatMode();
-    group_ = group_name;
+      group_ = group_name;
     rclcpp::Node::SharedPtr nh_group("~/" + group_);
 
     pub_trajectory_ = neonavigation_common::compat::advertise<trajectory_msgs::msg::JointTrajectory>(
