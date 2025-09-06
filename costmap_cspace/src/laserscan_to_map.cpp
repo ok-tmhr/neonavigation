@@ -83,7 +83,7 @@ public:
     pnh_.param("accum_duration", accum_duration, 1.0);
     accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
+    pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
         pnh_, "map", 1, true);
     sub_scan_ = nh_->create_subscription("scan", 2, &LaserscanToMapNode::cbScan, this);

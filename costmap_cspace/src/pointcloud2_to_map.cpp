@@ -84,7 +84,7 @@ public:
     accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
+    pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
         pnh_, "map", 1, true);
     sub_cloud_ = nh_->create_subscription<sensor_msgs::msg::PointCloud2>(

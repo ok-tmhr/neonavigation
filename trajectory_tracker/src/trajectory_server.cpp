@@ -103,11 +103,11 @@ ServerNode::ServerNode()
   pnh_.param("hz", hz_, 5.0);
   pnh_.param("filter_step", filter_step_, 0.0);
 
-  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::msg::Path>(
+  pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       nh_, "path",
       pnh_, topic_path_, 2, true);
   pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("status", 2);
-  srv_change_path_ = neonavigation_common::compat::advertiseService(
+  srv_change_path_ = this->create_publisherService(
       nh_, "change_path",
       pnh_, "ChangePath", &ServerNode::change, this);
   update_num_ = 0;

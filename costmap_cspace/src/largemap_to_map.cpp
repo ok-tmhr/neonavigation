@@ -70,7 +70,7 @@ public:
   {
       pnh_.param("robot_frame", robot_frame_, std::string("base_link"));
 
-    pub_map_ = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
+    pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         nh_, "map_local",
         pnh_, "map", 1, true);
     sub_largemap_ = nh_->create_subscription("map", 2, &LargeMapToMapNode::cbLargeMap, this);

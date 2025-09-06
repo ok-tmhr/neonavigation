@@ -1154,13 +1154,13 @@ public:
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , jump_(tfbuf_)
   {
-      sub_map_ = neonavigation_common::compat::subscribe(
+      sub_map_ = this->create_subscription(
         nh_, "costmap",
         pnh_, "costmap", 1, &Planner3dNode::cbMap, this);
-    sub_map_update_ = neonavigation_common::compat::subscribe(
+    sub_map_update_ = this->create_subscription(
         nh_, "costmap_update",
         pnh_, "costmap_update", 1, &Planner3dNode::cbMapUpdate, this);
-    sub_goal_ = neonavigation_common::compat::subscribe(
+    sub_goal_ = this->create_subscription(
         nh_, "move_base_simple/goal",
         pnh_, "goal", 1, &Planner3dNode::cbGoal, this);
     sub_temporary_escape_trigger_ = pnh_->create_subscription(
@@ -1170,7 +1170,7 @@ public:
     pub_goal_ = pnh_->create_publisher<geometry_msgs::msg::PoseStamped>("current_goal", 1, true);
     pub_status_ = pnh_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", 1, true);
     pub_metrics_ = pnh_->create_publisher<neonavigation_metrics_msgs::msg::Metrics>("metrics", 1, false);
-    srs_forget_ = neonavigation_common::compat::advertiseService(
+    srs_forget_ = this->create_publisherService(
         nh_, "forget_planning_cost",
         pnh_, "forget", &Planner3dNode::cbForget, this);
     srs_make_plan_ = pnh_.advertiseService("make_plan", &Planner3dNode::cbMakePlan, this);
@@ -1197,7 +1197,7 @@ public:
     }
     else
     {
-      pub_path_ = neonavigation_common::compat::advertise<nav_msgs::msg::Path>(
+      pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
           nh_, "path",
           pnh_, "path", 1, true);
     }

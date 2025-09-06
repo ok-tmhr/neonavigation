@@ -306,7 +306,7 @@ public:
     pnh_.param("without_odom", without_odom_, false);
     if (without_odom_)
     {
-      sub_imu_raw_ = neonavigation_common::compat::subscribe(
+      sub_imu_raw_ = this->create_subscription(
           nh_, "imu/data",
           nh_, "imu", 64, &TrackOdometryNode::cbImu, this);
       pnh_.param("base_link_id", base_link_id_, std::string("base_link"));
@@ -337,7 +337,7 @@ public:
       pnh_.param("base_link_id", base_link_id_overwrite_, std::string(""));
     }
 
-    sub_reset_z_ = neonavigation_common::compat::subscribe(
+    sub_reset_z_ = this->create_subscription(
         nh_, "reset_odometry_z",
         pnh_, "reset_z", 1, &TrackOdometryNode::cbResetZ, this);
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);

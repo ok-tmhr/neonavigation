@@ -80,7 +80,7 @@ public:
     : nh_()
     , pnh_("~")
   {
-      sub_path_ = neonavigation_common::compat::subscribe(
+      sub_path_ = this->create_subscription(
         nh_, "patrol_nodes",
         pnh_, "path", 1, &PatrolActionNode::cbPath, this);
 

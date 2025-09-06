@@ -62,7 +62,7 @@ public:
     : pnh_("~")
     , nh_()
   {
-      sub_points_ = neonavigation_common::compat::subscribe(
+      sub_points_ = this->create_subscription(
         nh_, "mapcloud",
         pnh_, "map_cloud", 1, &PointcloudToMapsNode::cbPoints, this);
     pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, true);

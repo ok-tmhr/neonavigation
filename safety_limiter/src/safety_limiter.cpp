@@ -166,18 +166,18 @@ public:
     , has_collision_at_now_(false)
     , stuck_started_since_(rclcpp::Time(0))
   {
-      pub_twist_ = neonavigation_common::compat::advertise<geometry_msgs::msg::Twist>(
+      pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         nh_, "cmd_vel",
         pnh_, "cmd_vel_out", 1, true);
     pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud>("collision", 1, true);
     pub_status_ = pnh_->create_publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>("status", 1, true);
-    sub_twist_ = neonavigation_common::compat::subscribe(
+    sub_twist_ = this->create_subscription(
         nh_, "cmd_vel_in",
         pnh_, "cmd_vel_in", 1, &SafetyLimiterNode::cbTwist, this);
-    sub_disable_ = neonavigation_common::compat::subscribe(
+    sub_disable_ = this->create_subscription(
         nh_, "disable_safety",
         pnh_, "disable", 1, &SafetyLimiterNode::cbDisable, this);
-    sub_watchdog_ = neonavigation_common::compat::subscribe(
+    sub_watchdog_ = this->create_subscription(
         nh_, "watchdog_reset",
         pnh_, "watchdog_reset", 1, &SafetyLimiterNode::cbWatchdogReset, this);
 
@@ -185,7 +185,7 @@ public:
     pnh_.param("num_input_clouds", num_input_clouds, 1);
     if (num_input_clouds == 1)
     {
-      sub_clouds_.push_back(neonavigation_common::compat::subscribe(
+      sub_clouds_.push_back(this->create_subscription(
           nh_, "cloud",
           pnh_, "cloud", 1, &SafetyLimiterNode::cbCloud, this));
     }

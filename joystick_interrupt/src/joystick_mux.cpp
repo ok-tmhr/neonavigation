@@ -110,10 +110,10 @@ public:
     , pnh_("~")
   {
       sub_joy_ = nh_->create_subscription("joy", 1, &JoystickMux::cbJoy, this);
-    sub_topics_[0] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
+    sub_topics_[0] = this->create_subscription<topic_tools::ShapeShifter>(
         nh_, "mux_input0",
         pnh_, "input0", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
-    sub_topics_[1] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
+    sub_topics_[1] = this->create_subscription<topic_tools::ShapeShifter>(
         nh_, "mux_input1",
         pnh_, "input1", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
 

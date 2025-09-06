@@ -91,7 +91,7 @@ public:
     , pnh_("~")
     , engine_(seed_gen_())
   {
-      pub_cloud_ = neonavigation_common::compat::advertise<sensor_msgs::msg::PointCloud2>(
+      pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
         nh_, "mapcloud",
         pnh_, "cloud", 1, true);
 
@@ -117,7 +117,7 @@ public:
 private:
   rclcpp::Node::SharedPtr nh_;
   rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Publisher<>::SharedPtr pub_cloud_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cloud_;
 
   std::string file_;
   std::string frame_id_;

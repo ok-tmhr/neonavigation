@@ -88,7 +88,7 @@ RecorderNode::RecorderNode()
   pnh_.param("ang_interval", ang_interval_, 1.0);
   pnh_.param("store_time", store_time_, false);
 
-  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::msg::Path>(
+  pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       nh_, "path",
       pnh_, topic_path_, 10, true);
   srs_clear_path_ = pnh_.advertiseService("clear_path", &RecorderNode::clearPath, this);

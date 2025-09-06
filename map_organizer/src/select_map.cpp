@@ -63,13 +63,13 @@ int main(int argc, char** argv)
   rclcpp::Node::SharedPtr pnh("~");
   rclcpp::Node::SharedPtr nh("");
 
-  auto subMaps = neonavigation_common::compat::subscribe(
+  auto subMaps = this->create_subscription(
       nh, "maps",
       nh, "/maps", 1, cbMaps);
-  auto subFloor = neonavigation_common::compat::subscribe(
+  auto subFloor = this->create_subscription(
       nh, "floor",
       pnh, "floor", 1, cbFloor);
-  auto pubMap = neonavigation_common::compat::advertise<nav_msgs::msg::OccupancyGrid>(
+  auto pubMap = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
       nh, "map",
       nh, "/map", 1, true);
 
