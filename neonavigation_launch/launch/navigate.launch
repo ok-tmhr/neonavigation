@@ -22,20 +22,19 @@
   <arg name="linear_spread" default="0.3" />
   <arg name="output_info" default="screen" />
 
-  <param name="neonavigation_compatible" value="1" />
   <rosparam command="load" file="$(find neonavigation_launch)/config/navigate.yaml"/>
 
-  <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d" output="$(arg output_info)" >
-    <rosparam param="footprint" if="$(arg simulate)">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
+  <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(arg output_info)" >
+    <param param="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(arg simulate)" />
   </node>
-  <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_file)" if="$(arg use_map_server)" />
+  <node pkg="nav2_map_server" exec="map_server" name="map_server" args="$(arg map_file)" if="$(arg use_map_server)" />
 
-  <node pkg="planner_cspace" type="planner_3d" name="planner_3d" output="$(arg output_info)">
+  <node pkg="planner_cspace" exec="planner_3d" name="planner_3d" output="$(arg output_info)">
     <param name="use_path_with_velocity" value="$(arg use_path_with_velocity)" />
     <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
   </node>
 
-  <node pkg="trajectory_tracker" type="trajectory_tracker" name="spur">
+  <node pkg="trajectory_tracker" exec="trajectory_tracker" name="spur">
     <remap from="cmd_vel" to="$(arg cmd_vel_output)" unless="$(arg use_safety_limiter)" />
     <remap from="cmd_vel" to="cmd_vel_raw" if="$(arg use_safety_limiter)" />
 
@@ -51,22 +50,21 @@
     <param name="rotate_ang" value="0.4" unless="$(arg slow_and_precise)" />
 
   </node>
-  <node pkg="safety_limiter" type="safety_limiter" name="safety_limiter" if="$(arg use_safety_limiter)" output="screen">
+  <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" if="$(arg use_safety_limiter)" output="screen">
     <remap from="cmd_vel_in" to="cmd_vel_raw" />
     <remap from="cmd_vel" to="$(arg cmd_vel_output)" />
-    <rosparam param="footprint" if="$(arg simulate)">[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]</rosparam>
+    <param param="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(arg simulate)" />
     <param name="allow_empty_cloud" value="true" />
     <param name="watchdog_interval" value="0.0" />
   </node>
 
-  <node pkg="planner_cspace" type="patrol" name="patrol" />
+  <node pkg="planner_cspace" exec="patrol" name="patrol" />
 
   <group if="$(arg simulate)">
-    <node pkg="planner_cspace" type="dummy_robot" name="dummy_robot">
+    <node pkg="planner_cspace" exec="dummy_robot" name="dummy_robot">
       <remap from="cmd_vel" to="$(arg cmd_vel_output)" />
     </node>
-    <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+    <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
         args="$(arg sim_robot_x) $(arg sim_robot_y) 0 $(arg sim_robot_yaw) 0 0 map odom" />
   </group>
 </launch>
-
