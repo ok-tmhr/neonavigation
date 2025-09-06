@@ -75,7 +75,7 @@ protected:
     trans.transform.translation.x = x;
     trans.transform.translation.y = y;
     trans.transform.rotation.w = 1.0;
-    tfb_.sendTransform(trans);
+    tfb_->sendTransform(trans);
   }
   virtual void SetUp()
   {

@@ -68,11 +68,11 @@ void fillInPointcloudMsg(sensor_msgs::msg::PointCloud2& cloud, const std::initia
 
 TEST(PointcloudAccumulator, PushPointCloud)
 {
-  rclcpp::Duration accum_duration(1.0);
+  rclcpp::Duration accum_duration(1, 0);
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum(accum_duration);
 
-  rclcpp::Time stamp(0);
-  rclcpp::Duration dt(0.25);
+  rclcpp::Time stamp(0, 0, RCL_ROS_TIME);
+  rclcpp::Duration dt(0, 250000000);
   sensor_msgs::msg::PointCloud2 cloud;
   for (int i = 0; i < 10; i++)
   {

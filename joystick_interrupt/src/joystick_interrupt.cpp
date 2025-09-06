@@ -137,8 +137,9 @@ private:
   {
     last_input_twist_ = *msg;
     std_msgs::msg::Bool status;
+    bool use_sim_time = this->get_parameter("use_sim_time").as_bool();
     if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
-        (rclcpp::Time::isSimTime() && last_joy_msg_ == rclcpp::Time(0, 0, RCL_ROS_TIME)))
+        (use_sim_time && last_joy_msg_ == rclcpp::Time(0, 0, RCL_ROS_TIME)))
     {
       pub_twist_->publish(last_input_twist_);
       status.data = true;
@@ -152,6 +153,7 @@ private:
 
 public:
   JoystickInterrupt() : Node("joystick_interrupt")
+  , last_joy_msg_(0, 0, RCL_ROS_TIME)
   {
     using std::placeholders::_1;
       sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickInterrupt::cbJoy, this, _1));

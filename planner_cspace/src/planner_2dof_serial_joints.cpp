@@ -265,13 +265,13 @@ private:
             pos_sum += diff_max;
           }
         }
-        if (traj_prev_.points[0].time_from_start <= rclcpp::Duration::from_seconds(0))
+        if (rclcpp::Duration(traj_prev_.points[0].time_from_start) <= rclcpp::Duration::from_seconds(0))
         {
           avg_vel_ = std::min(links_[0].vmax_, links_[1].vmax_);
         }
         else
         {
-          avg_vel_ = pos_sum / traj_prev_.points[0].time_from_start.seconds();
+          avg_vel_ = pos_sum / rclcpp::Duration(traj_prev_.points[0].time_from_start).seconds();
           if (avg_vel_ > links_[0].vmax_)
             avg_vel_ = links_[0].vmax_;
           if (avg_vel_ > links_[1].vmax_)
@@ -368,6 +368,8 @@ private:
 
 public:
   explicit Planner2dofSerialJointsNode(const std::string group_name) : Node("planner_2dof_serial_joints")
+    , replan_prev_(0, 0, RCL_ROS_TIME)
+    , replan_interval_(0, 0)
     , has_joint_states_(false)
   {
       group_ = group_name;

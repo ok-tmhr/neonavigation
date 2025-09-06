@@ -149,9 +149,13 @@ public:
   SafetyLimiterNode() : Node("safety_limiter")
     , nh_()
     , pnh_("~")
+    , last_cloud_stamp_(0, 0, RCL_ROS_TIME)
+    , hold_(0, 0)
+    , hold_off_(0, 0, RCL_ROS_TIME)
+    , watchdog_interval_(0, 0)
     , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)
     , cloud_clear_(false)
-    , last_disable_cmd_(0)
+    , last_disable_cmd_(0, 0, RCL_ROS_TIME)
     , watchdog_stop_(false)
     , has_cloud_(false)
     , has_twist_(true)
@@ -350,7 +354,7 @@ protected:
       return 0.0;
     }
 
-    const bool can_transform = tfbuf_.canTransform(
+    const bool can_transform = tfbuf_->canTransform(
         base_frame_id_, cloud_accum_->header.frame_id,
         pcl_conversions::fromPCL(cloud_accum_->header.stamp));
     const rclcpp::Time stamp =
@@ -722,7 +726,7 @@ protected:
 
   void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr& msg)
   {
-    const bool can_transform = tfbuf_.canTransform(
+    const bool can_transform = tfbuf_->canTransform(
         fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
     const rclcpp::Time stamp =
         can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0, 0, RCL_ROS_TIME);

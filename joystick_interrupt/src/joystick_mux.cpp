@@ -39,7 +39,7 @@ class JoystickMux : public rclcpp::Node
 {
 private:
   rclcpp::Subscription<>::SharedPtr sub_topics_[2];
-  rclcpp::Subscription<>::SharedPtr sub_joy_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
   rclcpp::Publisher<>::SharedPtr pub_topic_;
   rclcpp::TimerBase::SharedPtr timer_;
   double timeout_;
@@ -100,9 +100,10 @@ private:
 
 public:
   JoystickMux() : Node("joystick_mux")
+  , last_joy_msg_(0, 0, RCL_ROS_TIME)
   {
     using std::placeholders::_1;
-      sub_joy_ = this->create_subscription("joy", 1, std::bind(&JoystickMux::cbJoy, this, _1));
+      sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickMux::cbJoy, this, _1));
     sub_topics_[0] = this->create_subscription<topic_tools::ShapeShifter>(
         "mux_input0",
         1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));

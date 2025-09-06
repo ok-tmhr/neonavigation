@@ -114,7 +114,7 @@ public:
     , width_(0)
     , height_(0)
     , angle_(0)
-    , stamp_(0)
+    , stamp_(0, 0, RCL_ROS_TIME)
   {
   }
   UpdatedRegion(

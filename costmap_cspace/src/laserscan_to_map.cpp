@@ -68,6 +68,8 @@ private:
 
 public:
   LaserscanToMapNode() : Node("laserscan_to_map")
+  , published_(0, 0, RCL_ROS_TIME)
+  , publish_interval_(0, 0)
   {
       this->get_parameter_or("z_min", z_min_, std::numeric_limits<double>::lowest());
     this->get_parameter_or("z_max", z_max_, std::numeric_limits<double>::max());

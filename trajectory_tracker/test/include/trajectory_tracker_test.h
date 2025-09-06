@@ -122,6 +122,10 @@ public:
   TrajectoryTrackerTest()
     : nh_("")
     , pnh_("~")
+    , delay_(0, 0)
+    , cmd_vel_time_(0, 0, RCL_ROS_TIME)
+    , trans_stamp_last_(0, 0, RCL_ROS_TIME)
+    , initial_cmd_vel_time_(0, 0, RCL_ROS_TIME)
   {
     sub_cmd_vel_ = nh_->create_subscription(
         "cmd_vel", 1, &TrajectoryTrackerTest::cbCmdVel, this);
@@ -297,7 +301,7 @@ public:
         trans.transform.rotation.z = odom.pose.pose.orientation.z;
         trans.transform.rotation.w = odom.pose.pose.orientation.w;
 
-        tfb_.sendTransform(trans);
+        tfb_->sendTransform(trans);
         pub_odom_->publish(odom);
       }
       trans_stamp_last_ = odom.header.stamp;

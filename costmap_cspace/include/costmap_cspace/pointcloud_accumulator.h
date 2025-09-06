@@ -53,6 +53,7 @@ public:
   };
 
   PointcloudAccumulator()
+  : time_to_hold_(0, 0)
   {
   }
 

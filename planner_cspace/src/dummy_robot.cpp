@@ -122,7 +122,7 @@ public:
       trans.child_frame_id = "base_link";
       trans.transform.translation = tf2::toMsg(tf2::Vector3(x_, y_, 0.0));
       trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), yaw_));
-      tfb_.sendTransform(trans);
+      tfb_->sendTransform(trans);
 
       nav_msgs::msg::Odometry odom;
       odom.header.frame_id = "odom";

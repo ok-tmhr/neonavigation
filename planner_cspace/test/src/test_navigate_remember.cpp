@@ -108,7 +108,7 @@ protected:
       {
         FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
       }
-      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
+      if (tfbuf_->canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }

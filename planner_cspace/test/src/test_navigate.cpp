@@ -154,7 +154,7 @@ protected:
       rate.sleep();
       const rclcpp::Time now = this->now();
       ASSERT_LT(now, deadline) << test_scope_ << "Initial transform timeout";
-      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
+      if (tfbuf_->canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }

@@ -1144,6 +1144,7 @@ protected:
 
 public:
   Planner3dNode() : Node("planner_3d")
+    , costmap_watchdog_(0, 0)
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))

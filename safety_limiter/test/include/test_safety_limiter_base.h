@@ -187,7 +187,7 @@ public:
         tf2::Transform(tf2::Quaternion(tf2::Vector3(0, 0, 1), ang), tf2::Vector3(lin, 0, 0)));
     trans.header.frame_id = parent_frame_id;
     trans.child_frame_id = child_frame_id;
-    tfb_.sendTransform(trans);
+    tfb_->sendTransform(trans);
   }
   inline bool hasDiag() const
   {

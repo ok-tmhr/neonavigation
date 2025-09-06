@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -67,6 +68,8 @@ private:
 
 public:
   Pointcloud2ToMapNode() : Node("pointcloud2_to_map")
+    , published_(0, 0, RCL_ROS_TIME)
+    , publish_interval_(0, 0)
     , accums_(2)
   {
       this->get_parameter_or("z_min", z_min_, 0.1);

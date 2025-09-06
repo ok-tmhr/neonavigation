@@ -220,7 +220,7 @@ private:
       }
 
       double slip_ratio = 1.0;
-      odom.header.stamp += rclcpp::Duration::from_seconds(tf_tolerance_);
+      odom.header.stamp = rclcpp::Duration::from_seconds(tf_tolerance_) + odom.header.stamp;
       odom.twist.twist.angular = imu_.angular_velocity;
       odom.pose.pose.orientation = imu_.orientation;
 

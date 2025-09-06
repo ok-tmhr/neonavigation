@@ -182,6 +182,7 @@ private:
 };
 
 TrackerNode::TrackerNode() : Node("trajectory_tracker")
+  , prev_odom_stamp_(0, 0, RCL_ROS_TIME)
   , is_path_updated_(false)
 {
   this->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
@@ -314,7 +315,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
 
   if (prev_odom_stamp_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
   {
-    const double dt = std::min(max_dt_, (odom->header.stamp - prev_odom_stamp_).seconds());
+    const double dt = std::min(max_dt_, (rclcpp::Time(odom->header.stamp) - prev_odom_stamp_).seconds());
     nav_msgs::msg::Odometry odom_compensated = *odom;
     Eigen::Vector3d prediction_offset(0, 0, 0);
     if (predict_odom_)
@@ -335,7 +336,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
 
     tf2::Transform odom_to_robot;
     tf2::fromMsg(odom_compensated.pose.pose, odom_to_robot);
-    const tf2::Stamped<tf2::Transform> odom_to_robot_stamped(odom_to_robot, odom->header.stamp, odom->header.frame_id);
+    const tf2::Stamped<tf2::Transform> odom_to_robot_stamped(odom_to_robot, tf2_ros::fromMsg(odom->header.stamp), odom->header.frame_id);
     control(odom_to_robot_stamped, prediction_offset, odom->twist.twist.linear.x, odom->twist.twist.angular.z, dt);
   }
   prev_odom_stamp_ = odom->header.stamp;
@@ -515,7 +516,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     tf2::fromMsg(
         tfbuf_->lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0, 0, RCL_ROS_TIME)), path_to_odom);
     const tf2::Transform path_to_robot = path_to_odom * odom_to_robot;
-    transform_delay = (this->now() - path_to_odom.stamp_).seconds();
+    transform_delay = this->now().seconds() - tf2::timeToSec(path_to_odom.stamp_);
     if (std::abs(transform_delay) > 0.1 && check_old_path_)
     {
       RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(),
