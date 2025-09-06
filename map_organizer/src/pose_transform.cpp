@@ -40,8 +40,8 @@
 class PoseTransformNode : public rclcpp::Node
 {
 private:
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string to_;
 
@@ -58,7 +58,7 @@ private:
       in.header = msg->header;
       in.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       in.pose = msg->pose.pose;
-      geometry_msgs::msg::TransformStamped trans = tfbuf_.lookupTransform(
+      geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
           to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(in, out, trans);
       out_msg = *msg;
@@ -74,7 +74,6 @@ private:
 
 public:
   PoseTransformNode() : Node("pose_transform")
-    , tfl_(tfbuf_)
   {
       sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_in",
@@ -83,6 +82,9 @@ public:
         "pose_out",
         1);
     this->get_parameter_or("to_frame", to_, std::string("map"));
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
 };
 

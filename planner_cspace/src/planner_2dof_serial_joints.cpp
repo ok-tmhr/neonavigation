@@ -66,8 +66,8 @@ private:
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr sub_trajectory_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_;
 
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -368,7 +368,6 @@ private:
 
 public:
   explicit Planner2dofSerialJointsNode(const std::string group_name) : Node("planner_2dof_serial_joints")
-    , tfl_(tfbuf_)
     , has_joint_states_(false)
   {
       group_ = group_name;
@@ -509,6 +508,9 @@ public:
     int num_threads;
     nh_group->get_parameter_or("num_threads", num_threads, 1);
     omp_set_num_threads(num_threads);
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
 
 private:

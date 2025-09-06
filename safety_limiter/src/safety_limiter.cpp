@@ -101,8 +101,8 @@ protected:
   rclcpp::Subscription<>::SharedPtr sub_disable_;
   rclcpp::Subscription<>::SharedPtr sub_watchdog_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   boost::recursive_mutex parameter_server_mutex_;
   std::unique_ptr<dynamic_reconfigure::Server<SafetyLimiterConfig>> parameter_server_;
 
@@ -149,7 +149,6 @@ public:
   SafetyLimiterNode() : Node("safety_limiter")
     , nh_()
     , pnh_("~")
-    , tfl_(tfbuf_)
     , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)
     , cloud_clear_(false)
     , last_disable_cmd_(0)
@@ -237,6 +236,9 @@ public:
 
     diag_updater_.setHardwareID("none");
     diag_updater_.add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
   void spin()
   {
@@ -357,7 +359,7 @@ protected:
     geometry_msgs::msg::TransformStamped fixed_to_base;
     try
     {
-      fixed_to_base = tfbuf_.lookupTransform(
+      fixed_to_base = tfbuf_->lookupTransform(
           base_frame_id_, cloud_accum_->header.frame_id, stamp);
     }
     catch (tf2::TransformException& e)
@@ -729,7 +731,7 @@ protected:
     try
     {
       const geometry_msgs::msg::TransformStamped cloud_to_fixed =
-          tfbuf_.lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
+          tfbuf_->lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
       tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)

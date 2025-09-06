@@ -73,7 +73,7 @@ int main(int argc, char** argv)
       nh, "map",
       rclcpp::QoS(1).transient_local());
 
-  tf2_ros::TransformBroadcaster tfb;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb;
   geometry_msgs::msg::TransformStamped trans;
   trans.header.frame_id = "map_ground";
   trans.child_frame_id = "map";

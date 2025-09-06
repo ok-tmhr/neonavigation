@@ -250,7 +250,7 @@ protected:
            (path_received_count_ - prev_path_received_count);
   }
 
-  tf2_ros::TransformBroadcaster tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Subscription<>::SharedPtr sub_path_;
   nav_msgs::msg::Path::ConstPtr path_;
   std::unique_ptr<dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>> planner_3d_client_;

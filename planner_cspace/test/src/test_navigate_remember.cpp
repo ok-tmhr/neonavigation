@@ -54,8 +54,8 @@ class NavigateWithRememberUpdates : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::msg::CSpace3D::ConstPtr costmap_;
   nav_msgs::msg::Path::ConstPtr path_;
@@ -165,7 +165,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
+        tfbuf_->lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);

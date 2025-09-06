@@ -51,9 +51,9 @@ protected:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_init_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformBroadcaster tfb_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   void cbTwist(const geometry_msgs::msg::Twist::ConstPtr& msg)
   {
@@ -68,7 +68,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_.lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(1.0));
+          tfbuf_->lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(1.0));
       tf2::doTransform(pose_in, pose_out, trans);
     }
     catch (tf2::TransformException& e)
@@ -86,7 +86,6 @@ protected:
 
 public:
   DummyRobotNode() : Node("dummy_robot")
-    , tfl_(tfbuf_)
   {
       this->get_parameter_or("initial_x", x_, 0.0);
     this->get_parameter_or("initial_y", y_, 0.0);
@@ -97,6 +96,10 @@ public:
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());
     sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&DummyRobotNode::cbTwist, this, std::placeholders::_1));
     sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
   void spin()
   {

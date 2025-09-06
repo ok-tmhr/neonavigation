@@ -123,8 +123,8 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_vel_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr pub_status_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
   double odom_timeout_sec_;
 
@@ -182,7 +182,6 @@ private:
 };
 
 TrackerNode::TrackerNode() : Node("trajectory_tracker")
-  , tfl_(tfbuf_)
   , is_path_updated_(false)
 {
   this->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
@@ -214,6 +213,9 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10), (&TrackerNode::cbOdometry, this, _1)
                                                   );
   }
+
+  tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
 
 }
 
@@ -345,7 +347,7 @@ void TrackerNode::cbTimer()
   {
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(frame_odom_, frame_robot_, rclcpp::Time(0, 0, RCL_ROS_TIME)), transform);
+        tfbuf_->lookupTransform(frame_odom_, frame_robot_, rclcpp::Time(0, 0, RCL_ROS_TIME)), transform);
     control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
   }
   catch (tf2::TransformException& e)
@@ -364,7 +366,7 @@ void TrackerNode::cbTimer()
 
 void TrackerNode::cbOdomTimeout()
 {
-  RCLCPP_WARN_STREAM(this->get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_);
+  RCLCPP_WARN_STREAM(this->get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_.nanoseconds());
   v_lim_.clear();
   w_lim_.clear();
   geometry_msgs::msg::Twist cmd_vel;
@@ -511,7 +513,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   {
     tf2::Stamped<tf2::Transform> path_to_odom;
     tf2::fromMsg(
-        tfbuf_.lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0, 0, RCL_ROS_TIME)), path_to_odom);
+        tfbuf_->lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0, 0, RCL_ROS_TIME)), path_to_odom);
     const tf2::Transform path_to_robot = path_to_odom * odom_to_robot;
     transform_delay = (this->now() - path_to_odom.stamp_).seconds();
     if (std::abs(transform_delay) > 0.1 && check_old_path_)

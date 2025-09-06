@@ -43,10 +43,10 @@
 class TfProjectionNode : public rclcpp::Node
 {
 private:
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-  tf2_ros::StaticTransformBroadcaster tf_static_broadcaster_;
-  tf2_ros::TransformBroadcaster tf_broadcaster_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
   double rate_;
   double tf_tolerance_;
@@ -61,7 +61,6 @@ private:
 
 public:
   TfProjectionNode() : Node("tf_projection")
-    , tf_listener_(tf_buffer_)
   {
     if (this->has_parameter("base_link_frame") ||
         this->has_parameter("projection_frame") ||
@@ -91,6 +90,11 @@ public:
 
     this->get_parameter_or("project_posture", project_posture_, false);
     this->get_parameter_or("align_all_posture_to_source", align_all_posture_to_source_, false);
+
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
+    tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
   }
   void process()
   {
@@ -99,10 +103,10 @@ public:
     try
     {
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1)),
+          tf_buffer_->lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1)),
           trans);
       tf2::fromMsg(
-          tf_buffer_.lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, rclcpp::Duration::from_seconds(0.1)),
+          tf_buffer_->lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, tf2::durationFromSec(0.1)),
           trans_target);
     }
     catch (tf2::TransformException& e)
@@ -111,8 +115,8 @@ public:
       return;
     }
 
-    if (!trans.stamp_.isZero())
-      trans.stamp_ += rclcpp::Duration::from_seconds(tf_tolerance_);
+    if (trans.stamp_ != tf2::TimePointZero)
+      trans.stamp_ += tf2::durationFromSec(tf_tolerance_);
 
     if (project_posture_)
     {
@@ -143,13 +147,13 @@ public:
     }
     trans_out.child_frame_id = projected_frame_;
 
-    if (trans.stamp_.isZero())
+    if (trans.stamp_ == tf2::TimePointZero)
     {
-      tf_static_broadcaster_.sendTransform(trans_out);
+      tf_static_broadcaster_->sendTransform(trans_out);
     }
     else
     {
-      tf_broadcaster_.sendTransform(trans_out);
+      tf_broadcaster_->sendTransform(trans_out);
     }
   }
   void cbTimer()

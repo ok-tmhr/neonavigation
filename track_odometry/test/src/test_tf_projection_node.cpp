@@ -42,14 +42,15 @@
 class TfProjectionTest : public ::testing::TestWithParam<const char*>
 {
 public:
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string projected_frame_;
 
   TfProjectionTest()
-    : tfl_(tfbuf_)
   {
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
   void SetUp() override
   {
@@ -64,7 +65,7 @@ TEST_P(TfProjectionTest, ProjectionTransform)
   geometry_msgs::msg::TransformStamped out;
   try
   {
-    out = tfbuf_.lookupTransform("map", projected_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(1.0));
+    out = tfbuf_->lookupTransform("map", projected_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(1.0));
   }
   catch (tf2::TransformException& e)
   {

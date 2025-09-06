@@ -68,7 +68,7 @@ private:
   rclcpp::Publisher<>::SharedPtr pub_path_;
   rclcpp::Publisher<>::SharedPtr pub_path_vel_;
   rclcpp::Publisher<>::SharedPtr pub_odom_;
-  tf2_ros::TransformBroadcaster tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Time cmd_vel_time_;
   rclcpp::Time trans_stamp_last_;
 

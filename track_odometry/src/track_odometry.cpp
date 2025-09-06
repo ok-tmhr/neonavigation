@@ -97,9 +97,9 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_reset_z_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
-  tf2_ros::TransformBroadcaster tf_broadcaster_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   nav_msgs::msg::Odometry odom_prev_;
   nav_msgs::msg::Odometry odomraw_prev_;
 
@@ -151,7 +151,7 @@ private:
     imu_.header = msg->header;
     try
     {
-      geometry_msgs::msg::TransformStamped trans = tf_buffer_.lookupTransform(
+      geometry_msgs::msg::TransformStamped trans = tf_buffer_->lookupTransform(
           base_link_id_, msg->header.frame_id, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
 
       geometry_msgs::msg::Vector3Stamped vin, vout;
@@ -282,7 +282,7 @@ private:
       odom_trans.transform.translation = toVector3(toEigen(odom.pose.pose.position));
       odom_trans.transform.rotation = odom.pose.pose.orientation;
       if (publish_tf_)
-        tf_broadcaster_.sendTransform(odom_trans);
+        tf_broadcaster_->sendTransform(odom_trans);
     }
     odomraw_prev_ = *msg;
     odom_prev_ = odom;
@@ -291,7 +291,6 @@ private:
 
 public:
   TrackOdometryNode() : Node("track_odometry")
-    , tf_listener_(tf_buffer_)
   {
 
     bool enable_tcp_no_delay;
@@ -373,6 +372,10 @@ public:
 
     dist_ = 0;
     slip_.set(0.0, 0.1);
+
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
   }
   void cbTimer()
   {

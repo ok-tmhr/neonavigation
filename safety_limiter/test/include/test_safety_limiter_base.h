@@ -89,7 +89,7 @@ protected:
   rclcpp::Subscription<>::SharedPtr sub_status_;
   rclcpp::Subscription<>::SharedPtr sub_cmd_vel_;
 
-  tf2_ros::TransformBroadcaster tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
 
   inline void cbDiag(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg)
   {

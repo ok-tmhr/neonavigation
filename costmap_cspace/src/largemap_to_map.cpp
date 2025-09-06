@@ -49,8 +49,8 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string robot_frame_;
 
@@ -62,7 +62,6 @@ private:
 
 public:
   LargeMapToMapNode() : Node("largemap_to_map")
-    , tfl_(tfbuf_)
   {
       this->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
@@ -105,6 +104,9 @@ public:
     double hz;
     this->get_parameter_or("hz", hz, 1.0);
     timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
 
 private:
@@ -123,7 +125,7 @@ private:
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
     }
     catch (tf2::TransformException& e)
     {

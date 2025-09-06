@@ -58,8 +58,8 @@ class Navigate : public ::testing::Test
 protected:
   rclcpp::Node::SharedPtr pnh_;
   rclcpp::Node::SharedPtr nh_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   nav_msgs::msg::OccupancyGrid::ConstPtr map_;
   nav_msgs::msg::OccupancyGrid::Ptr map_local_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
@@ -83,7 +83,6 @@ protected:
 
   Navigate()
     : pnh_("~")
-    , tfl_(tfbuf_)
     , local_map_apply_cnt_(0)
   {
     sub_map_ = nh_->create_subscription("map_global", 1, &Navigate::cbMap, this);
@@ -101,6 +100,9 @@ protected:
     pub_initial_pose_ =
         nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
     pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
 
   void SetUp() override
@@ -280,7 +282,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
+        tfbuf_->lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);

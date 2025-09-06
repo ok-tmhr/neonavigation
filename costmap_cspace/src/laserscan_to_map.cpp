@@ -49,8 +49,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
   nav_msgs::msg::OccupancyGrid map;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   laser_geometry::LaserProjection projector_;
   rclcpp::Time published_;
   rclcpp::Duration publish_interval_;
@@ -68,7 +68,6 @@ private:
 
 public:
   LaserscanToMapNode() : Node("laserscan_to_map")
-    , tfl_(tfbuf_)
   {
       this->get_parameter_or("z_min", z_min_, std::numeric_limits<double>::lowest());
     this->get_parameter_or("z_max", z_max_, std::numeric_limits<double>::max());
@@ -99,6 +98,9 @@ public:
     double hz;
     this->get_parameter_or("hz", hz, 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
 
 private:
@@ -109,7 +111,7 @@ private:
     projector_.projectLaser(*scan, cloud);
     try
     {
-      geometry_msgs::msg::TransformStamped trans = tfbuf_.lookupTransform(
+      geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
           global_frame_, cloud.header.frame_id, cloud.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(cloud, cloud_global, trans);
     }
@@ -129,7 +131,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;

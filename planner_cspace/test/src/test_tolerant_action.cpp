@@ -72,7 +72,7 @@ protected:
     try
     {
       const geometry_msgs::msg::TransformStamped map_to_robot =
-          tfbuf_.lookupTransform("map", "base_link", rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
+          tfbuf_->lookupTransform("map", "base_link", rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
       return std::hypot(map_to_robot.transform.translation.x - goal.target_pose.pose.position.x,
                         map_to_robot.transform.translation.y - goal.target_pose.pose.position.y);
     }

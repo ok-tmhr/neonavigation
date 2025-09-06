@@ -52,7 +52,7 @@ TEST(TrajectoryRecorder, TfToPath)
     path = msg;
   };
   rclcpp::Subscription<>::SharedPtr sub_path = nh.subscribe("path", 1, cb_path);
-  tf2_ros::TransformBroadcaster tfb;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb;
 
   const tf2::Transform points[] =
       {

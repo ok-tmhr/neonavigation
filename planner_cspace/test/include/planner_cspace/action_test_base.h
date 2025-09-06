@@ -53,12 +53,14 @@ class ActionTestBase : public ::testing::Test
 {
 public:
   ActionTestBase()
-    : tfl_(tfbuf_)
     , map_ready_(false)
   {
     move_base_ = std::make_shared<ActionClient>(TOPIC);
     sub_status_ = node_.subscribe(
         "/planner_3d/status", 10, &ActionTestBase::cbStatus, this);
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
   }
   void SetUp()
   {
@@ -125,8 +127,8 @@ protected:
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   bool map_ready_;
 };
 

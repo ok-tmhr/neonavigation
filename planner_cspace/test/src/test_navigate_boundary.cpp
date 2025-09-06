@@ -49,7 +49,7 @@ protected:
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
   rclcpp::Node::SharedPtr nh_;
-  tf2_ros::TransformBroadcaster tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Subscription<>::SharedPtr sub_status_;
   rclcpp::Subscription<>::SharedPtr sub_path_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status_;

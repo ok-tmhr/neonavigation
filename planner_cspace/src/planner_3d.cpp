@@ -123,8 +123,8 @@ protected:
   std::shared_ptr<Planner3DActionServer> act_;
   std::shared_ptr<Planner3DTolerantActionServer> act_tolerant_;
   planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal_tolerant_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
@@ -1130,7 +1130,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_.lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
+          tfbuf_->lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)
@@ -1144,7 +1144,6 @@ protected:
 
 public:
   Planner3dNode() : Node("planner_3d")
-    , tfl_(tfbuf_)
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
@@ -1336,6 +1335,8 @@ public:
     act_->start();
     act_tolerant_->start();
 
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
     // cbParameter() with the inital parameters will be called within setCallback().
   }
 
