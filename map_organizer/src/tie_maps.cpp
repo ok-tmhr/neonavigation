@@ -56,15 +56,13 @@ void operator>>(const YAML::Node& node, T& i)
 class TieMapNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Node::SharedPtr nh_;
   rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
   std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
 
 public:
   TieMapNode() : Node("tie_maps")
   {
-    pub_map_array_ = nh_->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
+    pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 
     map_organizer_msgs::msg::OccupancyGridArray maps;
 
@@ -76,8 +74,8 @@ public:
     double occ_th, free_th;
     MapMode mode;
     std::string frame_id;
-    pnh_->get_parameter_or("map_files", files_str, std::string(""));
-    pnh_->get_parameter_or("frame_id", frame_id, std::string("map"));
+    this->get_parameter_or("map_files", files_str, std::string(""));
+    this->get_parameter_or("frame_id", frame_id, std::string("map"));
 
     int i = 0;
     std::string file;

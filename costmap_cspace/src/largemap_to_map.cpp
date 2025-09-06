@@ -44,8 +44,6 @@
 class LargeMapToMapNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Node::SharedPtr nh_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_largemap_;
   rclcpp::TimerBase::SharedPtr timer_;

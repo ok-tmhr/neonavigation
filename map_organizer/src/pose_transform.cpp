@@ -40,8 +40,6 @@
 class PoseTransformNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Node::SharedPtr nh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
 
@@ -84,7 +82,7 @@ public:
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_out",
         1);
-    pnh_->get_parameter_or("to_frame", to_, std::string("map"));
+    this->get_parameter_or("to_frame", to_, std::string("map"));
   }
 };
 

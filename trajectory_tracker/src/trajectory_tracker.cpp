@@ -122,8 +122,6 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_vel_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr pub_status_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
@@ -202,9 +200,9 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
   sub_path_velocity_ = this->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
       "path_velocity", 2,
       boost::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
-  sub_vel_ = this->create_subscription(
+  sub_vel_ = this->create_subscription<std_msgs::msg::Float32>(
       "speed",
-      20, &TrackerNode::cbSpeed, this);
+      20, std::bind(&TrackerNode::cbSpeed, this, _1));
   pub_vel_ = this->create_publisher<geometry_msgs::msg::Twist>(
       "cmd_vel",
       10);
@@ -212,7 +210,7 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
   pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", rclcpp::QoS(10).transient_local());
   if (use_odom_)
   {
-    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10), &TrackerNode::cbOdometry, this,
+    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10), (&TrackerNode::cbOdometry, this, _1)
                                                   );
   }
 
@@ -307,7 +305,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
     else
     {
       odom_timeout_timer_ =
-          nh_->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), &TrackerNode::cbOdomTimeout, this, true, true);
+          this->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), &TrackerNode::cbOdomTimeout, this, true, true);
     }
   }
 
@@ -387,7 +385,7 @@ void TrackerNode::spin()
   rclcpp::TimerBase::SharedPtr timer;
   if (!use_odom_)
   {
-    timer = nh_->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &TrackerNode::cbTimer, this);
+    timer = this->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &TrackerNode::cbTimer, this);
   }
   rclcpp::spin(shared_from_this());
 }

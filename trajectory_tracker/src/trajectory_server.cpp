@@ -60,8 +60,6 @@ public:
   void spin();
 
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>::SharedPtr pub_status_;
   rclcpp::Service<trajectory_tracker_msgs::srv::ChangePath>::SharedPtr srv_change_path_;
@@ -95,14 +93,14 @@ ServerNode::ServerNode() : Node("trajectory_server")
   , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
-  pnh_->get_parameter_or("file", req_path_.filename, std::string("a.path"));
-  pnh_->get_parameter_or("hz", hz_, 5.0);
-  pnh_->get_parameter_or("filter_step", filter_step_, 0.0);
+  this->get_parameter_or("file", req_path_.filename, std::string("a.path"));
+  this->get_parameter_or("hz", hz_, 5.0);
+  this->get_parameter_or("filter_step", filter_step_, 0.0);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(2).transient_local());
-  pub_status_ = pnh_->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("status", 2);
+  pub_status_ = this->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("~/status", 2);
   srv_change_path_ = this->create_service<trajectory_tracker_msgs::srv::ChangePath>(
       "change_path",
       std::bind(&ServerNode::change, this, std::placeholders::_1, std::placeholders::_2));

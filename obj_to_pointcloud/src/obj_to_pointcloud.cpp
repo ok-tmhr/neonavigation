@@ -86,29 +86,27 @@ std::vector<std::string> split(const std::string& input, char delimiter)
 class ObjToPointcloudNode : public rclcpp::Node
 {
 public:
-  ObjToPointcloudNode() : Node()
-    , nh_()
-    , pnh_("~")
+  ObjToPointcloudNode() : Node("obj_to_pointcloud")
     , engine_(seed_gen_())
   {
       pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
         rclcpp::QoS(1).transient_local());
 
-    pnh_->get_parameter_or("frame_id", frame_id_, std::string("map"));
-    pnh_->get_parameter_or("objs", file_, std::string(""));
+    this->get_parameter_or("frame_id", frame_id_, std::string("map"));
+    this->get_parameter_or("objs", file_, std::string(""));
     if (file_.compare("") == 0)
     {
       RCLCPP_ERROR(this->get_logger(), "OBJ file not specified");
       rclcpp::shutdown();
       return;
     }
-    pnh_->get_parameter_or("points_per_meter_sq", ppmsq_, 600.0);
-    pnh_->get_parameter_or("downsample_grid", downsample_grid_, 0.05);
-    pnh_->get_parameter_or("offset_x", offset_x_, 0.0);
-    pnh_->get_parameter_or("offset_y", offset_y_, 0.0);
-    pnh_->get_parameter_or("offset_z", offset_z_, 0.0);
-    pnh_->get_parameter_or("scale", scale_, 1.0);
+    this->get_parameter_or("points_per_meter_sq", ppmsq_, 600.0);
+    this->get_parameter_or("downsample_grid", downsample_grid_, 0.05);
+    this->get_parameter_or("offset_x", offset_x_, 0.0);
+    this->get_parameter_or("offset_y", offset_y_, 0.0);
+    this->get_parameter_or("offset_z", offset_z_, 0.0);
+    this->get_parameter_or("scale", scale_, 1.0);
 
     auto pc = convertObj(split(file_, ','));
     pub_cloud_->publish(pc);
@@ -243,10 +241,10 @@ private:
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "obj_to_pointcloud");
+  rclcpp::init(argc, argv);
 
-  ObjToPointcloudNode m2p;
-  rclcpp::spin();
+  auto m2p = std::make_shared<ObjToPointcloudNode>();
+  rclcpp::spin(m2p);
 
   return 0;
 }

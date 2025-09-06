@@ -53,8 +53,6 @@ public:
   void save();
 
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
 
   std::string filename_;
@@ -65,7 +63,7 @@ private:
 SaverNode::SaverNode() : Node("trajectory_saver")
   , saved_(false)
 {
-  pnh_->get_parameter_or("file", filename_, std::string("a.path"));
+  this->get_parameter_or("file", filename_, std::string("a.path"));
 
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",

@@ -45,7 +45,6 @@
 class MapGeneratorNode : public rclcpp::Node
 {
 protected:
-  rclcpp::Node::SharedPtr nh_;
   std::string mapname_;
   rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr map_sub_;
   bool saved_map_;

@@ -40,8 +40,6 @@
 class JoystickInterrupt : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;

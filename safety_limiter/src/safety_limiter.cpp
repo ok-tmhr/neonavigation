@@ -99,8 +99,6 @@ bool XmlRpc_isNumber(XmlRpc::XmlRpcValue& value)
 class SafetyLimiterNode : public rclcpp::Node
 {
 protected:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_cloud_;
   rclcpp::Publisher<safety_limiter_msgs::msg::SafetyLimiterStatus>::SharedPtr pub_status_;
@@ -208,10 +206,6 @@ public:
     watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
     this->get_parameter_or("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
     this->get_parameter_or("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
-
-    parameter_server_.reset(
-        new dynamic_reconfigure::Server<SafetyLimiterConfig>(parameter_server_mutex_, pnh_));
-    parameter_server_->setCallback(boost::bind(&SafetyLimiterNode::cbParameter, this, _1, _2));
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!pnh_->has_parameter("footprint"))

@@ -99,8 +99,6 @@ protected:
   using Planner3DActionServer = rclcpp_action::Server<nav2_msgs::action::NavigateToPose>;
   using Planner3DTolerantActionServer = rclcpp_action::Server<planner_cspace_msgs::action::MoveWithTolerance>;
 
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr sub_map_;
   rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3DUpdate>::SharedPtr sub_map_update_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr sub_goal_;
@@ -1144,8 +1142,6 @@ protected:
 
 public:
   Planner3dNode() : Node("planner_3d")
-    , nh_()
-    , pnh_("~")
     , tfl_(tfbuf_)
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
@@ -1286,7 +1282,7 @@ public:
     {
       RCLCPP_WARN(this->get_logger(), "planner_3d: Experimental fast_map_update is enabled. ");
     }
-    if (pnh_->has_parameter("debug_mode"))
+    if (this->has_parameter("debug_mode"))
     {
       RCLCPP_ERROR(this->get_logger(),
           "planner_3d: ~/debug_mode parameter and ~/debug topic are deprecated. "

@@ -43,8 +43,6 @@
 class TfProjectionNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::StaticTransformBroadcaster tf_static_broadcaster_;
@@ -160,7 +158,7 @@ public:
   }
   void spin()
   {
-    rclcpp::TimerBase::SharedPtr timer = nh_->create_wall_timer(
+    rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
         rclcpp::Duration::from_seconds(1.0 / rate_), &TfProjectionNode::cbTimer, this);
     rclcpp::spin(shared_from_this());
   }

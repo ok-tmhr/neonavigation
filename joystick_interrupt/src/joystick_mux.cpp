@@ -36,8 +36,6 @@
 class JoystickMux
 {
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Subscription<>::SharedPtr sub_topics_[2];
   rclcpp::Subscription<>::SharedPtr sub_joy_;
   rclcpp::Publisher<>::SharedPtr pub_topic_;
@@ -105,11 +103,10 @@ private:
   }
 
 public:
-  JoystickMux()
-    : nh_("")
-    , pnh_("~")
+  JoystickMux() : Node("joystick_mux")
   {
-      sub_joy_ = nh_->create_subscription("joy", 1, &JoystickMux::cbJoy, this);
+    using std::placeholders::_1;
+      sub_joy_ = this->create_subscription("joy", 1, std::bind(&JoystickMux::cbJoy, this, _1));
     sub_topics_[0] = this->create_subscription<topic_tools::ShapeShifter>(
         "mux_input0",
         1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
@@ -117,11 +114,11 @@ public:
         "mux_input1",
         1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
 
-    pnh_->get_parameter_or("interrupt_button", interrupt_button_, 5);
-    pnh_->get_parameter_or("timeout", timeout_, 0.5);
+    this->get_parameter_or("interrupt_button", interrupt_button_, 5);
+    this->get_parameter_or("timeout", timeout_, 0.5);
     last_joy_msg_ = this->now();
 
-    timer_ = nh_->create_wall_timer(rclcpp::Duration::from_seconds(0.1), &JoystickMux::cbTimer, this);
+    timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(0.1), &JoystickMux::cbTimer, this);
 
     advertised_ = false;
     selected_ = 0;
@@ -130,10 +127,10 @@ public:
 
 int main(int argc, char* argv[])
 {
-  rclcpp::init(argc, argv, "joystick_mux");
+  rclcpp::init(argc, argv);
 
-  JoystickMux jy;
-  rclcpp::spin();
+  auto jy = std::make_shared<JoystickMux>();
+  rclcpp::spin(jy);
 
   return 0;
 }

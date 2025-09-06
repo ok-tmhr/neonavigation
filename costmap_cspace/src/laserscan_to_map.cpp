@@ -45,8 +45,6 @@
 class LaserscanToMapNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 

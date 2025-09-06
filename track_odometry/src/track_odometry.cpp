@@ -89,9 +89,6 @@ private:
   using SyncPolicy =
       message_filters::sync_policies::ApproximateTime<nav_msgs::msg::Odometry, sensor_msgs::msg::Imu>;
 
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
-
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_raw_;
   std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> sub_odom_;
   std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Imu>> sub_imu_;

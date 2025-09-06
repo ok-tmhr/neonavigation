@@ -61,9 +61,6 @@ public:
   using Ptr = std::shared_ptr<Planner2dofSerialJointsNode>;
 
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
-
   rclcpp::Publisher<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr pub_status_;
   rclcpp::Publisher<trajectory_msgs::msg::JointTrajectory>::SharedPtr pub_trajectory_;
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr sub_trajectory_;

@@ -43,9 +43,6 @@ protected:
   using MoveBaseClient = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>;
   using MoveWithToleranceClient = rclcpp_action::Client<planner_cspace_msgs::action::MoveWithTolerance>;
 
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
-
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   std::shared_ptr<MoveBaseClient> act_cli_;
   std::shared_ptr<MoveWithToleranceClient> act_cli_tolerant_;

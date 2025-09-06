@@ -51,8 +51,6 @@
 class PointcloudToMapsNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr pnh_;
-  rclcpp::Node::SharedPtr nh_;
   std::map<std::string, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_maps_;
   rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
@@ -334,7 +332,7 @@ public:
       }
 
       std::string name = "map" + std::to_string(floor_num);
-      pub_maps_[name] = pnh_->create_publisher<nav_msgs::msg::OccupancyGrid>(name, rclcpp::QoS(1).transient_local());
+      pub_maps_[name] = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/" + name, rclcpp::QoS(1).transient_local());
       pub_maps_[name]->publish(map);
       map_array.maps.push_back(map);
       RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm",

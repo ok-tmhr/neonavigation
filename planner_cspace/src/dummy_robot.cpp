@@ -41,8 +41,6 @@
 class DummyRobotNode : public rclcpp::Node
 {
 protected:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
 
   double x_;
   double y_;
@@ -90,9 +88,9 @@ public:
   DummyRobotNode() : Node("dummy_robot")
     , tfl_(tfbuf_)
   {
-      pnh_->get_parameter_or("initial_x", x_, 0.0);
-    pnh_->get_parameter_or("initial_y", y_, 0.0);
-    pnh_->get_parameter_or("initial_yaw", yaw_, 0.0);
+      this->get_parameter_or("initial_x", x_, 0.0);
+    this->get_parameter_or("initial_y", y_, 0.0);
+    this->get_parameter_or("initial_yaw", yaw_, 0.0);
     v_ = 0.0;
     w_ = 0.0;
 

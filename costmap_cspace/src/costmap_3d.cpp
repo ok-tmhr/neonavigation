@@ -44,8 +44,6 @@
 class Costmap3DOFNode : public rclcpp::Node
 {
 protected:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_map_;
   std::vector<rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr> sub_map_overlay_;
   rclcpp::Publisher<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr pub_costmap_;
@@ -184,19 +182,19 @@ public:
     pub_costmap_update_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>(
         "costmap_update",
         rclcpp::QoS(1).transient_local());
-    pub_footprint_ = pnh_->create_publisher<geometry_msgs::msg::PolygonStamped>("footprint", rclcpp::QoS(2).transient_local());
-    pub_debug_ = pnh_->create_publisher<sensor_msgs::msg::PointCloud>("debug", rclcpp::QoS(1).transient_local());
+    pub_footprint_ = this->create_publisher<geometry_msgs::msg::PolygonStamped>("~/footprint", rclcpp::QoS(2).transient_local());
+    pub_debug_ = this->create_publisher<sensor_msgs::msg::PointCloud>("~/debug", rclcpp::QoS(1).transient_local());
 
     int ang_resolution;
-    pnh_->get_parameter_or("ang_resolution", ang_resolution, 16);
+    this->get_parameter_or("ang_resolution", ang_resolution, 16);
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!pnh_->has_parameter("footprint"))
+    if (!this->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified.");
     }
-    pnh_->get_parameter("footprint", footprint_xml);
+    this->get_parameter("footprint", footprint_xml);
     costmap_cspace::Polygon footprint;
     try
     {
@@ -213,17 +211,17 @@ public:
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
     float linear_expand;
     float linear_spread;
-    pnh_->get_parameter_or("linear_expand", linear_expand, 0.2f);
-    pnh_->get_parameter_or("linear_spread", linear_spread, 0.5f);
+    this->get_parameter_or("linear_expand", linear_expand, 0.2f);
+    this->get_parameter_or("linear_spread", linear_spread, 0.5f);
     int linear_spread_min_cost;
-    pnh_->get_parameter_or("linear_spread_min_cost", linear_spread_min_cost, 0);
+    this->get_parameter_or("linear_spread_min_cost", linear_spread_min_cost, 0);
     root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
-    if (pnh_->has_parameter("static_layers"))
+    if (this->has_parameter("static_layers"))
     {
       XmlRpc::XmlRpcValue layers_xml;
-      pnh_->get_parameter("static_layers", layers_xml);
+      this->get_parameter("static_layers", layers_xml);
 
       if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
@@ -273,7 +271,7 @@ public:
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml.second);
 
-        sub_map_overlay_.push_back(nh_->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             layer_xml.first, 1,
             boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
       }
@@ -286,10 +284,10 @@ public:
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
-    if (pnh_->has_parameter("layers"))
+    if (this->has_parameter("layers"))
     {
       XmlRpc::XmlRpcValue layers_xml;
-      pnh_->get_parameter("layers", layers_xml);
+      this->get_parameter("layers", layers_xml);
 
       if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
       {
@@ -339,7 +337,7 @@ public:
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml.second);
 
-        sub_map_overlay_.push_back(nh_->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             layer_xml.first, 1,
             boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
       }
@@ -349,7 +347,7 @@ public:
       // Single layer mode for backward-compatibility
       costmap_cspace::MapOverlayMode overlay_mode;
       std::string overlay_mode_str;
-      pnh_->get_parameter_or("overlay_mode", overlay_mode_str, std::string("max"));
+      this->get_parameter_or("overlay_mode", overlay_mode_str, std::string("max"));
       if (overlay_mode_str.compare("overwrite") == 0)
         overlay_mode = costmap_cspace::MapOverlayMode::OVERWRITE;
       else if (overlay_mode_str.compare("max") == 0)
@@ -368,7 +366,7 @@ public:
 
       auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
       layer->loadConfig(layer_xml);
-      sub_map_overlay_.push_back(nh_->create_subscription<nav_msgs::msg::OccupancyGrid>(
+      sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
           "map_overlay", 1,
           boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
     }

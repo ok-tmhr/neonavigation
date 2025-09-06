@@ -44,8 +44,6 @@
 class Pointcloud2ToMapNode : public rclcpp::Node
 {
 private:
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
@@ -72,40 +70,41 @@ public:
     , tfl_(tfbuf_)
     , accums_(2)
   {
-      pnh_->get_parameter_or("z_min", z_min_, 0.1);
-    pnh_->get_parameter_or("z_max", z_max_, 1.0);
-    pnh_->get_parameter_or("global_frame", global_frame_, std::string("map"));
-    pnh_->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
+      this->get_parameter_or("z_min", z_min_, 0.1);
+    this->get_parameter_or("z_max", z_max_, 1.0);
+    this->get_parameter_or("global_frame", global_frame_, std::string("map"));
+    this->get_parameter_or("robot_frame", robot_frame_, std::string("base_link"));
 
     double accum_duration;
-    pnh_->get_parameter_or("accum_duration", accum_duration, 1.0);
+    this->get_parameter_or("accum_duration", accum_duration, 1.0);
     accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map_local",
         rclcpp::QoS(1).transient_local());
-    sub_cloud_ = nh_->create_subscription<sensor_msgs::msg::PointCloud2>(
+    using std::placeholders::_1;
+    sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud", 100,
         boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, false));
-    sub_cloud_single_ = nh_->create_subscription<sensor_msgs::msg::PointCloud2>(
+    sub_cloud_single_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud_singleshot", 100,
         boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, true));
 
     int width_param;
-    pnh_->get_parameter_or("width", width_param, 30);
+    this->get_parameter_or("width", width_param, 30);
     height_ = width_ = width_param;
     map_.header.frame_id = global_frame_;
 
     double resolution;
-    pnh_->get_parameter_or("resolution", resolution, 0.1);
+    this->get_parameter_or("resolution", resolution, 0.1);
     map_.info.resolution = resolution;
     map_.info.width = width_;
     map_.info.height = height_;
     map_.data.resize(map_.info.width * map_.info.height);
 
     double hz;
-    pnh_->get_parameter_or("hz", hz, 1.0);
+    this->get_parameter_or("hz", hz, 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
   }
 

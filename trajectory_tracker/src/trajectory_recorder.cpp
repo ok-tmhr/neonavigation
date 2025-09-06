@@ -65,8 +65,6 @@ private:
   double ang_interval_;
   bool store_time_;
 
-  rclcpp::Node::SharedPtr nh_;
-  rclcpp::Node::SharedPtr pnh_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   tf2_ros::Buffer tfbuf_;
   tf2_ros::TransformListener tfl_;
@@ -87,7 +85,7 @@ RecorderNode::RecorderNode() : Node("trajectory_recorder")
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(10).transient_local());
-  srs_clear_path_ = pnh_->create_service<std_srvs::srv::Empty>("clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
+  srs_clear_path_ = this->create_service<std_srvs::srv::Empty>("~/clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 RecorderNode::~RecorderNode()
