@@ -33,7 +33,7 @@
 
 #include <gtest/gtest.h>
 
-#include <actionlib/client/simple_action_client.h>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <planner_cspace_msgs/action/move_with_tolerance.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>

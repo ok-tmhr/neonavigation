@@ -37,7 +37,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <actionlib/client/simple_action_client.h>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav_msgs/srv/get_plan.hpp>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
@@ -103,7 +103,7 @@ public:
   }
 
 protected:
-  using ActionClient = actionlib::SimpleActionClient<ACTION>;
+  using ActionClient = rclcpp_action::Client<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
   void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
@@ -122,7 +122,7 @@ protected:
   }
 
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Subscription<>::SharedPtr sub_status_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   tf2_ros::Buffer tfbuf_;

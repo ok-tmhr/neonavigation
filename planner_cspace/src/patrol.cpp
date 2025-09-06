@@ -31,7 +31,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <rclcpp_action/client.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <planner_cspace_msgs/action/move_with_tolerance.hpp>
 #include <nav_msgs/msg/path.hpp>

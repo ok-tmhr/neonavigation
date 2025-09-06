@@ -33,7 +33,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
-#include <actionlib/client/simple_action_client.h>
+#include <rclcpp_action/rclcpp_action.hpp>
 
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav_msgs/msg/path.hpp>
@@ -45,7 +45,7 @@
 class NavigateBoundary : public ::testing::Test
 {
 protected:
-  using ActionClient = actionlib::SimpleActionClient<nav2_msgs::action::NavigateToPose>;
+  using ActionClient = rclcpp_action::Client<nav2_msgs::action::NavigateToPose>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
   rclcpp::Node::SharedPtr nh_;
