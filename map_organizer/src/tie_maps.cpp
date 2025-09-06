@@ -223,7 +223,7 @@ public:
                map_resp.map.info.resolution);
       maps.maps.push_back(map_resp.map);
       pub_map_.push_back(nh_->create_publisher<nav_msgs::msg::OccupancyGrid>(
-          "map" + std::to_string(i), 1, true));
+          "map" + std::to_string(i), rclcpp::QoS(1).transient_local()));
       pub_map_.back()->publish(map_resp.map);
       i++;
     }
