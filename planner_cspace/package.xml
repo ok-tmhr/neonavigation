@@ -1,25 +1,26 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>planner_cspace</name>
-  <version>0.18.2</version>
+  <version>0.1.0</version>
   <description>3-dof configuration space planner for mobile robot</description>
 
-  <maintainer email="atsushi.w@ieee.org">Atsushi Watanabe</maintainer>
+  <maintainer email="tomohiro.oku2023@gmail.com">Tomohiro Oku</maintainer>
   <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+  <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>roscpp</depend>
+  <depend>rclcpp</depend>
 
-  <test_depend>roslint</test_depend>
-  <test_depend>rostest</test_depend>
-  <test_depend>map_server</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>nav2_map_server</test_depend>
   <test_depend>trajectory_tracker</test_depend>
 
-  <depend>actionlib</depend>
+  <depend>rclcpp_action</depend>
   <depend>diagnostic_updater</depend>
-  <depend>dynamic_reconfigure</depend>
   <depend>geometry_msgs</depend>
   <depend>nav2_msgs</depend>
   <depend>nav_msgs</depend>
@@ -32,9 +33,8 @@
 
   <depend>costmap_cspace</depend>
   <depend>costmap_cspace_msgs</depend>
-  <depend>neonavigation_common</depend>
   <depend>neonavigation_metrics_msgs</depend>
-  <depend version_gte="0.12.0">planner_cspace_msgs</depend>
+  <depend>planner_cspace_msgs</depend>
   <depend>trajectory_tracker</depend>
   <depend>trajectory_tracker_msgs</depend>
 </package>

@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(costmap_cspace)
 
-set(CATKIN_DEPENDS
-  roscpp
+set(COLCON_DEPENDS
+  rclcpp
 
   geometry_msgs
   laser_geometry
@@ -13,15 +13,16 @@ set(CATKIN_DEPENDS
   tf2_sensor_msgs
 
   costmap_cspace_msgs
-  neonavigation_common
 )
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
-find_package(xmlrpcpp REQUIRED)
+find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
+endforeach()
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES costmap_3d_layers
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
+  COLCON_DEPENDS ${COLCON_DEPENDS}
 )
 
 
@@ -52,13 +53,12 @@ target_link_libraries(largemap_to_map ${catkin_LIBRARIES})
 add_dependencies(largemap_to_map ${catkin_EXPORTED_TARGETS})
 
 
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
   add_subdirectory(test)
 
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
 endif()
 
 
@@ -68,11 +68,13 @@ install(TARGETS
     laserscan_to_map
     pointcloud2_to_map
     costmap_3d_layers
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+install(DIRECTORY include
+  DESTINATION include
 )
+
+ament_package()

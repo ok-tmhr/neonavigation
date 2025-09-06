@@ -13,7 +13,7 @@ add_executable(planner_3d_debug
 )
 target_compile_definitions(planner_3d_debug PUBLIC DEBUG)
 target_link_libraries(planner_3d_debug ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d_debug ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
+add_dependencies(planner_3d_debug ${catkin_EXPORTED_TARGETS})
 
 catkin_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${catkin_LIBRARIES} ${Boost_LIBRARIES})

@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(planner_cspace)
 
-set(CATKIN_DEPENDS
-  roscpp
+set(COLCON_DEPENDS
+  rclcpp
 
-  actionlib
+  rclcpp_action
   diagnostic_updater
   dynamic_reconfigure
   geometry_msgs
@@ -19,14 +19,17 @@ set(CATKIN_DEPENDS
 
   costmap_cspace
   costmap_cspace_msgs
-  neonavigation_common
   neonavigation_metrics_msgs
   planner_cspace_msgs
   trajectory_tracker
   trajectory_tracker_msgs
 )
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
+find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
+endforeach()
+
 find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
 
@@ -36,7 +39,7 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
+  COLCON_DEPENDS ${COLCON_DEPENDS}
 )
 
 
@@ -58,7 +61,7 @@ add_executable(planner_3d
   src/start_pose_predictor.cpp
 )
 target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
+add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
@@ -85,12 +88,11 @@ target_link_libraries(patrol ${catkin_LIBRARIES})
 add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
 
 
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
   add_subdirectory(test)
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
 endif()
 
 
@@ -99,8 +101,11 @@ install(TARGETS
     patrol
     planner_2dof_serial_joints
     planner_3d
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  PUBLIC_HEADER DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  PUBLIC_HEADER DESTINATION include
 )
+
+ament_package()
+
