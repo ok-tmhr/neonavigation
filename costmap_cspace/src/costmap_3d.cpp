@@ -27,6 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>

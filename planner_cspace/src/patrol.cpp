@@ -122,9 +122,9 @@ public:
     {
       nav2_msgs::action::NavigateToPose::Goal goal;
 
-      goal.target_pose.header = path_.poses[pos_].header;
-      goal.target_pose.header.stamp = this->now();
-      goal.target_pose.pose = path_.poses[pos_].pose;
+      goal.pose.header = path_.poses[pos_].header;
+      goal.pose.header.stamp = this->now();
+      goal.pose.pose = path_.poses[pos_].pose;
 
       act_cli_->async_send_goal(goal);
     }

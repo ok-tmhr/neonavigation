@@ -29,6 +29,8 @@
 
 #include <string>
 
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>

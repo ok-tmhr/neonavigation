@@ -39,6 +39,8 @@
 #include <fstream>
 #include <string>
 
+#include <boost/bind.hpp>
+#include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>

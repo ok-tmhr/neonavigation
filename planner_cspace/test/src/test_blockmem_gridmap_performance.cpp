@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <memory>
 
+#include <boost/chrono.hpp>
 #include <gtest/gtest.h>
 
 #include <planner_cspace/blockmem_gridmap.h>

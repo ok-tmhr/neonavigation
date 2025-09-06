@@ -208,12 +208,12 @@ public:
     this->get_parameter_or("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
 
     XmlRpc::XmlRpcValue footprint_xml;
-    if (!pnh_->has_parameter("footprint"))
+    if (!this->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
     }
-    pnh_->get_parameter("footprint", footprint_xml);
+    this->get_parameter("footprint", footprint_xml);
     if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
     {
       RCLCPP_FATAL(this->get_logger(), "Invalid footprint");

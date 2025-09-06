@@ -30,10 +30,11 @@
 #include <cmath>
 #include <string>
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 
 #include <gtest/gtest.h>
 

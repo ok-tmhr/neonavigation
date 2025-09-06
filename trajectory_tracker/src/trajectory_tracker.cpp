@@ -49,6 +49,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -300,7 +301,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
   {
     if (odom_timeout_timer_)
     {
-      odom_timeout_timer_.setPeriod(rclcpp::Duration::from_seconds(odom_timeout_sec_), true);
+      odom_timeout_timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), true);
     }
     else
     {
@@ -385,7 +386,7 @@ void TrackerNode::spin()
   rclcpp::TimerBase::SharedPtr timer;
   if (!use_odom_)
   {
-    timer = this->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), &TrackerNode::cbTimer, this);
+    timer = this->create_wall_timer(rclcpp::Duration::from_seconds(1.0 / hz_), std::bind(&TrackerNode::cbTimer, this));
   }
   rclcpp::spin(shared_from_this());
 }

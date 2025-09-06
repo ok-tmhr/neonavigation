@@ -27,13 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 
-#include <topic_tools/shape_shifter.h>
+// #include <topic_tools/shape_shifter.h>
 
 
-class JoystickMux
+class JoystickMux : public rclcpp::Node
 {
 private:
   rclcpp::Subscription<>::SharedPtr sub_topics_[2];
@@ -73,8 +75,6 @@ private:
       if (!advertised_)
       {
         advertised_ = true;
-        if (neonavigation_common::compat::getCompat() !=
-            neonavigation_common::compat::current_level)
         {
           RCLCPP_ERROR(this->get_logger(),
               "Use %s (%s%s) topic instead of %s (%s%s)",
@@ -85,10 +85,6 @@ private:
               neonavigation_common::compat::getSimplifiedNamespace(pnh_).c_str(),
               "output");
           pub_topic_ = msg->advertise(pnh_, "output", 1, false);
-        }
-        else
-        {
-          pub_topic_ = msg->advertise("mux_output", 1, false);
         }
       }
       pub_topic_->publish(*msg);
@@ -118,7 +114,7 @@ public:
     this->get_parameter_or("timeout", timeout_, 0.5);
     last_joy_msg_ = this->now();
 
-    timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(0.1), &JoystickMux::cbTimer, this);
+    timer_ = this->create_wall_timer(rclcpp::Duration::from_seconds(0.1), std::bind(&JoystickMux::cbTimer, this));
 
     advertised_ = false;
     selected_ = 0;

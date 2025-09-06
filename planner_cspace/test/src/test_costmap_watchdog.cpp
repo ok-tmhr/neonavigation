@@ -29,6 +29,7 @@
 
 #include <string>
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_msgs/DiagnosticArray.h>

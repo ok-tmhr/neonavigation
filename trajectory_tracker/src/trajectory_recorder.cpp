@@ -108,7 +108,6 @@ void RecorderNode::spin()
 {
   rclcpp::Rate loop_rate(50);
   path_.header.frame_id = frame_global_;
-  path_.header.seq = 0;
 
   while (rclcpp::ok())
   {
@@ -136,9 +135,7 @@ void RecorderNode::spin()
     pose.pose.position.z = origin.z();
     pose.header.frame_id = frame_global_;
     pose.header.stamp = now;
-    pose.header.seq = path_.poses.size();
 
-    path_.header.seq++;
     path_.header.stamp = now;
 
     if (path_.poses.size() == 0)

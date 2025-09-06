@@ -35,6 +35,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
@@ -296,31 +297,23 @@ public:
     bool enable_tcp_no_delay;
     this->get_parameter_or("enable_tcp_no_delay", enable_tcp_no_delay, true);
     const rclcpp::QoS transport_hints =
-        enable_tcp_no_delay ? rclcpp::QoS() : rclcpp::QoS().best_effort();
+        enable_tcp_no_delay ? rclcpp::QoS(50) : rclcpp::QoS(50).best_effort();
 
     this->get_parameter_or("without_odom", without_odom_, false);
     if (without_odom_)
     {
       sub_imu_raw_ = this->create_subscription<sensor_msgs::msg::Imu>(
           "imu/data",
-          64, &TrackOdometryNode::cbImu, this);
+          64, std::bind(&TrackOdometryNode::cbImu, this, _1));
       this->get_parameter_or("base_link_id", base_link_id_, std::string("base_link"));
       this->get_parameter_or("odom_id", odom_id_, std::string("odom"));
     }
     else
     {
       sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::msg::Odometry>("odom_raw", 50, transport_hints));
-      if (neonavigation_common::compat::getCompat() == neonavigation_common::compat::current_level)
-      {
-        sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu/data", 50, transport_hints));
-      }
-      else
-      {
-        sub_imu_.reset(
-            new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu", 50, transport_hints));
-      }
+          new message_filters::Subscriber<nav_msgs::msg::Odometry>("odom_raw", transport_hints));
+      sub_imu_.reset(
+          new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu/data", transport_hints));
 
       int sync_window;
       this->get_parameter_or("sync_window", sync_window, 50);
@@ -335,7 +328,7 @@ public:
     sub_reset_z_ = this->create_subscription<std_msgs::msg::Float32>(
         "reset_odometry_z",
         1, std::bind(&TrackOdometryNode::cbResetZ, this, std::placeholders::_1));
-    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
+    pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
     if (this->has_parameter("z_filter"))
     {
@@ -399,7 +392,7 @@ public:
     else
     {
       rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
-          rclcpp::Duration::from_seconds(1.0 / 50.0), &TrackOdometryNode::cbTimer, this);
+          rclcpp::Duration::from_seconds(1.0 / 50.0), std::bind(&TrackOdometryNode::cbTimer, this));
       rclcpp::spin(shared_from_this());
     }
   }
