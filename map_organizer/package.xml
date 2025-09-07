@@ -31,4 +31,7 @@
 
   <build_depend>libpcl-all-dev</build_depend>
   <exec_depend>libpcl-all</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

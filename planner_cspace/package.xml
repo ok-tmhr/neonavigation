@@ -37,4 +37,7 @@
   <depend>planner_cspace_msgs</depend>
   <depend>trajectory_tracker</depend>
   <depend>trajectory_tracker_msgs</depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
