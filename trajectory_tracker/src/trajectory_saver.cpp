@@ -64,7 +64,7 @@ private:
 SaverNode::SaverNode() : Node("trajectory_saver")
   , saved_(false)
 {
-  this->get_parameter_or("file", filename_, std::string("a.path"));
+  this->declare_parameter("file", filename_, std::string("a.path"));
 
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",

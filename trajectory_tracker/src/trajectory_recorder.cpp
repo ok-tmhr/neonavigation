@@ -75,11 +75,11 @@ private:
 
 RecorderNode::RecorderNode() : Node("trajectory_recorder")
 {
-  this->get_parameter_or("frame_robot", frame_robot_, std::string("base_link"));
-  this->get_parameter_or("frame_global", frame_global_, std::string("map"));
-  this->get_parameter_or("dist_interval", dist_interval_, 0.3);
-  this->get_parameter_or("ang_interval", ang_interval_, 1.0);
-  this->get_parameter_or("store_time", store_time_, false);
+  this->declare_parameter("frame_robot", frame_robot_, std::string("base_link"));
+  this->declare_parameter("frame_global", frame_global_, std::string("map"));
+  this->declare_parameter("dist_interval", dist_interval_, 0.3);
+  this->declare_parameter("ang_interval", ang_interval_, 1.0);
+  this->declare_parameter("store_time", store_time_, false);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",

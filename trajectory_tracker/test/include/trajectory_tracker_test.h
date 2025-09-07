@@ -136,11 +136,11 @@ public:
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10).transient_local());
 
     double delay;
-    pnh_->get_parameter_or("odom_delay", delay, 0.0);
+    pnh_->declare_parameter("odom_delay", delay, 0.0);
     delay_ = rclcpp::Duration::from_seconds(delay);
-    pnh_->get_parameter_or("error_lin", error_lin_, 0.01);
-    pnh_->get_parameter_or("error_large_lin", error_large_lin_, 0.1);
-    pnh_->get_parameter_or("error_ang", error_ang_, 0.01);
+    pnh_->declare_parameter("error_lin", error_lin_, 0.01);
+    pnh_->declare_parameter("error_large_lin", error_large_lin_, 0.1);
+    pnh_->declare_parameter("error_ang", error_ang_, 0.01);
 
     dynamic_reconfigure_client_.reset(new dynamic_reconfigure::Client<ParamType>("/trajectory_tracker"));
 

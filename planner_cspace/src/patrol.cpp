@@ -79,10 +79,10 @@ public:
         "patrol_nodes",
         1, std::bind(&PatrolActionNode::cbPath, this, std::placeholders::_1));
 
-    this->get_parameter_or("with_tolerance", with_tolerance_, false);
-    this->get_parameter_or("tolerance_lin", tolerance_lin_, 0.1);
-    this->get_parameter_or("tolerance_ang", tolerance_ang_, 0.1);
-    this->get_parameter_or("tolerance_ang_finish", tolerance_ang_finish_, 0.05);
+    this->declare_parameter("with_tolerance", with_tolerance_, false);
+    this->declare_parameter("tolerance_lin", tolerance_lin_, 0.1);
+    this->declare_parameter("tolerance_ang", tolerance_ang_, 0.1);
+    this->declare_parameter("tolerance_ang_finish", tolerance_ang_finish_, 0.05);
 
     if (with_tolerance_)
     {

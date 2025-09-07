@@ -175,7 +175,7 @@ public:
         1, std::bind(&SafetyLimiterNode::cbWatchdogReset, this, _1));
 
     int num_input_clouds;
-    this->get_parameter_or("num_input_clouds", num_input_clouds, 1);
+    this->declare_parameter("num_input_clouds", num_input_clouds, 1);
     if (num_input_clouds == 1)
     {
       sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -193,13 +193,13 @@ public:
 
     if (this->has_parameter("t_margin"))
       RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
-    this->get_parameter_or("base_frame", base_frame_id_, std::string("base_link"));
-    this->get_parameter_or("fixed_frame", fixed_frame_id_, std::string("odom"));
+    this->declare_parameter("base_frame", base_frame_id_, std::string("base_link"));
+    this->declare_parameter("fixed_frame", fixed_frame_id_, std::string("odom"));
     double watchdog_interval_d;
-    this->get_parameter_or("watchdog_interval", watchdog_interval_d, 0.0);
+    this->declare_parameter("watchdog_interval", watchdog_interval_d, 0.0);
     watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
-    this->get_parameter_or("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
-    this->get_parameter_or("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
+    this->declare_parameter("max_linear_vel", max_values_[0], std::numeric_limits<double>::infinity());
+    this->declare_parameter("max_angular_vel", max_values_[1], std::numeric_limits<double>::infinity());
 
     XmlRpc::XmlRpcValue footprint_xml;
     if (!this->has_parameter("footprint"))

@@ -95,9 +95,9 @@ ServerNode::ServerNode() : Node("trajectory_server")
   , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
-  this->get_parameter_or("file", req_path_.filename, std::string("a.path"));
-  this->get_parameter_or("hz", hz_, 5.0);
-  this->get_parameter_or("filter_step", filter_step_, 0.0);
+  this->declare_parameter("file", req_path_.filename, std::string("a.path"));
+  this->declare_parameter("hz", hz_, 5.0);
+  this->declare_parameter("filter_step", filter_step_, 0.0);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",

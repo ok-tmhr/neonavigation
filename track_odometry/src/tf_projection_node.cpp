@@ -71,25 +71,25 @@ public:
           "tf_projection parameters \"base_link_frame\", \"projection_frame\", \"target_frame\", and \"frame\" "
           "are replaced by \"source_frame\", \"projection_surface_frame\", \"parent_frame\", and \"projected_frame\"");
 
-      this->get_parameter_or("base_link_frame", source_frame_, std::string("base_link"));
-      this->get_parameter_or("projection_frame", projection_surface_frame_, std::string("map"));
-      this->get_parameter_or("target_frame", parent_frame_, std::string("map"));
-      this->get_parameter_or("frame", projected_frame_, std::string("base_link_projected"));
+      this->declare_parameter("base_link_frame", source_frame_, std::string("base_link"));
+      this->declare_parameter("projection_frame", projection_surface_frame_, std::string("map"));
+      this->declare_parameter("target_frame", parent_frame_, std::string("map"));
+      this->declare_parameter("frame", projected_frame_, std::string("base_link_projected"));
     }
     else
     {
-      this->get_parameter_or("source_frame", source_frame_, std::string("base_link"));
-      this->get_parameter_or("projection_surface_frame", projection_surface_frame_, std::string("map"));
-      this->get_parameter_or("parent_frame", parent_frame_, std::string("map"));
-      this->get_parameter_or("projected_frame", projected_frame_, std::string("base_link_projected"));
+      this->declare_parameter("source_frame", source_frame_, std::string("base_link"));
+      this->declare_parameter("projection_surface_frame", projection_surface_frame_, std::string("map"));
+      this->declare_parameter("parent_frame", parent_frame_, std::string("map"));
+      this->declare_parameter("projected_frame", projected_frame_, std::string("base_link_projected"));
     }
 
-    this->get_parameter_or("hz", rate_, 10.0);
-    this->get_parameter_or("tf_tolerance", tf_tolerance_, 0.1);
-    this->get_parameter_or("flat", flat_, false);
+    this->declare_parameter("hz", rate_, 10.0);
+    this->declare_parameter("tf_tolerance", tf_tolerance_, 0.1);
+    this->declare_parameter("flat", flat_, false);
 
-    this->get_parameter_or("project_posture", project_posture_, false);
-    this->get_parameter_or("align_all_posture_to_source", align_all_posture_to_source_, false);
+    this->declare_parameter("project_posture", project_posture_, false);
+    this->declare_parameter("align_all_posture_to_source", align_all_posture_to_source_, false);
 
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
