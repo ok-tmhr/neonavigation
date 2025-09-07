@@ -15,7 +15,7 @@ set(COLCON_DEPENDS
   trajectory_tracker_msgs
 )
 
-find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
+find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
@@ -33,8 +33,7 @@ add_executable(trajectory_tracker src/trajectory_tracker.cpp)
 target_include_directories(trajectory_tracker PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(trajectory_tracker)
-add_dependencies(trajectory_tracker)
+ament_target_dependencies(trajectory_tracker Eigen3 ${COLCON_DEPENDS})
 
 add_executable(trajectory_recorder src/trajectory_recorder.cpp)
 target_include_directories(trajectory_recorder PUBLIC
