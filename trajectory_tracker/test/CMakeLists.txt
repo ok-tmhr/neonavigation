@@ -14,12 +14,12 @@ target_link_libraries(test_${PROJECT_NAME}_path2d)
 add_rostest_gtest(test_trajectory_recorder test/trajectory_recorder_rostest.test
     src/test_trajectory_recorder.cpp)
 target_link_libraries(test_trajectory_recorder)
-add_dependencies(test_trajectory_recorder trajectory_recorder)
+ament_target_dependencies(test_trajectory_recorder trajectory_recorder)
 
 add_rostest_gtest(test_trajectory_tracker test/trajectory_tracker_rostest.test
     src/test_trajectory_tracker.cpp)
 target_link_libraries(test_trajectory_tracker ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker trajectory_tracker)
+ament_target_dependencies(test_trajectory_tracker trajectory_tracker)
 
 add_rostest(test/trajectory_tracker_rostest.test
   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=true
@@ -34,9 +34,9 @@ add_rostest(test/trajectory_tracker_rostest.test
 add_rostest_gtest(test_trajectory_tracker_with_odom test/trajectory_tracker_with_odom_rostest.test
     src/test_trajectory_tracker_with_odom.cpp)
 target_link_libraries(test_trajectory_tracker_with_odom ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)
+ament_target_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)
 
 add_rostest_gtest(test_trajectory_tracker_overshoot test/trajectory_tracker_overshoot_rostest.test
     src/test_trajectory_tracker_overshoot.cpp)
 target_link_libraries(test_trajectory_tracker_overshoot ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker_overshoot trajectory_tracker)
+ament_target_dependencies(test_trajectory_tracker_overshoot trajectory_tracker)

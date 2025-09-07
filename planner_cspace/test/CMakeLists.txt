@@ -13,7 +13,7 @@ add_executable(planner_3d_debug
 )
 target_compile_definitions(planner_3d_debug PUBLIC DEBUG)
 target_link_libraries(planner_3d_debug ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d_debug)
+ament_target_dependencies(planner_3d_debug)
 
 ament_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
 target_link_libraries(test_blockmem_gridmap ${Boost_LIBRARIES})
@@ -90,14 +90,14 @@ add_rostest_gtest(test_debug_outputs
   src/test_debug_outputs.cpp
 )
 target_link_libraries(test_debug_outputs)
-add_dependencies(test_debug_outputs planner_3d)
+ament_target_dependencies(test_debug_outputs planner_3d)
 
 add_rostest_gtest(test_navigate
   test/navigation_rostest.test
   src/test_navigate.cpp
 )
 target_link_libraries(test_navigate)
-add_dependencies(test_navigate planner_3d patrol)
+ament_target_dependencies(test_navigate planner_3d patrol)
 
 add_rostest(test/navigation_rostest.test
   ARGS antialias_start:=true
@@ -124,7 +124,7 @@ add_rostest_gtest(test_navigate_remember
   src/test_navigate_remember.cpp
 )
 target_link_libraries(test_navigate_remember)
-add_dependencies(test_navigate_remember planner_3d patrol)
+ament_target_dependencies(test_navigate_remember planner_3d patrol)
 
 add_rostest(test/navigation_compat_rostest.test
   DEPENDENCIES test_navigate
@@ -135,56 +135,56 @@ add_rostest_gtest(test_navigate_boundary
   src/test_navigate_boundary.cpp
 )
 target_link_libraries(test_navigate_boundary)
-add_dependencies(test_navigate_boundary planner_3d_debug)
+ament_target_dependencies(test_navigate_boundary planner_3d_debug)
 
 add_rostest_gtest(test_abort
   test/abort_rostest.test
   src/test_abort.cpp
 )
 target_link_libraries(test_abort)
-add_dependencies(test_abort planner_3d)
+ament_target_dependencies(test_abort planner_3d)
 
 add_rostest_gtest(test_preempt
   test/preempt_rostest.test
   src/test_preempt.cpp
 )
 target_link_libraries(test_preempt)
-add_dependencies(test_preempt planner_3d)
+ament_target_dependencies(test_preempt planner_3d)
 
 add_rostest_gtest(test_costmap_watchdog
   test/costmap_watchdog_rostest.test
   src/test_costmap_watchdog.cpp
 )
 target_link_libraries(test_costmap_watchdog)
-add_dependencies(test_costmap_watchdog planner_3d)
+ament_target_dependencies(test_costmap_watchdog planner_3d)
 
 add_rostest_gtest(test_planner_2dof_serial_joints
   test/planner_2dof_serial_joints_rostest.test
   src/test_planner_2dof_serial_joints.cpp
 )
 target_link_libraries(test_planner_2dof_serial_joints)
-add_dependencies(test_planner_2dof_serial_joints planner_2dof_serial_joints)
+ament_target_dependencies(test_planner_2dof_serial_joints planner_2dof_serial_joints)
 
 add_rostest_gtest(test_planner_3d_map_size
   test/planner_3d_map_size_rostest.test
   src/test_planner_3d_map_size.cpp
 )
 target_link_libraries(test_planner_3d_map_size)
-add_dependencies(test_planner_3d_map_size planner_3d)
+ament_target_dependencies(test_planner_3d_map_size planner_3d)
 
 add_rostest_gtest(test_tolerant_action
   test/tolerant_action_rostest.test
   src/test_tolerant_action.cpp
 )
 target_link_libraries(test_tolerant_action)
-add_dependencies(test_tolerant_action planner_3d)
+ament_target_dependencies(test_tolerant_action planner_3d)
 
 add_rostest_gtest(test_dynamic_parameter_change
   test/dynamic_parameter_change_rostest.test
   src/test_dynamic_parameter_change.cpp
 )
 target_link_libraries(test_dynamic_parameter_change)
-add_dependencies(test_dynamic_parameter_change planner_3d)
+ament_target_dependencies(test_dynamic_parameter_change planner_3d)
 
 if(NEONAVIGATION_EXTRA_TESTS)
 

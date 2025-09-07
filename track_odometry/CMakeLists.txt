@@ -34,14 +34,14 @@ target_include_directories(track_odometry PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(track_odometry)
-add_dependencies(track_odometry)
+ament_target_dependencies(track_odometry)
 
 add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
 target_include_directories(tf_projection PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(tf_projection)
-add_dependencies(tf_projection)
+ament_target_dependencies(tf_projection)
 
 
 if(BUILD_TESTING)

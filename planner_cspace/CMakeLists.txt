@@ -53,7 +53,7 @@ target_include_directories(planner_3d PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(planner_3d ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d)
+ament_target_dependencies(planner_3d)
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
@@ -72,21 +72,21 @@ target_include_directories(planner_2dof_serial_joints PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(planner_2dof_serial_joints ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_2dof_serial_joints)
+ament_target_dependencies(planner_2dof_serial_joints)
 
 add_executable(dummy_robot src/dummy_robot.cpp)
 target_include_directories(dummy_robot PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(dummy_robot)
-add_dependencies(dummy_robot)
+ament_target_dependencies(dummy_robot)
 
 add_executable(patrol src/patrol.cpp)
 target_include_directories(patrol PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(patrol)
-add_dependencies(patrol)
+ament_target_dependencies(patrol)
 
 
 if(BUILD_TESTING)

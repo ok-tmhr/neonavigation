@@ -61,35 +61,35 @@ target_include_directories(pointcloud_to_maps PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(pointcloud_to_maps ${PCL_LIBRARIES})
-add_dependencies(pointcloud_to_maps)
+ament_target_dependencies(pointcloud_to_maps)
 
 add_executable(tie_maps src/tie_maps.cpp)
 target_include_directories(tie_maps PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(tie_maps yaml-cpp ${PCL_LIBRARIES})
-add_dependencies(tie_maps)
+ament_target_dependencies(tie_maps)
 
 add_executable(save_maps src/save_maps.cpp)
 target_include_directories(save_maps PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(save_maps ${PCL_LIBRARIES})
-add_dependencies(save_maps)
+ament_target_dependencies(save_maps)
 
 add_executable(select_map src/select_map.cpp)
 target_include_directories(select_map PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(select_map ${PCL_LIBRARIES})
-add_dependencies(select_map)
+ament_target_dependencies(select_map)
 
 add_executable(pose_transform src/pose_transform.cpp)
 target_include_directories(pose_transform PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(pose_transform ${PCL_LIBRARIES})
-add_dependencies(pose_transform)
+ament_target_dependencies(pose_transform)
 
 
 if(BUILD_TESTING)

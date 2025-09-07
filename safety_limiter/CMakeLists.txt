@@ -55,7 +55,7 @@ target_include_directories(safety_limiter PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(safety_limiter ${PCL_LIBRARIES})
-add_dependencies(safety_limiter)
+ament_target_dependencies(safety_limiter)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)

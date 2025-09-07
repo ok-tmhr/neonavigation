@@ -49,7 +49,7 @@ target_include_directories(obj_to_pointcloud PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(obj_to_pointcloud ${PCL_LIBRARIES})
-add_dependencies(obj_to_pointcloud)
+ament_target_dependencies(obj_to_pointcloud)
 
 
 if(BUILD_TESTING)
