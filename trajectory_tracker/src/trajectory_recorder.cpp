@@ -87,7 +87,7 @@ RecorderNode::RecorderNode() : Node("trajectory_recorder")
   srs_clear_path_ = this->create_service<std_srvs::srv::Empty>("~/clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
 
   tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-  tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+  tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 }
 
 RecorderNode::~RecorderNode()

@@ -60,7 +60,7 @@ public:
         "/planner_3d/status", 10, &ActionTestBase::cbStatus, this);
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp()
   {

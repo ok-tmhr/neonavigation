@@ -239,7 +239,7 @@ public:
     diag_updater_.add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void spin()
   {

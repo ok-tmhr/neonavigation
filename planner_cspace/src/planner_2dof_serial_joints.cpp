@@ -512,7 +512,7 @@ public:
     omp_set_num_threads(num_threads);
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
 private:

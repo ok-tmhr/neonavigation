@@ -1337,7 +1337,7 @@ public:
     act_tolerant_->start();
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
     // cbParameter() with the inital parameters will be called within setCallback().
   }
 

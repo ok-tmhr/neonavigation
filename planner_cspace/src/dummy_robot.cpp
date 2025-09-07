@@ -98,8 +98,8 @@ public:
     sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void spin()
   {

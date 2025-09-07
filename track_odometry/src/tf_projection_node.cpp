@@ -92,9 +92,9 @@ public:
     this->get_parameter_or("align_all_posture_to_source", align_all_posture_to_source_, false);
 
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(tf_buffer_);
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
     tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
-    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   }
   void process()
   {

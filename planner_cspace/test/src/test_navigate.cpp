@@ -102,7 +102,7 @@ protected:
     pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(tfbuf_);
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
   void SetUp() override
