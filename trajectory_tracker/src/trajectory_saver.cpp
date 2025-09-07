@@ -41,6 +41,8 @@
 
 #include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
+#include <rclcpp/serialized_message.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/path.hpp>
@@ -64,7 +66,7 @@ private:
 SaverNode::SaverNode() : Node("trajectory_saver")
   , saved_(false)
 {
-  this->declare_parameter("file", filename_, std::string("a.path"));
+  filename_ = this->declare_parameter("file", std::string("a.path"));
 
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
@@ -86,14 +88,13 @@ void SaverNode::cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
     return;
   }
 
-  uint32_t serial_size = rclcpp::serialization::serializationLength(*msg);
-  RCLCPP_INFO(this->get_logger(), "Size: %d\n", (int)serial_size);
-  boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+  auto serialized_msg = std::make_shared<rclcpp::SerializedMessage>();
+  rclcpp::Serialization<nav_msgs::msg::Path> serializer;
+  serializer.serialize_message(msg.get(), serialized_msg.get());
 
-  rclcpp::serialization::OStream stream(buffer.get(), serial_size);
-  rclcpp::serialization::serialize(stream, *msg);
+  RCLCPP_INFO(this->get_logger(), "Size: %d\n", (int)serialized_msg->size());
 
-  ofs.write(reinterpret_cast<char*>(buffer.get()), serial_size);
+  ofs.write(reinterpret_cast<char*>(serialized_msg->get_rcl_serialized_message().buffer), serialized_msg->size());
 
   saved_ = true;
 }

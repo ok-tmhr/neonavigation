@@ -42,6 +42,8 @@
 #include <boost/bind.hpp>
 #include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
+#include <rclcpp/serialized_message.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <interactive_markers/interactive_marker_server.hpp>
@@ -65,7 +67,7 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>::SharedPtr pub_status_;
   rclcpp::Service<trajectory_tracker_msgs::srv::ChangePath>::SharedPtr srv_change_path_;
-  interactive_markers::InteractiveMarkerServer srv_im_fb_;
+  std::shared_ptr<interactive_markers::InteractiveMarkerServer> srv_im_fb_;
 
   nav_msgs::msg::Path path_;
   trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
@@ -92,12 +94,11 @@ private:
 };
 
 ServerNode::ServerNode() : Node("trajectory_server")
-  , srv_im_fb_("trajectory_server")
   , buffer_(new uint8_t[1024])
 {
-  this->declare_parameter("file", req_path_.filename, std::string("a.path"));
-  this->declare_parameter("hz", hz_, 5.0);
-  this->declare_parameter("filter_step", filter_step_, 0.0);
+  req_path_.filename = this->declare_parameter("file", std::string("a.path"));
+  hz_ = this->declare_parameter("hz", 5.0);
+  filter_step_ = this->declare_parameter("filter_step", 0.0);
 
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",
@@ -108,6 +109,8 @@ ServerNode::ServerNode() : Node("trajectory_server")
       std::bind(&ServerNode::change, this, std::placeholders::_1, std::placeholders::_2));
   update_num_ = 0;
   max_markers_ = 0;
+
+  srv_im_fb_ = std::make_shared<interactive_markers::InteractiveMarkerServer>(this->get_namespace(), this);
 }
 ServerNode::~ServerNode()
 {
@@ -164,7 +167,7 @@ void ServerNode::updateIM()
   viz.type = viz.KEEP_ALIVE;
   viz.seq_num = update_num_++;
   viz.server_id = "Path";
-  srv_im_fb_.clear();
+  srv_im_fb_->clear();
   int i = 0;
   for (auto& p : path_.poses)
   {
@@ -220,23 +223,25 @@ void ServerNode::updateIM()
     menu.title = "Add";
 
     mark.menu_entries.push_back(menu);
-    srv_im_fb_.insert(mark, boost::bind(&ServerNode::processFeedback, this, std::placeholders::_1));
+    srv_im_fb_->insert(mark, std::bind(&ServerNode::processFeedback, this, std::placeholders::_1));
     viz.markers.push_back(mark);
   }
-  srv_im_fb_.applyChanges();
+  srv_im_fb_->applyChanges();
 }
 
 bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
                         trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res)
 {
-  req_path_ = req;
-  res.success = false;
+  req_path_ = *req;
+  res->success = false;
 
   if (loadFile())
   {
-    res.success = true;
-    rclcpp::serialization::IStream stream(buffer_.get(), serial_size_);
-    rclcpp::serialization::deserialize(stream, path_);
+    res->success = true;
+    rclcpp::SerializedMessage serialized_msg(serial_size_);
+    std::memcpy(serialized_msg.get_rcl_serialized_message().buffer, buffer_.get(), serial_size_);
+    rclcpp::Serialization<nav_msgs::msg::Path> serializer;
+    serializer.deserialize_message(&serialized_msg, &path_);
     path_.header.stamp = this->now();
     if (filter_step_ > 0)
     {
