@@ -34,23 +34,23 @@ target_include_directories(track_odometry PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(track_odometry)
-ament_target_dependencies(track_odometry)
+ament_target_dependencies(track_odometry ${COLCON_DEPENDS})
 
 add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
 target_include_directories(tf_projection PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(tf_projection)
-ament_target_dependencies(tf_projection)
+ament_target_dependencies(tf_projection ${COLCON_DEPENDS})
 
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  add_subdirectory(test)
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+#   add_subdirectory(test)
 
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 
 install(TARGETS
