@@ -37,7 +37,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/msg/pose.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <tf2/utils.h>
 #include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>

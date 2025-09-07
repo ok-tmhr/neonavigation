@@ -178,7 +178,7 @@ private:
   void cbOdomTimeout();
   void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
   TrackingResult getTrackingResult(
-      const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double) const;
+      const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double);
 };
 
 TrackerNode::TrackerNode() : Node("trajectory_tracker")
@@ -197,10 +197,10 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
       2,
-      boost::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
+      std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
   sub_path_velocity_ = this->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
       "path_velocity", 2,
-      boost::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
+      std::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
   sub_vel_ = this->create_subscription<std_msgs::msg::Float32>(
       "speed",
       20, std::bind(&TrackerNode::cbSpeed, this, _1));
@@ -301,16 +301,9 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
     frame_robot_ = odom->child_frame_id;
   }
   if (odom_timeout_sec_ != 0.0)
-  {
-    if (odom_timeout_timer_)
-    {
-      odom_timeout_timer_ = this->create_wall_timer(std::chrono::duration<double>(odom_timeout_sec_), std::bind(&TrackerNode::cbOdomTimeout, this));
-    }
-    else
     {
       odom_timeout_timer_ =
-          this->create_wall_timer(rclcpp::Duration::from_seconds(odom_timeout_sec_), std::bind(&TrackerNode::cbOdomTimeout, this), true, true);
-    }
+        this->create_wall_timer(std::chrono::duration<double>(odom_timeout_sec_), std::bind(&TrackerNode::cbOdomTimeout, this));
   }
 
   if (prev_odom_stamp_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
@@ -367,6 +360,7 @@ void TrackerNode::cbTimer()
 
 void TrackerNode::cbOdomTimeout()
 {
+  odom_timeout_timer_->cancel();
   RCLCPP_WARN_STREAM(this->get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_.nanoseconds());
   v_lim_.clear();
   w_lim_.clear();
@@ -501,7 +495,7 @@ void TrackerNode::control(
 
 TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     const tf2::Stamped<tf2::Transform>& odom_to_robot, const Eigen::Vector3d& prediction_offset,
-    const double odom_linear_vel, const double odom_angular_vel) const
+    const double odom_linear_vel, const double odom_angular_vel)
 {
   if (path_header_.frame_id.size() == 0 || path_.size() == 0)
   {
@@ -521,7 +515,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     {
       RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(),
           1000, "Timestamp of the transform is too old %f %f",
-          this->now().seconds(), path_to_odom.stamp_.seconds());
+          this->now().seconds(), tf2::timeToSec(path_to_odom.stamp_));
     }
     const float robot_yaw = tf2::getYaw(path_to_robot.getRotation());
     const Eigen::Transform<double, 2, Eigen::TransformTraits::AffineCompact> path_to_robot_2d =
