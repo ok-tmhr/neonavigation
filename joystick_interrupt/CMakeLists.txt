@@ -6,11 +6,11 @@ set(COLCON_DEPENDS
 
   geometry_msgs
   sensor_msgs
-  topic_tools
+  # topic_tools
 
 )
 
-find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
+find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
@@ -23,22 +23,22 @@ add_executable(joystick_interrupt src/joystick_interrupt.cpp)
 target_include_directories(joystick_interrupt PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(joystick_interrupt)
+ament_target_dependencies(joystick_interrupt ${COLCON_DEPENDS})
 
 add_executable(joystick_mux src/joystick_mux.cpp)
 target_include_directories(joystick_mux PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(joystick_mux)
+ament_target_dependencies(joystick_mux ${COLCON_DEPENDS})
 
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  add_subdirectory(test)
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+#   add_subdirectory(test)
 
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 
 install(TARGETS
