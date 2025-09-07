@@ -24,7 +24,7 @@ set(COLCON_DEPENDS
   trajectory_tracker_msgs
 )
 
-find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
+find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()

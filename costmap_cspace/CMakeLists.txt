@@ -15,7 +15,7 @@ set(COLCON_DEPENDS
   costmap_cspace_msgs
 )
 
-find_package(ament_cmake REQUIRED ${COLCON_DEPENDS})
+find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
