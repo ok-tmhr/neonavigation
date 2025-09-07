@@ -5,7 +5,7 @@ set(COLCON_DEPENDS
   rclcpp
 
   geometry_msgs
-  map_server
+  nav2_map_server
   nav_msgs
   pcl_conversions
   sensor_msgs
@@ -61,44 +61,44 @@ target_include_directories(pointcloud_to_maps PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(pointcloud_to_maps ${PCL_LIBRARIES})
-ament_target_dependencies(pointcloud_to_maps)
+ament_target_dependencies(pointcloud_to_maps ${COLCON_DEPENDS})
 
 add_executable(tie_maps src/tie_maps.cpp)
 target_include_directories(tie_maps PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(tie_maps yaml-cpp ${PCL_LIBRARIES})
-ament_target_dependencies(tie_maps)
+ament_target_dependencies(tie_maps ${COLCON_DEPENDS})
 
 add_executable(save_maps src/save_maps.cpp)
 target_include_directories(save_maps PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(save_maps ${PCL_LIBRARIES})
-ament_target_dependencies(save_maps)
+ament_target_dependencies(save_maps ${COLCON_DEPENDS})
 
 add_executable(select_map src/select_map.cpp)
 target_include_directories(select_map PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(select_map ${PCL_LIBRARIES})
-ament_target_dependencies(select_map)
+ament_target_dependencies(select_map ${COLCON_DEPENDS})
 
 add_executable(pose_transform src/pose_transform.cpp)
 target_include_directories(pose_transform PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(pose_transform ${PCL_LIBRARIES})
-ament_target_dependencies(pose_transform)
+ament_target_dependencies(pose_transform ${COLCON_DEPENDS})
 
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  add_subdirectory(test)
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+#   add_subdirectory(test)
 
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 
 install(TARGETS

@@ -48,7 +48,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_;
 
-  void cbPose(const geometry_msgs::msg::PoseWithCovarianceStamped::Ptr& msg)
+  void cbPose(const geometry_msgs::msg::PoseWithCovarianceStamped::Ptr msg)
   {
     try
     {

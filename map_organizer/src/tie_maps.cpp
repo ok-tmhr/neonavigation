@@ -27,6 +27,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+// #define HAVE_NEW_YAMLCPP
+
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
@@ -72,7 +74,7 @@ public:
     double origin[3], height;
     int negate;
     double occ_th, free_th;
-    MapMode mode;
+    nav2_map_server::MapMode mode;
     std::string frame_id;
     files_str = this->declare_parameter("map_files", std::string(""));
     frame_id = this->declare_parameter("frame_id", std::string("map"));
@@ -143,11 +145,11 @@ public:
         doc["mode"] >> modeS;
 
         if (modeS == "trinary")
-          mode = TRINARY;
+          mode = nav2_map_server::MapMode::Trinary;
         else if (modeS == "scale")
-          mode = SCALE;
+          mode = nav2_map_server::MapMode::Scale;
         else if (modeS == "raw")
-          mode = RAW;
+          mode = nav2_map_server::MapMode::Raw;
         else
         {
           RCLCPP_ERROR(this->get_logger(), "Invalid mode tag \"%s\".", modeS.c_str());
@@ -157,7 +159,7 @@ public:
       catch (YAML::Exception& e)
       {
         RCLCPP_DEBUG(this->get_logger(), "The map does not contain a mode tag or it is invalid... assuming trinary: %s", e.what());
-        mode = TRINARY;
+        mode = nav2_map_server::MapMode::Trinary;
       }
       try
       {
@@ -206,21 +208,29 @@ public:
 
       RCLCPP_INFO(this->get_logger(), "Loading map from image \"%s\"", mapfname.c_str());
 
-      nav_msgs::srv::GetMap::Response map_resp;
-      map_server::loadMapFromFile(&map_resp,
-                                  mapfname.c_str(), res, negate, occ_th, free_th, origin, mode);
-      map_resp.map.info.origin.position.z = height;
-      map_resp.map.info.map_load_time = this->now();
-      map_resp.map.header.frame_id = frame_id;
-      map_resp.map.header.stamp = this->now();
+      nav_msgs::msg::OccupancyGrid map_resp;
+      nav2_map_server::LoadParameters load_parameters{
+        .image_file_name = mapfname,
+        .resolution = res,
+        .origin = std::vector<double>(origin, origin + 3),
+        .free_thresh = free_th,
+        .occupied_thresh = occ_th,
+        .mode = mode,
+        .negate = negate
+      };
+      nav2_map_server::loadMapFromFile(load_parameters, map_resp);
+      map_resp.info.origin.position.z = height;
+      map_resp.info.map_load_time = this->now();
+      map_resp.header.frame_id = frame_id;
+      map_resp.header.stamp = this->now();
       RCLCPP_INFO(this->get_logger(), "Read a %d X %d map @ %.3lf m/cell",
-               map_resp.map.info.width,
-               map_resp.map.info.height,
-               map_resp.map.info.resolution);
-      maps.maps.push_back(map_resp.map);
+               map_resp.info.width,
+               map_resp.info.height,
+               map_resp.info.resolution);
+      maps.maps.push_back(map_resp);
       pub_map_.push_back(this->create_publisher<nav_msgs::msg::OccupancyGrid>(
           "map" + std::to_string(i), rclcpp::QoS(1).transient_local()));
-      pub_map_.back()->publish(map_resp.map);
+      pub_map_.back()->publish(map_resp);
       i++;
     }
     pub_map_array_->publish(maps);

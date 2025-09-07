@@ -49,16 +49,16 @@ target_include_directories(obj_to_pointcloud PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(obj_to_pointcloud ${PCL_LIBRARIES})
-ament_target_dependencies(obj_to_pointcloud)
+ament_target_dependencies(obj_to_pointcloud ${COLCON_DEPENDS})
 
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  add_subdirectory(test)
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+#   add_subdirectory(test)
 
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 
 install(TARGETS

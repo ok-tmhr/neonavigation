@@ -41,7 +41,7 @@ map_organizer_msgs::msg::OccupancyGridArray maps;
 std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
 
-void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr& msg)
+void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr msg)
 {
   RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
   maps = *msg;
@@ -52,7 +52,7 @@ void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr& msg)
     map.info.origin.position.z = 0.0;
   }
 }
-void cbFloor(const std_msgs::msg::Int32::Ptr& msg)
+void cbFloor(const std_msgs::msg::Int32::Ptr msg)
 {
   floor_cur = msg->data;
 }
@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
   auto node = rclcpp::Node::make_shared("select_map");
 
-  auto subMaps = node->create_subscription<nav_msgs::msg::OccupancyGrid>(
+  auto subMaps = node->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
       "maps",
       1, cbMaps);
   auto subFloor = node->create_subscription<std_msgs::msg::Int32>(
