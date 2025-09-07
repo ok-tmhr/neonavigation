@@ -62,7 +62,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
-// #include <pcl_ros/transforms.h>
 
 
 namespace safety_limiter
@@ -161,6 +160,7 @@ public:
     , has_twist_(true)
     , has_collision_at_now_(false)
     , stuck_started_since_(rclcpp::Time(0, 0, RCL_ROS_TIME))
+    , diag_updater_(this)
   {
       pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
@@ -202,39 +202,37 @@ public:
     double watchdog_interval_d;
     watchdog_interval_d = this->declare_parameter("watchdog_interval", 0.0);
     watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
-    max_values_[0] = this->declare_parameter("max_linear_vel", std::numeric_limits<double>::infinity());
-    max_values_[1] = this->declare_parameter("max_angular_vel", std::numeric_limits<double>::infinity());
+    max_values_[0] = std::numeric_limits<double>::infinity();
+    max_values_[1] = std::numeric_limits<double>::infinity();
 
-    XmlRpc::XmlRpcValue footprint_xml;
+    auto footprint = this->declare_parameter("footprint", "");
     if (!this->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified");
     }
-    this->get_parameter("footprint", footprint_xml);
-    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
-    {
-      RCLCPP_FATAL(this->get_logger(), "Invalid footprint");
-      throw std::runtime_error("Invalid footprint");
-    }
-    footprint_radius_ = 0;
-    for (int i = 0; i < footprint_xml.size(); i++)
-    {
-      if (!XmlRpc_isNumber(footprint_xml[i][0]) ||
-          !XmlRpc_isNumber(footprint_xml[i][1]))
-      {
-        RCLCPP_FATAL(this->get_logger(), "Invalid footprint value");
-        throw std::runtime_error("Invalid footprint value");
-      }
+    this->get_parameter("footprint", footprint);
+    std::regex pattern(R"(\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\])");
+    auto begin = std::sregex_iterator(footprint.begin(), footprint.end(), pattern);
+    auto end = std::sregex_iterator();
 
+    footprint_radius_ = 0;
+    for (auto it = begin; it != end; it++)
+    {
       vec v;
-      v[0] = static_cast<double>(footprint_xml[i][0]);
-      v[1] = static_cast<double>(footprint_xml[i][1]);
+      v[0] = std::stod((*it)[1].str());
+      v[1] = std::stod((*it)[2].str());
       footprint_p.v.push_back(v);
 
       const float dist = std::hypot(v[0], v[1]);
       if (dist > footprint_radius_)
         footprint_radius_ = dist;
+    }
+
+    if (footprint_p.v.size() < 3)
+    {
+      RCLCPP_FATAL(this->get_logger(), "Invalid footprint");
+      throw std::runtime_error("Invalid footprint");
     }
     footprint_p.v.push_back(footprint_p.v.front());
     RCLCPP_INFO(this->get_logger(), "footprint radius: %0.3f", footprint_radius_);
@@ -276,9 +274,7 @@ public:
     param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
 
     callback_handle_ = {
-      param_event_handler_->add_parameter_callback("freq", [this](const rclcpp::Parameter& p){
-        hz_ = p.as_double(); hold_ = std::max(hold_, rclcpp::Duration::from_seconds(1.0 / hz_));
-      }),
+      param_event_handler_->add_parameter_callback("freq", [this](const rclcpp::Parameter& p){ hz_ = p.as_double(); }),
       param_event_handler_->add_parameter_callback("cloud_timeout", [this](const rclcpp::Parameter& p){ timeout_ = p.as_double(); }),
       param_event_handler_->add_parameter_callback("disable_timeout", [this](const rclcpp::Parameter& p){ disable_timeout_ = p.as_double(); }),
       param_event_handler_->add_parameter_callback("lin_vel", [this](const rclcpp::Parameter& p){ vel_[0] = p.as_double(); }),
@@ -295,16 +291,12 @@ public:
       param_event_handler_->add_parameter_callback("yaw_margin", [this](const rclcpp::Parameter& p){ yaw_margin_ = p.as_double(); }),
       param_event_handler_->add_parameter_callback("yaw_escape", [this](const rclcpp::Parameter& p){ yaw_escape_ = p.as_double(); }),
       param_event_handler_->add_parameter_callback("downsample_grid", [this](const rclcpp::Parameter& p){ downsample_grid_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("hold", [this](const rclcpp::Parameter& p){
-        hold_ = rclcpp::Duration::from_seconds(std::max(p.as_double(), 1.0 / hz_));
-      }),
       param_event_handler_->add_parameter_callback("allow_empty_cloud", [this](const rclcpp::Parameter& p){ allow_empty_cloud_ = p.as_bool(); }),
     };
 
     event_callback_handle_ = param_event_handler_->add_parameter_event_callback(
       [this](const rcl_interfaces::msg::ParameterEvent& event){
-        std::regex re(this->get_fully_qualified_name());
-        if (std::regex_match(event.node, re))
+        if (event.node == this->get_fully_qualified_name())
         {
           cbParameter();
         }
@@ -378,6 +370,7 @@ protected:
   }
   void cbParameter()
   {
+    hold_ = std::max(hold_, rclcpp::Duration::from_seconds(1.0 / hz_));
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
     {

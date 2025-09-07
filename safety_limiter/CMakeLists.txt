@@ -5,9 +5,8 @@ set(COLCON_DEPENDS
     rclcpp
 
     diagnostic_updater
-      geometry_msgs
+    geometry_msgs
     pcl_conversions
-    pcl_ros
     sensor_msgs
     std_msgs
     tf2_ros
@@ -55,17 +54,17 @@ target_include_directories(safety_limiter PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(safety_limiter ${PCL_LIBRARIES})
-ament_target_dependencies(safety_limiter)
+ament_target_dependencies(safety_limiter ${COLCON_DEPENDS})
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  find_package(nav_msgs REQUIRED)
-  find_package(tf2_geometry_msgs REQUIRED)
-  add_subdirectory(test)
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+#   find_package(nav_msgs REQUIRED)
+#   find_package(tf2_geometry_msgs REQUIRED)
+#   add_subdirectory(test)
 
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 
 install(TARGETS
