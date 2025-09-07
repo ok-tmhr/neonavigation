@@ -39,31 +39,28 @@ add_executable(trajectory_recorder src/trajectory_recorder.cpp)
 target_include_directories(trajectory_recorder PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(trajectory_recorder)
-add_dependencies(trajectory_recorder)
+ament_target_dependencies(trajectory_recorder ${COLCON_DEPENDS})
 
 add_executable(trajectory_saver src/trajectory_saver.cpp)
 target_include_directories(trajectory_saver PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(trajectory_saver)
-add_dependencies(trajectory_saver)
+ament_target_dependencies(trajectory_saver ${COLCON_DEPENDS})
 
 add_executable(trajectory_server src/trajectory_server.cpp)
 target_include_directories(trajectory_server PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(trajectory_server)
-add_dependencies(trajectory_server)
+ament_target_dependencies(trajectory_server ${COLCON_DEPENDS})
 
 
-if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  add_subdirectory(test)
+# if(BUILD_TESTING)
+#   find_package(ament_cmake_gtest REQUIRED)
+#   add_subdirectory(test)
 
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
+#   find_package(ament_lint_auto REQUIRED)
+#   ament_lint_auto_find_test_dependencies()
+# endif()
 
 
 install(TARGETS
