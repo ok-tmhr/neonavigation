@@ -77,8 +77,8 @@ private:
 
   bool loadFile();
   void loadPath();
-  bool change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
-              trajectory_tracker_msgs::srv::ChangePath::Response& res);
+  bool change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+              trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res);
   void processFeedback(
       const visualization_msgs::msg::InteractiveMarkerFeedback::ConstPtr& feedback);
   void updateIM();
@@ -226,8 +226,8 @@ void ServerNode::updateIM()
   srv_im_fb_.applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request& req,
-                        trajectory_tracker_msgs::srv::ChangePath::Response& res)
+bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+                        trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res)
 {
   req_path_ = req;
   res.success = false;

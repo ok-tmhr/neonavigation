@@ -245,8 +245,8 @@ protected:
   StartPosePredictor start_pose_predictor_;
   rclcpp::TimerBase::SharedPtr no_map_update_timer_;
 
-  bool cbForget(std_srvs::srv::Empty::Request& req,
-                std_srvs::srv::Empty::Response& res)
+  bool cbForget(std_srvs::srv::Empty::Request::SharedPtr req,
+                std_srvs::srv::Empty::Response::SharedPtr res)
   {
     RCLCPP_WARN(this->get_logger(), "Forgetting remembered costmap.");
     if (has_map_)
@@ -328,8 +328,8 @@ protected:
     return point;
   }
 
-  bool cbMakePlan(nav_msgs::srv::GetPlan::Request& req,
-                  nav_msgs::srv::GetPlan::Response& res)
+  bool cbMakePlan(nav_msgs::srv::GetPlan::Request::SharedPtr req,
+                  nav_msgs::srv::GetPlan::Response::SharedPtr res)
   {
     if (!has_map_)
     {

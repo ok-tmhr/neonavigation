@@ -56,8 +56,8 @@ public:
   void spin();
 
 private:
-  bool clearPath(std_srvs::srv::Empty::Request& req,
-                 std_srvs::srv::Empty::Response& res);
+  bool clearPath(std_srvs::srv::Empty::Request::SharedPtr req,
+                 std_srvs::srv::Empty::Response::SharedPtr res);
 
   std::string frame_robot_;
   std::string frame_global_;
@@ -99,8 +99,8 @@ float dist2d(geometry_msgs::msg::Point& a, geometry_msgs::msg::Point& b)
   return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
-bool RecorderNode::clearPath(std_srvs::srv::Empty::Request& /* req */,
-                             std_srvs::srv::Empty::Response& /* res */)
+bool RecorderNode::clearPath(std_srvs::srv::Empty::Request::SharedPtr /* req */,
+                             std_srvs::srv::Empty::Response::SharedPtr /* res */)
 {
   path_.poses.clear();
   return true;
