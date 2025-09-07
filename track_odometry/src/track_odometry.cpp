@@ -91,8 +91,8 @@ private:
       message_filters::sync_policies::ApproximateTime<nav_msgs::msg::Odometry, sensor_msgs::msg::Imu>;
 
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_raw_;
-  std::shared_ptr<message_filters::Subscriber<nav_msgs::msg::Odometry>> sub_odom_;
-  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Imu>> sub_imu_;
+  message_filters::Subscriber<nav_msgs::msg::Odometry> sub_odom_;
+  message_filters::Subscriber<sensor_msgs::msg::Imu> sub_imu_;
   std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
 
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_reset_z_;
@@ -127,7 +127,7 @@ private:
   bool has_odom_;
   bool publish_tf_;
 
-  void cbResetZ(const std_msgs::msg::Float32::Ptr& msg)
+  void cbResetZ(const std_msgs::msg::Float32::Ptr msg)
   {
     odom_prev_.pose.pose.position.z = msg->data;
   }
@@ -309,17 +309,15 @@ public:
     }
     else
     {
-      sub_odom_.reset(
-          new message_filters::Subscriber<nav_msgs::msg::Odometry>("odom_raw", transport_hints));
-      sub_imu_.reset(
-          new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu/data", transport_hints));
+      sub_odom_.subscribe(this, "odom_raw", transport_hints.get_rmw_qos_profile());
+      sub_imu_.subscribe(this, "imu/data", transport_hints.get_rmw_qos_profile());
 
       int sync_window;
       sync_window = this->declare_parameter("sync_window", 50);
       sync_.reset(
           new message_filters::Synchronizer<SyncPolicy>(
-              SyncPolicy(sync_window), *sub_odom_, *sub_imu_));
-      sync_->registerCallback(boost::bind(&TrackOdometryNode::cbOdomImu, this, std::placeholders::_1, std::placeholders::_2));
+              SyncPolicy(sync_window), sub_odom_, sub_imu_));
+      sync_->registerCallback(std::bind(&TrackOdometryNode::cbOdomImu, this, std::placeholders::_1, std::placeholders::_2));
 
       base_link_id_overwrite_ = this->declare_parameter("base_link_id", std::string(""));
     }
