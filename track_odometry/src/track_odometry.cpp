@@ -35,7 +35,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
@@ -48,8 +47,8 @@
 #include <message_filters/synchronizer.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <track_odometry/kalman_filter1.h>
@@ -298,6 +297,8 @@ public:
     const rclcpp::QoS transport_hints =
         enable_tcp_no_delay ? rclcpp::QoS(50) : rclcpp::QoS(50).best_effort();
 
+    using std::placeholders::_1;
+    using std::placeholders::_2;
     without_odom_ = this->declare_parameter("without_odom", false);
     if (without_odom_)
     {
@@ -317,14 +318,14 @@ public:
       sync_.reset(
           new message_filters::Synchronizer<SyncPolicy>(
               SyncPolicy(sync_window), sub_odom_, sub_imu_));
-      sync_->registerCallback(std::bind(&TrackOdometryNode::cbOdomImu, this, std::placeholders::_1, std::placeholders::_2));
+      sync_->registerCallback(std::bind(&TrackOdometryNode::cbOdomImu, this, _1, _2));
 
       base_link_id_overwrite_ = this->declare_parameter("base_link_id", std::string(""));
     }
 
     sub_reset_z_ = this->create_subscription<std_msgs::msg::Float32>(
         "reset_odometry_z",
-        1, std::bind(&TrackOdometryNode::cbResetZ, this, std::placeholders::_1));
+        1, std::bind(&TrackOdometryNode::cbResetZ, this, _1));
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
     if (this->has_parameter("z_filter"))
