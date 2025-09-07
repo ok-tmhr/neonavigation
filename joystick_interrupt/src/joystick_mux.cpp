@@ -111,8 +111,8 @@ public:
         "mux_input1",
         1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
 
-    this->declare_parameter("interrupt_button", interrupt_button_, 5);
-    this->declare_parameter("timeout", timeout_, 0.5);
+    interrupt_button_ = this->declare_parameter("interrupt_button", 5);
+    timeout_ = this->declare_parameter("timeout", 0.5);
     last_joy_msg_ = this->now();
 
     timer_ = this->create_wall_timer(std::chrono::duration<double>(0.1), std::bind(&JoystickMux::cbTimer, this));

@@ -43,7 +43,7 @@ int floor_cur = 0;
 
 void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr& msg)
 {
-  RCLCPP_INFO(this->get_logger(), "Map array received");
+  RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
   maps = *msg;
   orig_mapinfos.clear();
   for (auto& map : maps.maps)
@@ -59,18 +59,17 @@ void cbFloor(const std_msgs::msg::Int32::Ptr& msg)
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv, "select_map");
-  rclcpp::Node::SharedPtr pnh("~");
-  rclcpp::Node::SharedPtr nh("");
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("select_map");
 
-  auto subMaps = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+  auto subMaps = node->create_subscription<nav_msgs::msg::OccupancyGrid>(
       "maps",
       1, cbMaps);
-  auto subFloor = this->create_subscription<std_msgs::msg::Int32>(
+  auto subFloor = node->create_subscription<std_msgs::msg::Int32>(
       "floor",
       1, cbFloor);
-  auto pubMap = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      nh, "map",
+  auto pubMap = node->create_publisher<nav_msgs::msg::OccupancyGrid>(
+      "map",
       rclcpp::QoS(1).transient_local());
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb;
@@ -84,7 +83,7 @@ int main(int argc, char** argv)
   while (rclcpp::ok())
   {
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node);
 
     if (maps.maps.size() == 0)
       continue;
@@ -98,12 +97,12 @@ int main(int argc, char** argv)
       }
       else
       {
-        RCLCPP_INFO(this->get_logger(), "Floor out of range");
+        RCLCPP_INFO(node->get_logger(), "Floor out of range");
       }
       floor_prev = floor_cur;
     }
-    trans.header.stamp = this->now() + rclcpp::Duration::from_seconds(0.15);
-    tfb.sendTransform(trans);
+    trans.header.stamp = node->now() + rclcpp::Duration::from_seconds(0.15);
+    tfb->sendTransform(trans);
   }
 
   return 0;

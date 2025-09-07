@@ -81,7 +81,7 @@ public:
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_out",
         1);
-    this->declare_parameter("to_frame", to_, std::string("map"));
+    to_ = this->declare_parameter("to_frame", std::string("map"));
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);

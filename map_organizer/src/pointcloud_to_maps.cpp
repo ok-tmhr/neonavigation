@@ -80,13 +80,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    this->declare_parameter("grid", grid, 0.05);
-    this->declare_parameter("points_thresh_rate", points_thresh_rate, 0.5);
-    this->declare_parameter("robot_height", robot_height_f, 1.0);
-    this->declare_parameter("floor_height", floor_height_f, 0.1);
-    this->declare_parameter("floor_tolerance", floor_tolerance_f, 0.2);
-    this->declare_parameter("min_floor_area", min_floor_area, 100.0);
-    this->declare_parameter("floor_area_thresh_rate", floor_area_thresh_rate, 0.8);
+    grid = this->declare_parameter("grid", 0.05);
+    points_thresh_rate = this->declare_parameter("points_thresh_rate", 0.5);
+    robot_height_f = this->declare_parameter("robot_height", 1.0);
+    floor_height_f = this->declare_parameter("floor_height", 0.1);
+    floor_tolerance_f = this->declare_parameter("floor_tolerance", 0.2);
+    min_floor_area = this->declare_parameter("min_floor_area", 100.0);
+    floor_area_thresh_rate = this->declare_parameter("floor_area_thresh_rate", 0.8);
     robot_height = std::lround(robot_height_f / grid);
     floor_height = std::lround(floor_height_f / grid);
     floor_tolerance = std::lround(floor_tolerance_f / grid);

@@ -165,20 +165,20 @@ public:
         2);
     pub_int_ = this->create_publisher<std_msgs::msg::Bool>("~/interrupt_status", 2);
 
-    this->declare_parameter("linear_vel", linear_vel_, 0.5);
-    this->declare_parameter("angular_vel", angular_vel_, 0.8);
-    this->declare_parameter("linear_axis", linear_axis_, 1);
-    this->declare_parameter("angular_axis", angular_axis_, 0);
-    this->declare_parameter("linear_axis2", linear_axis2_, -1);
-    this->declare_parameter("angular_axis2", angular_axis2_, -1);
-    this->declare_parameter("interrupt_button", interrupt_button_, 6);
-    this->declare_parameter("high_speed_button", high_speed_button_, -1);
-    this->declare_parameter("linear_high_speed_ratio", linear_high_speed_ratio_, 1.3);
-    this->declare_parameter("angular_high_speed_ratio", angular_high_speed_ratio_, 1.1);
-    this->declare_parameter("timeout", timeout_, 0.5);
-    this->declare_parameter("linear_y_vel", linear_y_vel_, 0.0);
-    this->declare_parameter("linear_y_axis", linear_y_axis_, -1);
-    this->declare_parameter("linear_y_axis2", linear_y_axis2_, -1);
+    linear_vel_ = this->declare_parameter("linear_vel", 0.5);
+    angular_vel_ = this->declare_parameter("angular_vel", 0.8);
+    linear_axis_ = this->declare_parameter("linear_axis", 1);
+    angular_axis_ = this->declare_parameter("angular_axis", 0);
+    linear_axis2_ = this->declare_parameter("linear_axis2", -1);
+    angular_axis2_ = this->declare_parameter("angular_axis2", -1);
+    interrupt_button_ = this->declare_parameter("interrupt_button", 6);
+    high_speed_button_ = this->declare_parameter("high_speed_button", -1);
+    linear_high_speed_ratio_ = this->declare_parameter("linear_high_speed_ratio", 1.3);
+    angular_high_speed_ratio_ = this->declare_parameter("angular_high_speed_ratio", 1.1);
+    timeout_ = this->declare_parameter("timeout", 0.5);
+    linear_y_vel_ = this->declare_parameter("linear_y_vel", 0.0);
+    linear_y_axis_ = this->declare_parameter("linear_y_axis", -1);
+    linear_y_axis2_ = this->declare_parameter("linear_y_axis2", -1);
 
     last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 

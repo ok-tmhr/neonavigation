@@ -135,8 +135,8 @@ private:
   {
     RCLCPP_DEBUG(this->get_logger(),
         "Synchronized timestamp: odom %0.3f, imu %0.3f",
-        odom_msg->header.stamp.seconds(),
-        imu_msg->header.stamp.seconds());
+        tf2_ros::timeToSec(odom_msg->header.stamp),
+        tf2_ros::timeToSec(imu_msg->header.stamp));
     cbImu(imu_msg);
     cbOdom(odom_msg);
   }
@@ -207,7 +207,7 @@ private:
     nav_msgs::msg::Odometry odom = *msg;
     if (has_odom_)
     {
-      const double dt = (odom.header.stamp - odomraw_prev_.header.stamp).seconds();
+      const double dt = tf2_ros::timeToSec(odom.header.stamp) - tf2_ros::timeToSec(odomraw_prev_.header.stamp);
       if (base_link_id_overwrite_.size() == 0)
       {
         base_link_id_ = odom.child_frame_id;
@@ -294,18 +294,18 @@ public:
   {
 
     bool enable_tcp_no_delay;
-    this->declare_parameter("enable_tcp_no_delay", enable_tcp_no_delay, true);
+    enable_tcp_no_delay = this->declare_parameter("enable_tcp_no_delay", true);
     const rclcpp::QoS transport_hints =
         enable_tcp_no_delay ? rclcpp::QoS(50) : rclcpp::QoS(50).best_effort();
 
-    this->declare_parameter("without_odom", without_odom_, false);
+    without_odom_ = this->declare_parameter("without_odom", false);
     if (without_odom_)
     {
       sub_imu_raw_ = this->create_subscription<sensor_msgs::msg::Imu>(
           "imu/data",
           64, std::bind(&TrackOdometryNode::cbImu, this, _1));
-      this->declare_parameter("base_link_id", base_link_id_, std::string("base_link"));
-      this->declare_parameter("odom_id", odom_id_, std::string("odom"));
+      base_link_id_ = this->declare_parameter("base_link_id", std::string("base_link"));
+      odom_id_ = this->declare_parameter("odom_id", std::string("odom"));
     }
     else
     {
@@ -315,13 +315,13 @@ public:
           new message_filters::Subscriber<sensor_msgs::msg::Imu>("imu/data", transport_hints));
 
       int sync_window;
-      this->declare_parameter("sync_window", sync_window, 50);
+      sync_window = this->declare_parameter("sync_window", 50);
       sync_.reset(
           new message_filters::Synchronizer<SyncPolicy>(
               SyncPolicy(sync_window), *sub_odom_, *sub_imu_));
       sync_->registerCallback(boost::bind(&TrackOdometryNode::cbOdomImu, this, std::placeholders::_1, std::placeholders::_2));
 
-      this->declare_parameter("base_link_id", base_link_id_overwrite_, std::string(""));
+      base_link_id_overwrite_ = this->declare_parameter("base_link_id", std::string(""));
     }
 
     sub_reset_z_ = this->create_subscription<std_msgs::msg::Float32>(
@@ -347,13 +347,13 @@ public:
     }
     else
     {
-      this->declare_parameter("z_filter_timeconst", z_filter_timeconst_, -1.0);
+      z_filter_timeconst_ = this->declare_parameter("z_filter_timeconst", -1.0);
     }
-    this->declare_parameter("tf_tolerance", tf_tolerance_, 0.01);
-    this->declare_parameter("use_kf", use_kf_, true);
-    this->declare_parameter("enable_negative_slip", negative_slip_, false);
-    this->declare_parameter("debug", debug_, false);
-    this->declare_parameter("publish_tf", publish_tf_, true);
+    tf_tolerance_ = this->declare_parameter("tf_tolerance", 0.01);
+    use_kf_ = this->declare_parameter("use_kf", true);
+    negative_slip_ = this->declare_parameter("enable_negative_slip", false);
+    debug_ = this->declare_parameter("debug", false);
+    publish_tf_ = this->declare_parameter("publish_tf", true);
 
     if (base_link_id_overwrite_.size() > 0)
     {
@@ -361,11 +361,11 @@ public:
     }
 
     // sigma_odom_ [rad/s]: standard deviation of odometry angular vel on straight running
-    this->declare_parameter("sigma_odom", sigma_odom_, 0.005);
+    sigma_odom_ = this->declare_parameter("sigma_odom", 0.005);
     // sigma_predict_ [sigma/second]: prediction sigma of kalman filter
-    this->declare_parameter("sigma_predict", sigma_predict_, 0.5);
+    sigma_predict_ = this->declare_parameter("sigma_predict", 0.5);
     // predict_filter_tc_ [sec.]: LPF time-constant to forget estimated slip_ ratio
-    this->declare_parameter("predict_filter_tc", predict_filter_tc_, 1.0);
+    predict_filter_tc_ = this->declare_parameter("predict_filter_tc", 1.0);
 
     has_imu_ = false;
     has_odom_ = false;

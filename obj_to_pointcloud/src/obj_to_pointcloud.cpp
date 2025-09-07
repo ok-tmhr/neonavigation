@@ -93,20 +93,20 @@ public:
         "mapcloud",
         rclcpp::QoS(1).transient_local());
 
-    this->declare_parameter("frame_id", frame_id_, std::string("map"));
-    this->declare_parameter("objs", file_, std::string(""));
+    frame_id_ = this->declare_parameter("frame_id", std::string("map"));
+    file_ = this->declare_parameter("objs", std::string(""));
     if (file_.compare("") == 0)
     {
       RCLCPP_ERROR(this->get_logger(), "OBJ file not specified");
       rclcpp::shutdown();
       return;
     }
-    this->declare_parameter("points_per_meter_sq", ppmsq_, 600.0);
-    this->declare_parameter("downsample_grid", downsample_grid_, 0.05);
-    this->declare_parameter("offset_x", offset_x_, 0.0);
-    this->declare_parameter("offset_y", offset_y_, 0.0);
-    this->declare_parameter("offset_z", offset_z_, 0.0);
-    this->declare_parameter("scale", scale_, 1.0);
+    ppmsq_ = this->declare_parameter("points_per_meter_sq", 600.0);
+    downsample_grid_ = this->declare_parameter("downsample_grid", 0.05);
+    offset_x_ = this->declare_parameter("offset_x", 0.0);
+    offset_y_ = this->declare_parameter("offset_y", 0.0);
+    offset_z_ = this->declare_parameter("offset_z", 0.0);
+    scale_ = this->declare_parameter("scale", 1.0);
 
     auto pc = convertObj(split(file_, ','));
     pub_cloud_->publish(pc);

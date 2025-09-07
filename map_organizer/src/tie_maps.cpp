@@ -74,8 +74,8 @@ public:
     double occ_th, free_th;
     MapMode mode;
     std::string frame_id;
-    this->declare_parameter("map_files", files_str, std::string(""));
-    this->declare_parameter("frame_id", frame_id, std::string("map"));
+    files_str = this->declare_parameter("map_files", std::string(""));
+    frame_id = this->declare_parameter("frame_id", std::string("map"));
 
     int i = 0;
     std::string file;
@@ -218,7 +218,7 @@ public:
                map_resp.map.info.height,
                map_resp.map.info.resolution);
       maps.maps.push_back(map_resp.map);
-      pub_map_.push_back(nh_->create_publisher<nav_msgs::msg::OccupancyGrid>(
+      pub_map_.push_back(this->create_publisher<nav_msgs::msg::OccupancyGrid>(
           "map" + std::to_string(i), rclcpp::QoS(1).transient_local()));
       pub_map_.back()->publish(map_resp.map);
       i++;

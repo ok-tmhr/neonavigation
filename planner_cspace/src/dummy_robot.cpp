@@ -87,9 +87,9 @@ protected:
 public:
   DummyRobotNode() : Node("dummy_robot")
   {
-      this->declare_parameter("initial_x", x_, 0.0);
-    this->declare_parameter("initial_y", y_, 0.0);
-    this->declare_parameter("initial_yaw", yaw_, 0.0);
+    x_ = this->declare_parameter("initial_x", 0.0);
+    y_ = this->declare_parameter("initial_y", 0.0);
+    yaw_ = this->declare_parameter("initial_yaw", 0.0);
     v_ = 0.0;
     w_ = 0.0;
 
