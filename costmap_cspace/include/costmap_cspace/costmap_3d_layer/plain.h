@@ -57,14 +57,26 @@ public:
     }
     setFootprint(footprint);
   }
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
+    if (config.name.empty())
+    {
     const int linear_spread_min_cost =
-        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
+    config.linear_spread_min_cost;
     setExpansion(
-        static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]),
+      config.linear_expand,
+      config.linear_spread,
+      linear_spread_min_cost);
+    }
+    else
+    {
+    const int linear_spread_min_cost =
+        node.declare_parameter(config.name + ".linear_spread_min_cost", 0);
+    setExpansion(
+        node.declare_parameter<float>(config.name + ".linear_expand"),
+        node.declare_parameter<float>(config.name + ".linear_spread"),
         linear_spread_min_cost);
+    }
   }
 };
 }  // namespace costmap_cspace

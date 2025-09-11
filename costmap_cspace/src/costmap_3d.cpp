@@ -159,7 +159,7 @@ protected:
     pub_footprint_->publish(footprint);
   }
 
-  static costmap_cspace::MapOverlayMode getMapOverlayModeFromString(
+  costmap_cspace::MapOverlayMode getMapOverlayModeFromString(
       const std::string overlay_mode_str)
   {
     if (overlay_mode_str == "overwrite")
@@ -187,9 +187,9 @@ public:
     pub_debug_ = this->create_publisher<sensor_msgs::msg::PointCloud>("~/debug", rclcpp::QoS(1).transient_local());
 
     int ang_resolution;
-    this->declare_parameter("ang_resolution", ang_resolution, 16);
+    ang_resolution = this->declare_parameter("ang_resolution", 16);
 
-    XmlRpc::XmlRpcValue footprint_xml;
+    auto footprint_xml = this->declare_parameter("footprint", "");
     if (!this->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
@@ -212,68 +212,49 @@ public:
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
     float linear_expand;
     float linear_spread;
-    this->declare_parameter("linear_expand", linear_expand, 0.2f);
-    this->declare_parameter("linear_spread", linear_spread, 0.5f);
+    linear_expand = this->declare_parameter("linear_expand", 0.2f);
+    linear_spread = this->declare_parameter("linear_spread", 0.5f);
     int linear_spread_min_cost;
-    this->declare_parameter("linear_spread_min_cost", linear_spread_min_cost, 0);
+    linear_spread_min_cost = this->declare_parameter("linear_spread_min_cost", 0);
     root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
-    if (this->has_parameter("static_layers"))
+    std::vector<std::string> layers_xml;
+    layers_xml = this->declare_parameter("static_layers", layers_xml);
     {
-      XmlRpc::XmlRpcValue layers_xml;
-      this->get_parameter("static_layers", layers_xml);
-
-      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
-      {
-        RCLCPP_FATAL(this->get_logger(), "static_layers parameter must contain at least one layer config.");
-        RCLCPP_ERROR(this->get_logger(),
-            "Migration from old version:\n"
-            "---  # Old\n"
-            "static_layers:\n"
-            "  YOUR_LAYER_NAME:\n"
-            "    type: LAYER_TYPE\n"
-            "    parameters: values\n"
-            "---  # New\n"
-            "static_layers:\n"
-            "  - name: YOUR_LAYER_NAME\n"
-            "    type: LAYER_TYPE\n"
-            "    parameters: values\n"
-            "---\n");
-        throw std::runtime_error("layers parameter must contain at least one layer config.");
-      }
       for (int i = 0; i < layers_xml.size(); ++i)
       {
-        auto layer_xml = std::pair<std::string, XmlRpc::XmlRpcValue>(
-            layers_xml[i]["name"], layers_xml[i]);
-        RCLCPP_INFO(this->get_logger(), "New static layer: %s", layer_xml.first.c_str());
+        costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml{.name = layers_xml[i]};
+        RCLCPP_INFO(this->get_logger(), "New static layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
-        if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
+        layer_xml.overlay_mode = this->declare_parameter(layer_xml.name + ".overlay_mode", "");
+        if (!layer_xml.overlay_mode.empty())
           overlay_mode = getMapOverlayModeFromString(
-              layer_xml.second["overlay_mode"]);
+              layer_xml.overlay_mode);
         else
           RCLCPP_WARN(this->get_logger(), "overlay_mode of the static layer is not specified. Using MAX mode.");
 
-        std::string type;
-        if (layer_xml.second["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
-          type = std::string(layer_xml.second["type"]);
+        std::string type = this->declare_parameter(layer_xml.name + ".type", "");
+        if (!type.empty())
+          layer_xml.type = type;
         else
         {
           RCLCPP_FATAL(this->get_logger(), "Layer type is not specified.");
           throw std::runtime_error("Layer type is not specified.");
         }
 
-        if (!layer_xml.second.hasMember("footprint"))
-          layer_xml.second["footprint"] = footprint_xml;
+        layer_xml.footprint = this->declare_parameter(layer_xml.name + ".footprint", "");
+        if (layer_xml.footprint.empty())
+          layer_xml.footprint = footprint_xml;
 
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
         costmap_->addLayer(layer, overlay_mode);
-        layer->loadConfig(layer_xml.second);
+        layer->loadConfig(layer_xml, *this);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-            layer_xml.first, 1,
+            layer_xml.name, 1,
             boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
       }
     }
@@ -285,61 +266,42 @@ public:
         "map", 1,
         boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
 
-    if (this->has_parameter("layers"))
+    auto layers_xml = this->declare_parameter<std::vector<std::string>>("layers", {});
+    if (layers_xml.size() > 0)
     {
-      XmlRpc::XmlRpcValue layers_xml;
-      this->get_parameter("layers", layers_xml);
-
-      if (layers_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || layers_xml.size() < 1)
-      {
-        RCLCPP_FATAL(this->get_logger(), "layers parameter must contain at least one layer config.");
-        RCLCPP_ERROR(this->get_logger(),
-            "Migration from old version:\n"
-            "---  # Old\n"
-            "layers:\n"
-            "  YOUR_LAYER_NAME:\n"
-            "    type: LAYER_TYPE\n"
-            "    parameters: values\n"
-            "---  # New\n"
-            "layers:\n"
-            "  - name: YOUR_LAYER_NAME\n"
-            "    type: LAYER_TYPE\n"
-            "    parameters: values\n"
-            "---\n");
-        throw std::runtime_error("layers parameter must contain at least one layer config.");
-      }
       for (int i = 0; i < layers_xml.size(); ++i)
       {
-        auto layer_xml = std::pair<std::string, XmlRpc::XmlRpcValue>(
-            layers_xml[i]["name"], layers_xml[i]);
-        RCLCPP_INFO(this->get_logger(), "New layer: %s", layer_xml.first.c_str());
+        auto layer_xml = costmap_cspace::Costmap3dLayerBase::LayerConfig{ .name = layers_xml[i] };
+        RCLCPP_INFO(this->get_logger(), "New layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
-        if (layer_xml.second["overlay_mode"].getType() == XmlRpc::XmlRpcValue::TypeString)
+        layer_xml.overlay_mode = this->declare_parameter(layer_xml.name + ".overlay_mode", "");
+        if (!layer_xml.overlay_mode.empty())
           overlay_mode = getMapOverlayModeFromString(
-              layer_xml.second["overlay_mode"]);
+              layer_xml.overlay_mode);
         else
           RCLCPP_WARN(this->get_logger(), "overlay_mode of the layer is not specified. Using MAX mode.");
 
-        std::string type;
-        if (layer_xml.second["type"].getType() == XmlRpc::XmlRpcValue::TypeString)
-          type = std::string(layer_xml.second["type"]);
+        std::string type = this->declare_parameter(layer_xml.name + ".type", "");
+        if (!type.empty())
+          layer_xml.type = type;
         else
         {
           RCLCPP_FATAL(this->get_logger(), "Layer type is not specified.");
           throw std::runtime_error("Layer type is not specified.");
         }
 
-        if (!layer_xml.second.hasMember("footprint"))
-          layer_xml.second["footprint"] = footprint_xml;
+        layer_xml.footprint = this->declare_parameter(layer_xml.name + ".footprint", "");
+        if (layer_xml.footprint.empty())
+          layer_xml.footprint = footprint_xml;
 
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
         costmap_->addLayer(layer, overlay_mode);
-        layer->loadConfig(layer_xml.second);
+        layer->loadConfig(layer_xml, *this);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-            layer_xml.first, 1,
+            layer_xml.name, 1,
             boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
       }
     }
@@ -348,7 +310,7 @@ public:
       // Single layer mode for backward-compatibility
       costmap_cspace::MapOverlayMode overlay_mode;
       std::string overlay_mode_str;
-      this->declare_parameter("overlay_mode", overlay_mode_str, std::string("max"));
+      overlay_mode_str = this->declare_parameter("overlay_mode", std::string("max"));
       if (overlay_mode_str.compare("overwrite") == 0)
         overlay_mode = costmap_cspace::MapOverlayMode::OVERWRITE;
       else if (overlay_mode_str.compare("max") == 0)
@@ -360,13 +322,13 @@ public:
       }
       RCLCPP_INFO(this->get_logger(), "costmap_3d: %s mode", overlay_mode_str.c_str());
 
-      XmlRpc::XmlRpcValue layer_xml;
-      layer_xml["footprint"] = footprint_xml;
-      layer_xml["linear_expand"] = linear_expand;
-      layer_xml["linear_spread"] = linear_spread;
+      costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml;
+      layer_xml.footprint = footprint_xml;
+      layer_xml.linear_expand = linear_expand;
+      layer_xml.linear_spread = linear_spread;
 
       auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
-      layer->loadConfig(layer_xml);
+      layer->loadConfig(layer_xml, *this);
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
           "map_overlay", 1,
           boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
@@ -378,7 +340,7 @@ public:
     const geometry_msgs::msg::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = this->create_wall_timer(
         std::chrono::duration<double>(1.0),
-        boost::bind(&Costmap3DOFNode::cbPublishFootprint, this, footprint_msg));
+        [=](){cbPublishFootprint(footprint_msg);});
   }
 };
 

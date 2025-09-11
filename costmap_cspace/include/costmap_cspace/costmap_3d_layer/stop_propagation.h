@@ -47,7 +47,7 @@ public:
   using Ptr = std::shared_ptr<Costmap3dLayerStopPropagation>;
 
 public:
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)

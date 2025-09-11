@@ -56,7 +56,7 @@ protected:
   UpdatedRegion region_prev_;
 
 public:
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
   }
   void setHandler(CALLBACK cb)

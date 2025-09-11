@@ -254,6 +254,17 @@ class Costmap3dLayerBase
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dLayerBase>;
+  struct LayerConfig {
+    std::string name;
+    std::string type;
+    std::string overlay_mode;
+    std::string footprint;
+    double linear_expand;
+    double linear_spread;
+    int linear_spread_min_cost = 0;
+    bool keep_unknown = false;
+    int8_t unknown_cost = -1;
+  };
 
 protected:
   int ang_grid_;
@@ -278,7 +289,7 @@ public:
   {
   }
 
-  virtual void loadConfig(XmlRpc::XmlRpcValue config) = 0;
+  virtual void loadConfig(LayerConfig& config, rclcpp::Node& node) = 0;
   virtual void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info) = 0;
 
   void setAngleResolution(
@@ -373,7 +384,7 @@ public:
     }
     else
     {
-      RCLCPP_DEBUG(this->get_logger(), "update_chain_entry execution has been avoided.");
+      RCLCPP_DEBUG(rclcpp::get_logger("costmap_3d_layer"), "update_chain_entry execution has been avoided.");
     }
   }
   CSpace3DMsg::Ptr getMap()
@@ -418,7 +429,7 @@ protected:
       }
       else
       {
-        RCLCPP_ERROR(this->get_logger(), "map and map_overlay must have same frame_id. skipping");
+        RCLCPP_ERROR(rclcpp::get_logger("costmap_3d_layer"), "map and map_overlay must have same frame_id. skipping");
       }
     }
 

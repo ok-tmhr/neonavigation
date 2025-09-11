@@ -43,8 +43,6 @@
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 
-#include <xmlrpcpp/XmlRpcValue.h>
-
 #include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/cspace3_cache.h>
 #include <costmap_cspace/polygon.h>
@@ -82,17 +80,30 @@ public:
     , range_max_(0)
   {
   }
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
+    if (config.name.empty())
+    {
     const int linear_spread_min_cost =
-        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
+        config.linear_spread_min_cost;
     setExpansion(
-        static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]),
+        config.linear_expand,
+        config.linear_spread,
         linear_spread_min_cost);
-    setFootprint(costmap_cspace::Polygon(config["footprint"]));
-    if (config.hasMember("keep_unknown"))
-      setKeepUnknown(config["keep_unknown"]);
+    setFootprint(costmap_cspace::Polygon(config.footprint));
+    setKeepUnknown(node.declare_parameter("keep_unknown", false));
+    }
+    else
+    {
+    const int linear_spread_min_cost =
+        node.declare_parameter(config.name + ".linear_spread_min_cost", 0);
+    setExpansion(
+        node.declare_parameter<float>(config.name + ".linear_expand"),
+        node.declare_parameter<float>(config.name + ".linear_spread"),
+        linear_spread_min_cost);
+    setFootprint(costmap_cspace::Polygon(config.footprint));
+    setKeepUnknown(node.declare_parameter(config.name + ".keep_unknown", false));
+    }
   }
   void setKeepUnknown(const bool keep_unknown)
   {
