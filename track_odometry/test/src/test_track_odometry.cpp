@@ -55,7 +55,7 @@ public:
       nav_msgs::msg::Odometry& odom_raw,
       sensor_msgs::msg::Imu& imu)
   {
-    rclcpp::Duration::from_seconds(0.1).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
     rclcpp::Rate rate(100);
     odom_ = nullptr;
     for (int i = 0; i < 1000 && rclcpp::ok(); ++i)
@@ -141,7 +141,7 @@ public:
     nav_msgs::msg::Odometry::ConstPtr odom_prev = odom_;
     while (true)
     {
-      rclcpp::Duration::from_seconds(0.1).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
       rclcpp::spin_some(shared_from_this());
       if (odom_prev == odom_)
       {

@@ -83,7 +83,7 @@ protected:
     sub_path_ = nh_->create_subscription("path", 1, &NavigateBoundary::cbPath, this);
 
     publishTransform(1.0, 0.6);
-    rclcpp::Duration::from_seconds(0.5).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
 
     nav2_msgs::action::NavigateToPose::Goal goal;
     goal.target_pose.header.frame_id = "map";
@@ -92,7 +92,7 @@ protected:
     goal.target_pose.pose.position.x = 1.4;
     goal.target_pose.pose.position.y = 0.6;
     move_base_->async_send_goal(goal);
-    rclcpp::Duration::from_seconds(0.5).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
   }
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {
@@ -117,7 +117,7 @@ TEST_F(NavigateBoundary, StartPositionScan)
       status_ = nullptr;
       for (int i = 0; i < 100; ++i)
       {
-        rclcpp::Duration::from_seconds(0.05).sleep();
+        rclcpp::sleep_for(std::chrono::milliseconds(50));
         rclcpp::spin_some(shared_from_this());
         if (path_ && status_)
           break;
@@ -148,7 +148,7 @@ TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
         std_msgs::msg::Empty msg;
         pub_trigger->publish(msg);
 
-        rclcpp::Duration::from_seconds(0.2).sleep();
+        rclcpp::sleep_for(std::chrono::milliseconds(200));
         rclcpp::spin_some(shared_from_this());
         if (path_ && status_)
           break;

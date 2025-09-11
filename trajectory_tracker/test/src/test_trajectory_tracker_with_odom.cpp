@@ -86,7 +86,7 @@ TEST_F(TrajectoryTrackerTest, Timeout)
     rclcpp::spin_some(shared_from_this());
   }
   // Wait until odometry timeout
-  rclcpp::Duration::from_seconds(0.2).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(200));
   rclcpp::spin_some(shared_from_this());
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);

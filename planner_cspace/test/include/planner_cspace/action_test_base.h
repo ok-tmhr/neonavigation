@@ -96,7 +96,7 @@ public:
       {
         FAIL() << "planner_3d didn't receive map";
       }
-      rclcpp::Duration::from_seconds(1).sleep();
+      rclcpp::sleep_for(std::chrono::seconds(1));
       rclcpp::spin_some(shared_from_this());
     }
   }

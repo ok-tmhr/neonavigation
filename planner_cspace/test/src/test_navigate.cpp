@@ -187,7 +187,7 @@ protected:
     std_srvs::srv::Empty::Response res;
     srv_forget_.call(req, res);
 
-    rclcpp::Duration::from_seconds(1.0).sleep();
+    rclcpp::sleep_for(std::chrono::seconds(1));
   }
   void TearDown() override
   {
@@ -317,7 +317,7 @@ protected:
     ASSERT_TRUE(static_cast<bool>(map_));
     ASSERT_TRUE(static_cast<bool>(map_local_));
     pubMapLocal();
-    rclcpp::Duration::from_seconds(0.2).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(200));
 
     rclcpp::Rate wait(10);
     rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
@@ -432,7 +432,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
   pubMapLocal();
-  rclcpp::Duration::from_seconds(0.2).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(200));
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);
@@ -581,7 +581,7 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
   ASSERT_TRUE(static_cast<bool>(map_));
   ASSERT_TRUE(static_cast<bool>(map_local_));
   pubMapLocal();
-  rclcpp::Duration::from_seconds(0.2).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(200));
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);

@@ -89,7 +89,7 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
   const rclcpp::Duration wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   const planner_cspace_msgs::action::MoveWithTolerance::Goal goal = createGoalInFree();
   move_base_->async_send_goal(goal);
 

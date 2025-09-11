@@ -31,7 +31,6 @@
 
 #include <trajectory_tracker_test.h>
 
-#include <dynamic_reconfigure/client.h>
 
 class TrajectoryTrackerOvershootTest : public TrajectoryTrackerTest
 {

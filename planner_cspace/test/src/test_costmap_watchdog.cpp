@@ -78,7 +78,7 @@ TEST(Planner3D, CostmapWatchdog)
   goal.pose.position.y = 2.8;
   goal.pose.orientation.w = 1.0;
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   pub_goal->publish(goal);
 
   rclcpp::Rate rate(10);
@@ -158,7 +158,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   goal.pose.orientation.w = std::sin(0.09);
   goal.pose.orientation.z = std::cos(0.09);
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   pub_goal->publish(goal);
 
   costmap_cspace_msgs::msg::CSpace3DUpdate update;

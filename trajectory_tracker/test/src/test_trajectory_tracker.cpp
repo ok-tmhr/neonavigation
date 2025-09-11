@@ -623,7 +623,7 @@ void timeSource()
   rclcpp::Publisher<>::SharedPtr pub = nh.advertise<rosgraph_msgs::msg::Clock>("clock", 1);
 
   rclcpp::WallRate rate(400.0);  // 400% speed
-  rclcpp::WallTime time = rclcpp::WallTime::now();
+  rclcpp::WallTime time = rclcpp::Clock().now();
   while (rclcpp::ok())
   {
     rosgraph_msgs::msg::Clock clock;

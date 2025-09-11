@@ -129,7 +129,7 @@ protected:
     std_srvs::srv::Empty::Response res;
     srv_forget_.call(req, res);
 
-    rclcpp::Duration::from_seconds(1.0).sleep();
+    rclcpp::sleep_for(std::chrono::seconds(1));
   }
   void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
@@ -197,7 +197,7 @@ protected:
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
     rclcpp::spin_some(shared_from_this());
-    rclcpp::Duration::from_seconds(0.2).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(200));
 
     rclcpp::Rate wait(10);
     rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
@@ -228,7 +228,7 @@ protected:
 TEST_F(NavigateWithRememberUpdates, Navigate)
 {
   rclcpp::spin_some(shared_from_this());
-  rclcpp::Duration::from_seconds(0.2).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(200));
 
   nav_msgs::msg::Path path;
   path.poses.resize(1);

@@ -32,7 +32,6 @@
 
 #include <gtest/gtest.h>
 
-#include <dynamic_reconfigure/client.h>
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -59,11 +58,11 @@ public:
     const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(2);
     while (sub_path_.getNumPublishers() < 1 || pub_map_overlay_->get_subscription_count() < 1)
     {
-      rclcpp::Duration::from_seconds(0.1).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
       ASSERT_TRUE(rclcpp::ok());
       ASSERT_LT(this->now(), deadline);
     }
-    rclcpp::Duration::from_seconds(0.5).sleep();  // wait some more time to ensure tf topic connection
+    rclcpp::sleep_for(std::chrono::milliseconds(500));  // wait some more time to ensure tf topic connection
 
     map_overlay_.header.frame_id = "map";
     map_overlay_.info.resolution = 0.1;
@@ -176,7 +175,7 @@ protected:
     rclcpp::Time deadline = start_time + rclcpp::Duration::from_seconds(1.0);
     while (rclcpp::ok())
     {
-      rclcpp::Duration::from_seconds(0.1).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
       rclcpp::spin_some(shared_from_this());
       if (path_ && (path_->header.stamp > start_time) && (path_->poses.size() > 0))
       {
@@ -213,7 +212,7 @@ protected:
   double getAveragePathInterval(const rclcpp::Duration& costmap_publishing_interval)
   {
     publishMapAndRobot(2.55, 0.45, M_PI);
-    rclcpp::Duration::from_seconds(0.3).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(300));
     move_base_->async_send_goal(CreateGoalInFree());
     while (rclcpp::ok() && (move_base_->getState() != rclcpp_action::ResultCode::ACTIVE))
     {
@@ -265,7 +264,7 @@ protected:
 TEST_F(DynamicParameterChangeTest, DisableCurves)
 {
   publishMapAndRobot(2.55, 0.45, M_PI);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
 
   sendGoalAndWaitForPath();
   // The default path is including curves.
@@ -284,14 +283,14 @@ TEST_F(DynamicParameterChangeTest, DisableCurves)
 TEST_F(DynamicParameterChangeTest, StartPosePrediction)
 {
   publishMapAndRobot(1.65, 0.65, M_PI);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
   const nav_msgs::msg::Path initial_path = *path_;
 
   // The path is changed to keep distance from the obstacle.
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 100;
   publishMapAndRobot(1.65, 0.65, M_PI);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
   EXPECT_FALSE(comparePath(initial_path, *path_));
 
@@ -305,7 +304,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   // No obstacle and the path is same as the first one.
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
   publishMapAndRobot(1.65, 0.65, M_PI);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
   EXPECT_TRUE(comparePath(initial_path, *path_));
 
@@ -313,7 +312,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   // the obstacle.
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 100;
   publishMapAndRobot(1.65, 0.65, M_PI);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
   EXPECT_TRUE(comparePath(initial_path, *path_));
 
@@ -321,7 +320,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
   move_base_->async_cancel_all_goals();
   map_overlay_.data[13 + 5 * map_overlay_.info.width] = 0;
   publishMapAndRobot(1.25, 0.95, M_PI / 2);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
   const nav_msgs::msg::Path short_path = *path_;
   // In the second path planning after cancel, the exptected start pose is same as the goal.
@@ -332,7 +331,7 @@ TEST_F(DynamicParameterChangeTest, StartPosePrediction)
 TEST_F(DynamicParameterChangeTest, TriggerPlanByCostmapUpdate)
 {
   publishMapAndRobot(2.55, 0.45, M_PI);
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
 
   const rclcpp::Duration costmap_publishing_interval(0.1);

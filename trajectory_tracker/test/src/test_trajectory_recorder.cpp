@@ -63,7 +63,7 @@ TEST(TrajectoryRecorder, TfToPath)
       };
   const size_t len = sizeof(points) / sizeof(tf2::Transform);
 
-  rclcpp::Duration::from_seconds(1.0).sleep();
+  rclcpp::sleep_for(std::chrono::seconds(1));
   for (auto& p : points)
   {
     for (size_t i = 0; i < 3; ++i)
@@ -73,7 +73,7 @@ TEST(TrajectoryRecorder, TfToPath)
               p, this->now() + rclcpp::Duration::from_seconds(0.1), "map"));
       trans.child_frame_id = "base_link";
       tfb.sendTransform(trans);
-      rclcpp::Duration::from_seconds(0.1).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
     }
   }
   rclcpp::spin_some(shared_from_this());
@@ -99,7 +99,7 @@ TEST(TrajectoryRecorder, TfToPath)
   while (received_count != 2)
   {
     rclcpp::spin_some(shared_from_this());
-    rclcpp::Duration::from_seconds(0.1).sleep();
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
   }
   ASSERT_EQ(static_cast<int>(path->poses.size()), 1);
   ASSERT_EQ(path->poses.back().pose.position.x, points[len - 1].getOrigin().x());

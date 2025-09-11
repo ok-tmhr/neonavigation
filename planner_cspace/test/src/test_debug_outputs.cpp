@@ -56,7 +56,7 @@ public:
     // Wait planner
     while (rclcpp::ok())
     {
-      rclcpp::Duration::from_seconds(0.1).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
       rclcpp::spin_some(shared_from_this());
       if (cnt_planner_ready_ > 5 && cnt_path_ > 5)
         break;
@@ -71,7 +71,7 @@ public:
     // Wait receiving the messages
     while (rclcpp::ok())
     {
-      rclcpp::Duration::from_seconds(0.1).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
       rclcpp::spin_some(shared_from_this());
       // First hysteresis map doesn't have previous path information.
       if (cnt_hysteresis_ > 2 && cnt_remembered_ > 2)
@@ -240,7 +240,7 @@ TEST_F(DebugOutputsTest, Distance)
 TEST_F(DebugOutputsTest, Metrics)
 {
   metrics_ = nullptr;
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   rclcpp::spin_some(shared_from_this());
   ASSERT_TRUE(metrics_);
   ASSERT_NE(0u, metrics_->data.size());

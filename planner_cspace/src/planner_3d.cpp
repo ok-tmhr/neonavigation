@@ -1620,7 +1620,7 @@ public:
       {
         return;
       }
-      rclcpp::Duration::from_seconds(0.01).sleep();
+      rclcpp::sleep_for(std::chrono::milliseconds(10));
     }
   }
 

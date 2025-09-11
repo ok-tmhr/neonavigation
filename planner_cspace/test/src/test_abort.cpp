@@ -79,7 +79,7 @@ TEST_F(AbortTest, AbortByGoalInRock)
   const rclcpp::Duration wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
-  rclcpp::Duration::from_seconds(0.5).sleep();
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
   // Send a goal which is in Rock
   move_base_->async_send_goal(createGoalInRock());
   while (move_base_->getState().state_ !=
