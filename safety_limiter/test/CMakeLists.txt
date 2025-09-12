@@ -1,4 +1,4 @@
-add_rostest_gtest(test_safety_limiter
+ament_add_gtest(test_safety_limiter
   test/safety_limiter_rostest.test
   src/test_safety_limiter.cpp
 )
@@ -8,7 +8,7 @@ include_directories(include)
 
 ament_target_dependencies(test_safety_limiter safety_limiter)
 
-add_rostest_gtest(test_safety_limiter2
+ament_add_gtest(test_safety_limiter2
   test/safety_limiter2_rostest.test
   src/test_safety_limiter2.cpp
 )
@@ -16,7 +16,7 @@ target_link_libraries(test_safety_limiter2 ${nav_msgs_LIBRARIES} ${tf2_geometry_
 target_include_directories(test_safety_limiter2 PUBLIC ${nav_msgs_INCLUDE_DIRS} ${tf2_geometry_msgs_INCLUDE_DIRS})
 ament_target_dependencies(test_safety_limiter2 safety_limiter)
 
-add_rostest_gtest(test_safety_limiter_compat
+ament_add_gtest(test_safety_limiter_compat
   test/safety_limiter_compat_rostest.test
   src/test_safety_limiter.cpp
 )

@@ -85,14 +85,14 @@ ament_add_gtest(test_start_pose_predictor
 )
 target_link_libraries(test_start_pose_predictor ${Boost_LIBRARIES})
 
-add_rostest_gtest(test_debug_outputs
+ament_add_gtest(test_debug_outputs
   test/debug_outputs_rostest.test
   src/test_debug_outputs.cpp
 )
 target_link_libraries(test_debug_outputs)
 ament_target_dependencies(test_debug_outputs planner_3d)
 
-add_rostest_gtest(test_navigate
+ament_add_gtest(test_navigate
   test/navigation_rostest.test
   src/test_navigate.cpp
 )
@@ -119,7 +119,7 @@ add_rostest(test/navigation_rostest.test
   DEPENDENCIES test_navigate
 )
 
-add_rostest_gtest(test_navigate_remember
+ament_add_gtest(test_navigate_remember
   test/navigation_remember_rostest.test
   src/test_navigate_remember.cpp
 )
@@ -130,56 +130,56 @@ add_rostest(test/navigation_compat_rostest.test
   DEPENDENCIES test_navigate
 )
 
-add_rostest_gtest(test_navigate_boundary
+ament_add_gtest(test_navigate_boundary
   test/navigation_boundary_rostest.test
   src/test_navigate_boundary.cpp
 )
 target_link_libraries(test_navigate_boundary)
 ament_target_dependencies(test_navigate_boundary planner_3d_debug)
 
-add_rostest_gtest(test_abort
+ament_add_gtest(test_abort
   test/abort_rostest.test
   src/test_abort.cpp
 )
 target_link_libraries(test_abort)
 ament_target_dependencies(test_abort planner_3d)
 
-add_rostest_gtest(test_preempt
+ament_add_gtest(test_preempt
   test/preempt_rostest.test
   src/test_preempt.cpp
 )
 target_link_libraries(test_preempt)
 ament_target_dependencies(test_preempt planner_3d)
 
-add_rostest_gtest(test_costmap_watchdog
+ament_add_gtest(test_costmap_watchdog
   test/costmap_watchdog_rostest.test
   src/test_costmap_watchdog.cpp
 )
 target_link_libraries(test_costmap_watchdog)
 ament_target_dependencies(test_costmap_watchdog planner_3d)
 
-add_rostest_gtest(test_planner_2dof_serial_joints
+ament_add_gtest(test_planner_2dof_serial_joints
   test/planner_2dof_serial_joints_rostest.test
   src/test_planner_2dof_serial_joints.cpp
 )
 target_link_libraries(test_planner_2dof_serial_joints)
 ament_target_dependencies(test_planner_2dof_serial_joints planner_2dof_serial_joints)
 
-add_rostest_gtest(test_planner_3d_map_size
+ament_add_gtest(test_planner_3d_map_size
   test/planner_3d_map_size_rostest.test
   src/test_planner_3d_map_size.cpp
 )
 target_link_libraries(test_planner_3d_map_size)
 ament_target_dependencies(test_planner_3d_map_size planner_3d)
 
-add_rostest_gtest(test_tolerant_action
+ament_add_gtest(test_tolerant_action
   test/tolerant_action_rostest.test
   src/test_tolerant_action.cpp
 )
 target_link_libraries(test_tolerant_action)
 ament_target_dependencies(test_tolerant_action planner_3d)
 
-add_rostest_gtest(test_dynamic_parameter_change
+ament_add_gtest(test_dynamic_parameter_change
   test/dynamic_parameter_change_rostest.test
   src/test_dynamic_parameter_change.cpp
 )

@@ -1,4 +1,4 @@
-add_rostest_gtest(test_joystick_interrupt
+ament_add_gtest(test_joystick_interrupt
   test/joystick_interrupt_rostest.test
   src/test_joystick_interrupt.cpp
 )

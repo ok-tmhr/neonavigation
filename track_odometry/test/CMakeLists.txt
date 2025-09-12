@@ -4,14 +4,14 @@ ament_add_gtest(test_tf_projection
 )
 target_link_libraries(test_tf_projection)
 
-add_rostest_gtest(test_track_odometry
+ament_add_gtest(test_track_odometry
   test/track_odometry_rostest.test
   src/test_track_odometry.cpp
 )
 target_link_libraries(test_track_odometry)
 ament_target_dependencies(test_track_odometry track_odometry)
 
-add_rostest_gtest(test_tf_projection_node
+ament_add_gtest(test_tf_projection_node
   test/tf_projection_rostest.test
   src/test_tf_projection_node.cpp
 )

@@ -1,4 +1,4 @@
-add_rostest_gtest(test_obj_to_pointcloud
+ament_add_gtest(test_obj_to_pointcloud
   test/obj_to_pointcloud_rostest.test
   src/test_obj_to_pointcloud.cpp
 )
