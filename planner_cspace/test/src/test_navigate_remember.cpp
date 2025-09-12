@@ -76,7 +76,7 @@ protected:
         "/planner_3d/status", 10, &NavigateWithRememberUpdates::cbStatus, this);
     sub_path_ = nh_->create_subscription("path", 1, &NavigateWithRememberUpdates::cbPath, this);
     srv_forget_ =
-        nh_.serviceClient<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
+        nh_.->create_client<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
             "forget_planning_cost");
     pub_initial_pose_ =
         nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());

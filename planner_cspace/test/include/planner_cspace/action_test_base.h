@@ -70,7 +70,7 @@ public:
     }
 
     rclcpp::ServiceClient srv_plan =
-        node_.serviceClient<nav_msgs::srv::GetPlanRequest, nav_msgs::srv::GetPlanResponse>(
+        node_.->create_client<nav_msgs::srv::GetPlanRequest, nav_msgs::srv::GetPlanResponse>(
             "/planner_3d/make_plan");
 
     const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10.0);

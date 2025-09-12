@@ -93,7 +93,7 @@ protected:
     sub_path_ = nh_->create_subscription("path", 1, &Navigate::cbPath, this);
     sub_path_vel_ = nh_->create_subscription("path_velocity", 1, &Navigate::cbPathVel, this);
     srv_forget_ =
-        nh_.serviceClient<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
+        nh_.->create_client<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
             "forget_planning_cost");
     pub_map_ = nh_->create_publisher<nav_msgs::msg::OccupancyGrid>("map", rclcpp::QoS(1).transient_local());
     pub_map_local_ = nh_->create_publisher<nav_msgs::msg::OccupancyGrid>("overlay", rclcpp::QoS(1).transient_local());
@@ -510,7 +510,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
 TEST_F(Navigate, GlobalPlan)
 {
   rclcpp::ServiceClient srv_plan =
-      nh_.serviceClient<nav_msgs::srv::GetPlanRequest, nav_msgs::srv::GetPlanResponse>(
+      nh_.->create_client<nav_msgs::srv::GetPlanRequest, nav_msgs::srv::GetPlanResponse>(
           "/planner_3d/make_plan");
 
   rclcpp::spin_some(shared_from_this());
