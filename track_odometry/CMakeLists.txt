@@ -44,13 +44,13 @@ target_link_libraries(tf_projection)
 ament_target_dependencies(tf_projection ${COLCON_DEPENDS})
 
 
-# if(BUILD_TESTING)
-#   find_package(ament_cmake_gtest REQUIRED)
-#   add_subdirectory(test)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  add_subdirectory(test)
 
-#   find_package(ament_lint_auto REQUIRED)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 
 install(TARGETS

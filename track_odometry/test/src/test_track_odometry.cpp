@@ -42,14 +42,15 @@ class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
 protected:
   std::vector<nav_msgs::msg::Odometry> odom_msg_buffer_;
+  rclcpp::Node::SharedPtr nh_;
 
 public:
   void initializeNode(const std::string& ns)
   {
-    rclcpp::Node::SharedPtr nh(ns);
-    pub_odom_ = nh.advertise<nav_msgs::msg::Odometry>("odom_raw", 10);
-    pub_imu_ = nh.advertise<sensor_msgs::msg::Imu>("imu/data", 10);
-    sub_odom_ = nh.subscribe("odom", 10, &TrackOdometryTest::cbOdom, this);
+    nh_ = rclcpp::Node::make_shared("test_track_odometry", ns);
+    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom_raw", 10);
+    pub_imu_ = nh_->create_publisher<sensor_msgs::msg::Imu>("imu/data", 10);
+    sub_odom_ = nh_->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackOdometryTest::cbOdom, this, std::placeholders::_1));
   }
   bool initializeTrackOdometry(
       nav_msgs::msg::Odometry& odom_raw,
@@ -60,13 +61,13 @@ public:
     odom_ = nullptr;
     for (int i = 0; i < 1000 && rclcpp::ok(); ++i)
     {
-      odom_raw.header.stamp = this->now();
-      imu.header.stamp = odom_raw.header.stamp + rclcpp::Duration::from_seconds(0.0001);
+      odom_raw.header.stamp = nh_->now();
+      imu.header.stamp = rclcpp::Time(odom_raw.header.stamp) + rclcpp::Duration::from_seconds(0.0001);
       pub_odom_->publish(odom_raw);
       pub_imu_->publish(imu);
       rate.sleep();
       odom_.reset();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (odom_ && i > 50)
         break;
     }
@@ -102,7 +103,7 @@ public:
       stepAndPublish(odom_raw, imu, dt);
 
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (++cnt >= steps)
         break;
     }
@@ -114,8 +115,8 @@ public:
       sensor_msgs::msg::Imu& imu,
       const double dt)
   {
-    odom_raw.header.stamp += rclcpp::Duration::from_seconds(dt);
-    imu.header.stamp += rclcpp::Duration::from_seconds(dt);
+    odom_raw.header.stamp = rclcpp::Time(odom_raw.header.stamp) + rclcpp::Duration::from_seconds(dt);
+    imu.header.stamp = rclcpp::Time(imu.header.stamp) + rclcpp::Duration::from_seconds(dt);
     pub_imu_->publish(imu);
 
     // Buffer odom message to add delay and jitter.
@@ -142,7 +143,7 @@ public:
     while (true)
     {
       rclcpp::sleep_for(std::chrono::milliseconds(100));
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (odom_prev == odom_)
       {
         // no more new messages
@@ -153,9 +154,9 @@ public:
   }
 
 protected:
-  rclcpp::Publisher<>::SharedPtr pub_odom_;
-  rclcpp::Publisher<>::SharedPtr pub_imu_;
-  rclcpp::Subscription<>::SharedPtr sub_odom_;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
   nav_msgs::msg::Odometry::ConstPtr odom_;
   size_t odom_cnt_;
 
@@ -302,7 +303,7 @@ INSTANTIATE_TEST_CASE_P(
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_track_odometry");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

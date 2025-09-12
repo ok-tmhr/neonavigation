@@ -31,7 +31,7 @@
 #include <string>
 
 #include <rclcpp/rclcpp.hpp>
-#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2/utils.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/buffer.h>
@@ -42,6 +42,7 @@
 class TfProjectionTest : public ::testing::TestWithParam<const char*>
 {
 public:
+  rclcpp::Node::SharedPtr node_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
@@ -49,7 +50,8 @@ public:
 
   TfProjectionTest()
   {
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    node_ = rclcpp::Node::make_shared("test_tf_projection_node");
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp() override
@@ -104,7 +106,7 @@ INSTANTIATE_TEST_CASE_P(
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_tf_projection_node");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

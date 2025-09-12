@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node name="test_tf_projection_node" pkg="track_odometry" exec="test_tf_projection_node" />
+  <node name="test_tf_projection_node" pkg="track_odometry" exec="test_tf_projection_node" output="screen" />
 
   <node pkg="track_odometry" exec="tf_projection" name="tf_projection">
     <param name="base_link_frame" value="base_link" />
