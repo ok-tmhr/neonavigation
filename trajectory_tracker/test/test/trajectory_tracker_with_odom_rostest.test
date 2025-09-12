@@ -4,7 +4,11 @@
 
   <set_parameter name="use_sim_time" value="false" />
 
-  <node name="test_trajectory_tracker_with_odom" pkg="trajectory_tracker" exec="test_trajectory_tracker_with_odom" time-limit="120.0" />
+  <!-- <node name="test_trajectory_tracker_with_odom" pkg="trajectory_tracker" exec="test_trajectory_tracker_with_odom" output="screen" /> -->
+
+  <timer period="120.0">
+    <shutdown />
+  </timer>
 
   <node pkg="trajectory_tracker" exec="trajectory_tracker" name="trajectory_tracker" output="screen">
     <param name="max_vel" value="1.0" />
