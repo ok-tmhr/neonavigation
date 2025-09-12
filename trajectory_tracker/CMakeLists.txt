@@ -54,13 +54,13 @@ target_include_directories(trajectory_server PUBLIC
 ament_target_dependencies(trajectory_server ${COLCON_DEPENDS})
 
 
-# if(BUILD_TESTING)
-#   find_package(ament_cmake_gtest REQUIRED)
-#   add_subdirectory(test)
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  add_subdirectory(test)
 
-#   find_package(ament_lint_auto REQUIRED)
-#   ament_lint_auto_find_test_dependencies()
-# endif()
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 
 install(TARGETS

@@ -43,11 +43,12 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = this->now();
+  const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
+    if (nh_->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -59,7 +60,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -69,7 +70,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     // Check multiple times to assert overshoot.
@@ -85,6 +86,7 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
 TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 {
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   const double resolutions[] =
       {
           0.1,
@@ -105,10 +107,10 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
     rclcpp::Rate rate(50);
-    const rclcpp::Time start = this->now();
+    const rclcpp::Time start = nh_->now();
     while (rclcpp::ok())
     {
-      if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
+      if (nh_->now() > start + rclcpp::Duration::from_seconds(10.0))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -121,7 +123,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
@@ -131,7 +133,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
       {
         publishTransform();
         rate.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
       }
 
       // Check multiple times to assert overshoot.
@@ -153,6 +155,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 {
   const double vels[] = {0.02, 0.05, 0.1, 0.2, 0.5, 1.0};
   const double path_length = 2.0;
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   for (const double vel : vels)
   {
     const std::string info_message = "linear vel: " + std::to_string(vel);
@@ -166,10 +169,10 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
     rclcpp::Rate rate(50);
-    const rclcpp::Time start = this->now();
+    const rclcpp::Time start = nh_->now();
     while (rclcpp::ok())
     {
-      if (this->now() > start + rclcpp::Duration::from_seconds(5.0 + path_length / vel))
+      if (nh_->now() > start + rclcpp::Duration::from_seconds(5.0 + path_length / vel))
       {
         FAIL()
             << "Timeout" << std::endl
@@ -182,7 +185,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
         break;
     }
@@ -192,7 +195,7 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
       {
         publishTransform();
         rate.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
       }
 
       // Check multiple times to assert overshoot.
@@ -222,11 +225,12 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = this->now();
+  const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
+    if (nh_->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -238,7 +242,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
 
     if (0.3 < getPos()[0] && getPos()[0] < 0.35)
     {
@@ -258,7 +262,7 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     // Check multiple times to assert overshoot.
@@ -290,11 +294,12 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   }
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = this->now();
+  const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration::from_seconds(20.0))
+    if (nh_->now() > start + rclcpp::Duration::from_seconds(20.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -306,7 +311,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -316,7 +321,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     // Check multiple times to assert overshoot.
@@ -333,6 +338,7 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 {
   const float init_yaw_array[] = {0.0, 3.0};
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   for (const float init_yaw : init_yaw_array)
   {
     const std::vector<float> target_angle_array[] =
@@ -366,10 +372,10 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
         waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
         rclcpp::Rate rate(50);
-        const rclcpp::Time start = this->now();
+        const rclcpp::Time start = nh_->now();
         for (int i = 0; rclcpp::ok(); ++i)
         {
-          if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
+          if (nh_->now() > start + rclcpp::Duration::from_seconds(10.0))
           {
             FAIL()
                 << condition_name.str()
@@ -382,7 +388,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 
           publishTransform();
           rate.sleep();
-          rclcpp::spin_some(shared_from_this());
+          rclcpp::spin_some(nh_);
 
           if (cmd_vel_ && i > 5)
           {
@@ -407,7 +413,7 @@ TEST_F(TrajectoryTrackerTest, InPlaceTurn)
           {
             publishTransform();
             rate.sleep();
-            rclcpp::spin_some(shared_from_this());
+            rclcpp::spin_some(nh_);
           }
 
           // Check multiple times to assert overshoot.
@@ -441,11 +447,12 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   }
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = this->now();
+  const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
+    if (nh_->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -457,7 +464,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -467,7 +474,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     // Check multiple times to assert overshoot.
@@ -485,6 +492,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 {
   initState(Eigen::Vector2d(0, 0), 0);
 
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   std::vector<Eigen::Vector3d> poses;
   std::vector<Eigen::Vector3d> poses_second_half;
   Eigen::Vector3d p(0.0, 0.0, 0.0);
@@ -504,10 +512,10 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
   int cnt_arrive_local_goal(0);
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = this->now();
+  const rclcpp::Time start = nh_->now();
   for (int i = 0; rclcpp::ok(); i++)
   {
-    if (this->now() > start + rclcpp::Duration::from_seconds(15.0))
+    if (nh_->now() > start + rclcpp::Duration::from_seconds(15.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -519,7 +527,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
 
@@ -547,7 +555,7 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     // Check multiple times to assert overshoot.
@@ -572,11 +580,12 @@ TEST_F(TrajectoryTrackerTest, FarAray)
   poses.push_back(Eigen::Vector3d(0.5, y_pos, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
+  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = this->now();
+  const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
   {
-    if (this->now() > start + rclcpp::Duration::from_seconds(10.0))
+    if (nh_->now() > start + rclcpp::Duration::from_seconds(10.0))
     {
       FAIL()
           << "Timeout" << std::endl
@@ -588,7 +597,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -598,7 +607,7 @@ TEST_F(TrajectoryTrackerTest, FarAray)
     {
       publishTransform();
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     // Check multiple times to assert overshoot.
@@ -614,30 +623,30 @@ TEST_F(TrajectoryTrackerTest, FarAray)
 
 void timeSource()
 {
-  rclcpp::Node::SharedPtr nh("/");
+  auto nh = rclcpp::Node::make_shared("time_source");
   bool use_sim_time;
-  nh.param("/use_sim_time", use_sim_time, false);
+  nh->get_parameter_or("use_sim_time", use_sim_time, false);
   if (!use_sim_time)
     return;
 
-  rclcpp::Publisher<>::SharedPtr pub = nh.advertise<rosgraph_msgs::msg::Clock>("clock", 1);
+  auto pub = nh->create_publisher<rosgraph_msgs::msg::Clock>("clock", 1);
 
   rclcpp::WallRate rate(400.0);  // 400% speed
-  rclcpp::WallTime time = rclcpp::Clock().now();
+  auto time = rclcpp::Clock().now();
   while (rclcpp::ok())
   {
     rosgraph_msgs::msg::Clock clock;
-    clock.clock.fromNSec(time.toNSec());
+    clock.clock = time;
     pub->publish(clock);
     rate.sleep();
-    time += rclcpp::WallDuration(0.01);
+    time += rclcpp::Duration::from_seconds(0.01);
   }
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_trajectory_tracker");
+  rclcpp::init(argc, argv);
 
   boost::thread time_thread(timeSource);
 

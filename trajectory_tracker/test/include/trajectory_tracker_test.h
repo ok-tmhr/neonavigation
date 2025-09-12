@@ -116,7 +116,7 @@ public:
   rclcpp::Duration delay_;
 
   TrajectoryTrackerTest()
-    : nh_("")
+    : nh_(rclcpp::Node::make_shared("trajectory_tracker_test"))
     , delay_(0, 0)
     , cmd_vel_time_(0, 0, RCL_ROS_TIME)
     , trans_stamp_last_(0, 0, RCL_ROS_TIME)
@@ -146,6 +146,8 @@ public:
       if (pub_path_->get_subscription_count() > 0)
         break;
     }
+
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*nh_);
   }
   void initState(const tf2::Transform& pose)
   {

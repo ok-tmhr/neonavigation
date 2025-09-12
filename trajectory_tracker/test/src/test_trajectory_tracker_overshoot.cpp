@@ -46,11 +46,17 @@ protected:
     poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-    ParamType param;
-    ASSERT_TRUE(getConfig(param));
-    param.goal_tolerance_lin_vel = goal_tolerance_lin_vel;
-    param.goal_tolerance_ang_vel = goal_tolerance_ang_vel;
-    ASSERT_TRUE(setConfig(param));
+    auto node = rclcpp::Node::make_shared("test_trajectory_tracker_overshoot");
+    auto param_client = std::make_shared<rclcpp::SyncParametersClient>(node, "trajectory_tracker");
+    param_client->wait_for_service();
+    auto result = param_client->set_parameters({
+      rclcpp::Parameter("goal_tolerance_lin_vel", goal_tolerance_lin_vel),
+      rclcpp::Parameter("goal_tolerance_ang_vel", goal_tolerance_ang_vel),
+    });
+    for (const auto &res : result)
+    {
+      ASSERT_TRUE(res.successful);
+    }
 
     nav_msgs::msg::Odometry odom;
     odom.header.frame_id = "odom";
@@ -70,15 +76,15 @@ protected:
     odom.twist.twist.angular.z = rotation_vel;
 
     rclcpp::Rate rate(50);
-    const rclcpp::Time initial_time = this->now();
+    const rclcpp::Time initial_time = node->now();
     const rclcpp::Time time_limit = initial_time + rclcpp::Duration::from_seconds(5.0);
-    while (rclcpp::ok() && time_limit > this->now())
+    while (rclcpp::ok() && time_limit > node->now())
     {
-      odom.header.stamp = this->now();
+      odom.header.stamp = node->now();
       publishTransform(odom);
       rate.sleep();
-      rclcpp::spin_some(shared_from_this());
-      if ((status_->header.stamp > initial_time + rclcpp::Duration::from_seconds(0.5)) && (status_->status == expected_status))
+      rclcpp::spin_some(node);
+      if ((rclcpp::Time(status_->header.stamp) > initial_time + rclcpp::Duration::from_seconds(0.5)) && (status_->status == expected_status))
       {
         return;
       }
@@ -126,7 +132,7 @@ TEST_F(TrajectoryTrackerOvershootTest, AngularrVelocityToleranceWithRemainingAng
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_trajectory_tracker_overshoot");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

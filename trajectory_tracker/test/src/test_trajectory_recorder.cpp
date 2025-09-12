@@ -41,7 +41,7 @@
 
 TEST(TrajectoryRecorder, TfToPath)
 {
-  rclcpp::Node::SharedPtr nh("");
+  auto nh = rclcpp::Node::make_shared("test_trajectory_recorder");
 
   nav_msgs::msg::Path::ConstPtr path;
   int received_count = 0;
@@ -51,8 +51,8 @@ TEST(TrajectoryRecorder, TfToPath)
     ++received_count;
     path = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub_path = nh.subscribe("path", 1, cb_path);
-  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb;
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
+  auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(nh);
 
   const tf2::Transform points[] =
       {
@@ -70,13 +70,13 @@ TEST(TrajectoryRecorder, TfToPath)
     {
       geometry_msgs::msg::TransformStamped trans =
           tf2::toMsg(tf2::Stamped<tf2::Transform>(
-              p, this->now() + rclcpp::Duration::from_seconds(0.1), "map"));
+              p, tf2_ros::fromRclcpp(nh->now() + rclcpp::Duration::from_seconds(0.1)), "map"));
       trans.child_frame_id = "base_link";
-      tfb.sendTransform(trans);
+      tfb->sendTransform(trans);
       rclcpp::sleep_for(std::chrono::milliseconds(100));
     }
   }
-  rclcpp::spin_some(shared_from_this());
+  rclcpp::spin_some(nh);
   ASSERT_TRUE(static_cast<bool>(path));
   ASSERT_EQ(received_count, 1);
 
@@ -92,13 +92,15 @@ TEST(TrajectoryRecorder, TfToPath)
     ASSERT_EQ(path->poses[i].pose.orientation.w, points[i].getRotation().w());
   }
 
-  rclcpp::ServiceClient client = nh.serviceClient<std_srvs::srv::Empty>("/trajectory_recorder/clear_path");
-  std_srvs::srv::Empty empty;
-  ASSERT_TRUE(client.call(empty));
+  auto client = nh->create_client<std_srvs::srv::Empty>("/trajectory_recorder/clear_path");
+  auto empty = std::make_shared<std_srvs::srv::Empty::Request>();
+  client->wait_for_service();
+  auto result = client->async_send_request(empty);
+  ASSERT_TRUE(rclcpp::spin_until_future_complete(nh, result) == rclcpp::FutureReturnCode::SUCCESS);
 
   while (received_count != 2)
   {
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     rclcpp::sleep_for(std::chrono::milliseconds(100));
   }
   ASSERT_EQ(static_cast<int>(path->poses.size()), 1);
@@ -114,7 +116,7 @@ TEST(TrajectoryRecorder, TfToPath)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_trajectory_recorder");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
