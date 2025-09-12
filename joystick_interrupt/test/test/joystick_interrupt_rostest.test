@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node name="test_joystick_interrupt" pkg="joystick_interrupt" exec="test_joystick_interrupt" />
+  <node name="test_joystick_interrupt" pkg="joystick_interrupt" exec="test_joystick_interrupt" output="screen" />
 
   <node pkg="joystick_interrupt" exec="joystick_interrupt" name="joystick_interrupt">
     <param name="interrupt_button" value="0" />
