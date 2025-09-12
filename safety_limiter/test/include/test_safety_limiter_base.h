@@ -34,10 +34,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <diagnostic_msgs/DiagnosticArray.h>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <safety_limiter_msgs/msg/safety_limiter_status.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -53,7 +53,7 @@ inline void GenerateEmptyPointcloud2(sensor_msgs::msg::PointCloud2& cloud)
   cloud.width = 0;
   cloud.is_bigendian = false;
   cloud.is_dense = false;
-  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2FieldsByString(1, "xyz");
 }
 inline void GenerateSinglePointPointcloud2(
@@ -66,7 +66,7 @@ inline void GenerateSinglePointPointcloud2(
   cloud.width = 1;
   cloud.is_bigendian = false;
   cloud.is_dense = false;
-  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2FieldsByString(1, "xyz");
   sensor_msgs::PointCloud2Iterator<float> iter_x(cloud, "x");
   sensor_msgs::PointCloud2Iterator<float> iter_y(cloud, "y");
@@ -82,12 +82,12 @@ class SafetyLimiterTest : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  rclcpp::Publisher<>::SharedPtr pub_cmd_vel_;
-  rclcpp::Publisher<>::SharedPtr pub_cloud_;
-  rclcpp::Publisher<>::SharedPtr pub_watchdog_;
-  rclcpp::Subscription<>::SharedPtr sub_diag_;
-  rclcpp::Subscription<>::SharedPtr sub_status_;
-  rclcpp::Subscription<>::SharedPtr sub_cmd_vel_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_cloud_;
+  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr pub_watchdog_;
+  rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr sub_diag_;
+  rclcpp::Subscription<safety_limiter_msgs::msg::SafetyLimiterStatus>::SharedPtr sub_status_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
 
@@ -112,25 +112,26 @@ public:
   geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
 
   inline SafetyLimiterTest()
-    : nh_()
+    : nh_(rclcpp::Node::make_shared("test_safety_limiter"))
   {
     pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_in", 1);
     pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 1);
     pub_watchdog_ = nh_->create_publisher<std_msgs::msg::Empty>("watchdog_reset", 1);
-    sub_diag_ = nh_->create_subscription("diagnostics", 1, &SafetyLimiterTest::cbDiag, this);
-    sub_status_ = nh_->create_subscription("/safety_limiter/status", 1, &SafetyLimiterTest::cbStatus, this);
-    sub_cmd_vel_ = nh_->create_subscription("cmd_vel", 1, &SafetyLimiterTest::cbCmdVel, this);
+    using std::placeholders::_1;
+    sub_diag_ = nh_->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, std::bind(&SafetyLimiterTest::cbDiag, this, _1));
+    sub_status_ = nh_->create_subscription<safety_limiter_msgs::msg::SafetyLimiterStatus>("/safety_limiter/status", 1, std::bind(&SafetyLimiterTest::cbStatus, this, _1));
+    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&SafetyLimiterTest::cbCmdVel, this, _1));
 
     rclcpp::Rate wait(10.0);
     // Skip initial state
     for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
-      publishEmptyPointPointcloud2("base_link", this->now());
+      publishEmptyPointPointcloud2("base_link", nh_->now());
       publishWatchdogReset();
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
     cmd_vel_.reset();
     diag_.reset();
@@ -182,7 +183,7 @@ public:
       const float ang)
   {
     geometry_msgs::msg::TransformStamped trans;
-    trans.header.stamp = this->now();
+    trans.header.stamp = nh_->now();
     trans.transform = tf2::toMsg(
         tf2::Transform(tf2::Quaternion(tf2::Vector3(0, 0, 1), ang), tf2::Vector3(lin, 0, 0)));
     trans.header.frame_id = parent_frame_id;

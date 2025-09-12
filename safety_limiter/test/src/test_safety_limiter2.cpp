@@ -31,6 +31,7 @@
 #include <cmath>
 #include <string>
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
@@ -70,21 +71,21 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
         stopped = true;
       }
     };
-    rclcpp::Subscription<>::SharedPtr sub_cmd_vel = nh_->create_subscription("cmd_vel", 1, cb_cmd_vel);
+    auto sub_cmd_vel = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, cb_cmd_vel);
 
     int count_after_stop = 10;
     for (float t = 0; t < 10.0 && rclcpp::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
-        publishSinglePointPointcloud2(1.5 - x, 0, 0, "base_link", this->now());
+        publishSinglePointPointcloud2(1.5 - x, 0, 0, "base_link", nh_->now());
       else
-        publishSinglePointPointcloud2(-3.5 - x, 0, 0, "base_link", this->now());
+        publishSinglePointPointcloud2(-3.5 - x, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", x, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (stopped)
       {
         count_after_stop--;
@@ -105,14 +106,14 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
       EXPECT_GT(-1.3, x)
           << "vel: " << vel;  // Collision point + margin * 2
     }
-    sub_cmd_vel.shutdown();
+    sub_cmd_vel.reset();
   }
 }
 
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_safety_limiter");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

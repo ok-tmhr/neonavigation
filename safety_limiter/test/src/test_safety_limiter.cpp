@@ -33,7 +33,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <diagnostic_msgs/DiagnosticStatus.h>
+#include <diagnostic_msgs/msg/diagnostic_status.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
@@ -66,7 +66,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
         {
           // cloud must have timestamp, otherwise the robot stops
           if (with_cloud > 1)
-            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", this->now());
+            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
           else
             publishSinglePointPointcloud2(1000, 1000, 0, "base_link", rclcpp::Time(0, 0, RCL_ROS_TIME));
         }
@@ -77,7 +77,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
         broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
 
         if (i > 5 && cmd_vel_)
         {
@@ -137,11 +137,11 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
   // Skip initial state
   for (int i = 0; i < 30 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", this->now());
+    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
   }
 
   bool received = false;
@@ -157,16 +157,16 @@ TEST_F(SafetyLimiterTest, CloudBuffering)
     // safety_limiter must check 4 buffered clouds
     // 3/4 of pointclouds have collision point
     if ((i % 4) == 0)
-      publishSinglePointPointcloud2(10, 0, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(10, 0, 0, "base_link", nh_->now());
     else
-      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
 
     publishWatchdogReset();
     publishTwist(2.0, 0);
     broadcastTF("odom", "base_link", 0.0, 0.0);
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (en && cmd_vel_)
     {
       received = true;
@@ -183,11 +183,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
   // Skip initial state
   for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", this->now());
+    publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
   }
 
   for (float vel = 0.0; vel < 2.0; vel += 0.4)
@@ -200,13 +200,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(0.5, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, ((i % 5) - 2.0) * 0.01);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -234,11 +234,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
   // Skip initial state
   for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", this->now());
+    publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
   }
 
   for (float vel = 0.0; vel > -2.0; vel -= 0.4)
@@ -251,13 +251,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(-2.5, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, ((i % 5) - 2.0) * 0.01);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -285,11 +285,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
   // Skip initial state
   for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", this->now());
+    publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
   }
 
   const float vel_ref[] = {-0.2, -0.4, 0.2, 0.4};
@@ -303,13 +303,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(-0.05, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -354,11 +354,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
   // Skip initial state
   for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-1, -1, 0, "base_link", this->now());
+    publishSinglePointPointcloud2(-1, -1, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
   }
 
   for (float vel = 0.0; vel < M_PI; vel += M_PI / 10)
@@ -371,13 +371,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-1, -1.1, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(-1, -1.1, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist((i % 3) * 0.01, vel);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -405,11 +405,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
   // Skip initial state
   for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
-    publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", this->now());
+    publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", nh_->now());
     publishWatchdogReset();
 
     wait.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
   }
 
   const float vel_ref[] = {-0.2, -0.4, 0.2, 0.4};
@@ -423,13 +423,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(-1, -0.09, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(0.0, vel);
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -482,13 +482,13 @@ TEST_F(SafetyLimiterTest, NoCollision)
       {
         if (i > 5)
           en = true;
-        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", this->now());
+        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
         publishWatchdogReset();
         publishTwist(vel, ang_vel);
         broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
         if (en && cmd_vel_)
         {
           received = true;
@@ -526,16 +526,16 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulation)
     for (float t = 0; t < 10.0 && rclcpp::ok() && count_after_stop > 0; t += dt)
     {
       if (vel > 0)
-        publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", this->now());
+        publishSinglePointPointcloud2(1.0 - x, 0, 0, "base_link", nh_->now());
       else
-        publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", this->now());
+        publishSinglePointPointcloud2(-3.0 - x, 0, 0, "base_link", nh_->now());
 
       publishWatchdogReset();
       publishTwist(vel, 0.0);
       broadcastTF("odom", "base_link", x, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (cmd_vel_)
       {
         if (std::abs(cmd_vel_->linear.x) < 1e-4 && x > 0.5)
@@ -586,13 +586,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
       {
         if (i > 5)
           en = true;
-        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", this->now());
+        publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
         publishWatchdogReset();
         publishTwist(linear_velocities[linear_index], angular_velocities[angular_index]);
         broadcastTF("odom", "base_link", 0.0, 0.0);
 
         wait.sleep();
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
         if (en && cmd_vel_)
         {
           received = true;
@@ -624,11 +624,11 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
   {
     for (int i = 0; i < 10 && rclcpp::ok(); ++i)
     {
-      publishSinglePointPointcloud2(2.0, 0, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(2.0, 0, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(0, 0);
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
     }
 
     double obstacle_x;
@@ -665,13 +665,13 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
     {
       if (i > 5)
         en = true;
-      publishSinglePointPointcloud2(obstacle_x, obstacle_y, 0, "base_link", this->now());
+      publishSinglePointPointcloud2(obstacle_x, obstacle_y, 0, "base_link", nh_->now());
       publishWatchdogReset();
       publishTwist(vel * std::cos(angle), 0, vel * std::sin(angle));
       broadcastTF("odom", "base_link", 0.0, 0.0);
 
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (en && cmd_vel_)
       {
         received = true;
@@ -700,7 +700,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_safety_limiter");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
