@@ -119,18 +119,18 @@ protected:
       rate.sleep();
       ASSERT_LT(this->now(), deadline)
           << test_scope_ << "Initialization timeout: "
-          << "sub_map:" << sub_map_.getNumPublishers() << " "
-          << "sub_map_local:" << sub_map_local_.getNumPublishers() << " "
-          << "sub_costmap:" << sub_costmap_.getNumPublishers() << " "
-          << "sub_status:" << sub_status_.getNumPublishers() << " "
+          << "sub_map:" << sub_map_->get_publisher_count() << " "
+          << "sub_map_local:" << sub_map_local_->get_publisher_count() << " "
+          << "sub_costmap:" << sub_costmap_->get_publisher_count() << " "
+          << "sub_status:" << sub_status_->get_publisher_count() << " "
           << "pub_map:" << pub_map_->get_subscription_count() << " "
           << "pub_map_local:" << pub_map_local_->get_subscription_count() << " "
           << "pub_initial_pose:" << pub_initial_pose_->get_subscription_count() << " "
           << "pub_patrol_nodes:" << pub_patrol_nodes_->get_subscription_count() << " ";
-      if (sub_map_.getNumPublishers() > 0 &&
-          sub_map_local_.getNumPublishers() > 0 &&
-          sub_costmap_.getNumPublishers() > 0 &&
-          sub_status_.getNumPublishers() > 0 &&
+      if (sub_map_->get_publisher_count() > 0 &&
+          sub_map_local_->get_publisher_count() > 0 &&
+          sub_costmap_->get_publisher_count() > 0 &&
+          sub_status_->get_publisher_count() > 0 &&
           pub_map_->get_subscription_count() > 0 &&
           pub_map_local_->get_subscription_count() > 0 &&
           pub_initial_pose_->get_subscription_count() > 0 &&

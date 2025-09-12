@@ -56,7 +56,7 @@ public:
     pub_odom_ = node_.advertise<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());  // not actually used
 
     const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(2);
-    while (sub_path_.getNumPublishers() < 1 || pub_map_overlay_->get_subscription_count() < 1)
+    while (sub_path_->get_publisher_count() < 1 || pub_map_overlay_->get_subscription_count() < 1)
     {
       rclcpp::sleep_for(std::chrono::milliseconds(100));
       ASSERT_TRUE(rclcpp::ok());
