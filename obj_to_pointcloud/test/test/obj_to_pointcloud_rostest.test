@@ -6,5 +6,5 @@
     <param name="scale" value="0.001" />
   </node>
 
-  <test test-name="test_obj_to_pointcloud" pkg="obj_to_pointcloud" exec="test_obj_to_pointcloud" />
+  <node name="test_obj_to_pointcloud" pkg="obj_to_pointcloud" exec="test_obj_to_pointcloud" />
 </launch>

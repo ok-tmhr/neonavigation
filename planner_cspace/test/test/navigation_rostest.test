@@ -4,10 +4,10 @@
   <arg name="fast_map_update" default="false" />
   <arg name="with_tolerance" default="false" />
   <arg name="enable_crowd_mode" default="false" />
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)_$(arg enable_crowd_mode)" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(var antialias_start)_$(var fast_map_update)_$(var with_tolerance)_$(var enable_crowd_mode)" />
 
-  <test test-name="test_navigate_$(arg antialias_start)_$(arg fast_map_update)_$(arg with_tolerance)_$(arg enable_crowd_mode)" pkg="planner_cspace" exec="test_navigate" time-limit="260.0">
-    <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
+  <node name="test_navigate_$(var antialias_start)_$(var fast_map_update)_$(var with_tolerance)_$(var enable_crowd_mode)" pkg="planner_cspace" exec="test_navigate" time-limit="260.0">
+    <param name="enable_crowd_mode" value="$(var enable_crowd_mode)" />
   </test>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
@@ -32,10 +32,10 @@
     <param name="max_vel" value="0.1" />
     <param name="max_ang_vel" value="0.3" />
     <param name="goal_tolerance_lin" value="0.025" />
-    <param name="antialias_start" value="$(arg antialias_start)" />
-    <param name="fast_map_update" value="$(arg fast_map_update)" />
-    <param name="enable_crowd_mode" value="$(arg enable_crowd_mode)" />
-    <param name="temporary_escape" value="$(arg enable_crowd_mode)" />
+    <param name="antialias_start" value="$(var antialias_start)" />
+    <param name="fast_map_update" value="$(var fast_map_update)" />
+    <param name="enable_crowd_mode" value="$(var enable_crowd_mode)" />
+    <param name="temporary_escape" value="$(var enable_crowd_mode)" />
     <param name="retain_last_error_status" value="false" />
   </node>
   <node pkg="trajectory_tracker" exec="trajectory_tracker" name="spur">
@@ -74,7 +74,7 @@
   </node>
 
   <node pkg="planner_cspace" exec="patrol" name="patrol">
-    <param name="with_tolerance" value="$(arg with_tolerance)" />
+    <param name="with_tolerance" value="$(var with_tolerance)" />
     <param name="tolerance_lin" value="0.1" />
     <param name="tolerance_ang" value="0.1" />
   </node>

@@ -3,9 +3,9 @@
   <arg name="antialias_start" default="false" />
   <arg name="fast_map_update" default="false" />
   <arg name="with_tolerance" default="false" />
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_remember" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_remember" />
 
-  <test test-name="test_navigate_remember" pkg="planner_cspace" exec="test_navigate_remember" time-limit="200.0" />
+  <node name="test_navigate_remember" pkg="planner_cspace" exec="test_navigate_remember" time-limit="200.0" />
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
         <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />

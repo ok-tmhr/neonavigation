@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_map_size" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_map_size" />
 
-  <test test-name="test_planner_3d_map_size" pkg="planner_cspace" exec="test_planner_3d_map_size" />
+  <node name="test_planner_3d_map_size" pkg="planner_cspace" exec="test_planner_3d_map_size" />
 
   <node pkg="planner_cspace" exec="planner_3d" name="planner_3d" />
 </launch>

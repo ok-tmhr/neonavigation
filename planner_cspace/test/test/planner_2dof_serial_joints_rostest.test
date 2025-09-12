@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_planner_2dof_serial_joints" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_planner_2dof_serial_joints" />
 
-  <test test-name="test_planner_2dof_serial_joints" pkg="planner_cspace" exec="test_planner_2dof_serial_joints" time-limit="60.0" />
+  <node name="test_planner_2dof_serial_joints" pkg="planner_cspace" exec="test_planner_2dof_serial_joints" time-limit="60.0" />
 
   <node pkg="planner_cspace" exec="planner_2dof_serial_joints" name="planner_2dof_serial_joints" output="screen">
     <param name="num_groups" value="1" />

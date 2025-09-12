@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <launch>
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
 
-  <test test-name="test_costmap_watchdog" pkg="planner_cspace" exec="test_costmap_watchdog" time-limit="30.0" />
+  <node name="test_costmap_watchdog" pkg="planner_cspace" exec="test_costmap_watchdog" time-limit="30.0" />
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
         <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
