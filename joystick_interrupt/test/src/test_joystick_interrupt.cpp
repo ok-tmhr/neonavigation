@@ -40,9 +40,9 @@ class JoystickInterruptTest : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  rclcpp::Publisher<>::SharedPtr pub_cmd_vel_;
-  rclcpp::Publisher<>::SharedPtr pub_joy_;
-  rclcpp::Subscription<>::SharedPtr sub_cmd_vel_;
+  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_cmd_vel_;
+  rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_joy_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
 
   geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
 
@@ -53,17 +53,18 @@ protected:
 
 public:
   explicit JoystickInterruptTest(const std::string& cmd_vel_topic = "cmd_vel")
-    : nh_()
+    : nh_(rclcpp::Node::make_shared("test_joystick_interrupt"))
   {
     pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_input", 1);
     pub_joy_ = nh_->create_publisher<sensor_msgs::msg::Joy>("joy", 1);
-    sub_cmd_vel_ = nh_->create_subscription(cmd_vel_topic, 1, &JoystickInterruptTest::cbCmdVel, this);
+    using std::placeholders::_1;
+    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_topic, 1, std::bind(&JoystickInterruptTest::cbCmdVel, this, _1));
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
     {
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (i > 5 && pub_cmd_vel_->get_subscription_count() > 0)
         break;
     }
@@ -86,7 +87,7 @@ public:
       const float ang1)
   {
     sensor_msgs::msg::Joy joy;
-    joy.header.stamp = this->now();
+    joy.header.stamp = nh_->now();
     joy.buttons.resize(2);
     joy.buttons[0] = button;
     joy.buttons[1] = high_speed;
@@ -120,7 +121,7 @@ TEST_F(JoystickInterruptTest, NoInterrupt)
       publishJoy(0, 1, 0, 0, 1, 1);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (i < 3)
       continue;
     ASSERT_TRUE(static_cast<bool>(cmd_vel_));
@@ -148,7 +149,7 @@ TEST_F(JoystickInterruptTest, Interrupt)
       publishJoy(1, 0, 0, 0, 0, 1);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (i < 3)
       continue;
     ASSERT_TRUE(static_cast<bool>(cmd_vel_));
@@ -189,7 +190,7 @@ TEST_F(JoystickInterruptTest, InterruptNoTwistInput)
       publishJoy(0, 0, 0, 0.5, 0, 0);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (i < 3)
       continue;
     ASSERT_TRUE(static_cast<bool>(cmd_vel_));
@@ -230,7 +231,7 @@ TEST_F(JoystickInterruptTest, InterruptHighSpeed)
       publishJoy(1, 1, 0, 0, 0, 1);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (i < 3)
       continue;
     ASSERT_TRUE(static_cast<bool>(cmd_vel_));
@@ -270,7 +271,7 @@ public:
       const float ang1)
   {
     sensor_msgs::msg::Joy joy;
-    joy.header.stamp = this->now();
+    joy.header.stamp = nh_->now();
     joy.buttons.resize(2);
     joy.buttons[0] = button;
     joy.buttons[1] = high_speed;
@@ -308,7 +309,7 @@ TEST_F(JoystickInterruptOmniTest, Interrupt)
       publishJoy(1, 0, 0, 0, -0.7, 0, 0, 1);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     if (i < 3)
       continue;
     ASSERT_TRUE(static_cast<bool>(cmd_vel_));
@@ -361,10 +362,10 @@ class JoystickMuxTest : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  rclcpp::Publisher<>::SharedPtr pub1_;
-  rclcpp::Publisher<>::SharedPtr pub2_;
-  rclcpp::Publisher<>::SharedPtr pub_joy_;
-  rclcpp::Subscription<>::SharedPtr sub_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub1_;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr pub2_;
+  rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_joy_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_;
 
   std_msgs::msg::Int32::ConstPtr msg_;
 
@@ -376,16 +377,18 @@ protected:
 public:
   JoystickMuxTest()
   {
+    nh_ = rclcpp::Node::make_shared("test_joystick_interrupt");
     pub1_ = nh_->create_publisher<std_msgs::msg::Int32>("mux_input0", 1);
     pub2_ = nh_->create_publisher<std_msgs::msg::Int32>("mux_input1", 1);
     pub_joy_ = nh_->create_publisher<sensor_msgs::msg::Joy>("joy", 1);
-    sub_ = nh_->create_subscription("mux_output", 1, &JoystickMuxTest::cbMsg, this);
+    using std::placeholders::_1;
+    sub_ = nh_->create_subscription<std_msgs::msg::Int32>("mux_output", 1, std::bind(&JoystickMuxTest::cbMsg, this, _1));
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
     {
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (i > 5 && pub1_->get_subscription_count() > 0)
         break;
     }
@@ -396,8 +399,8 @@ public:
     for (size_t i = 0; i < 100; ++i)
     {
       wait.sleep();
-      rclcpp::spin_some(shared_from_this());
-      if (i > 5 && sub_.getNumPublishers() > 0)
+      rclcpp::spin_some(nh_);
+      if (i > 5 && sub_->get_publisher_count() > 0)
         break;
     }
   }
@@ -416,7 +419,7 @@ public:
   void publishJoy(const int button)
   {
     sensor_msgs::msg::Joy joy;
-    joy.header.stamp = this->now();
+    joy.header.stamp = nh_->now();
     joy.buttons.resize(1);
     joy.buttons[0] = button;
     pub_joy_->publish(joy);
@@ -424,45 +427,46 @@ public:
   void publishEmptyJoy()
   {
     sensor_msgs::msg::Joy joy;
-    joy.header.stamp = this->now();
+    joy.header.stamp = nh_->now();
     pub_joy_->publish(joy);
   }
 };
 
-TEST_F(JoystickMuxTest, Interrupt)
-{
-  publish1(0);
-  publish2(0);
-  waitPublisher();
-  for (int btn = 0; btn < 2; ++btn)
-  {
-    publishJoy(btn);
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    rclcpp::Rate rate(20);
-    for (int i = 0; i < 15; ++i)
-    {
-      publishJoy(btn);
-      publish1(i);
-      publish2(-i);
+// ! No support for topic_tools::ShapeShifter in ROS2
+// TEST_F(JoystickMuxTest, Interrupt)
+// {
+//   publish1(0);
+//   publish2(0);
+//   waitPublisher();
+//   for (int btn = 0; btn < 2; ++btn)
+//   {
+//     publishJoy(btn);
+//     rclcpp::sleep_for(std::chrono::seconds(1));
+//     rclcpp::Rate rate(20);
+//     for (int i = 0; i < 15; ++i)
+//     {
+//       publishJoy(btn);
+//       publish1(i);
+//       publish2(-i);
 
-      rate.sleep();
-      rclcpp::spin_some(shared_from_this());
+//       rate.sleep();
+//       rclcpp::spin_some(nh_);
 
-      if (i < 5)
-        continue;
+//       if (i < 5)
+//         continue;
 
-      ASSERT_TRUE(static_cast<bool>(msg_)) << "button: " << btn;
-      if (btn)
-      {
-        ASSERT_NEAR(-i, msg_->data, 2) << "button: " << btn;
-      }
-      else
-      {
-        ASSERT_NEAR(i, msg_->data, 2) << "button:" << btn;
-      }
-    }
-  }
-}
+//       ASSERT_TRUE(static_cast<bool>(msg_)) << "button: " << btn;
+//       if (btn)
+//       {
+//         ASSERT_NEAR(-i, msg_->data, 2) << "button: " << btn;
+//       }
+//       else
+//       {
+//         ASSERT_NEAR(i, msg_->data, 2) << "button:" << btn;
+//       }
+//     }
+//   }
+// }
 /*
 TEST_F(JoystickMuxTest, Timeout)
 {
@@ -477,7 +481,7 @@ TEST_F(JoystickMuxTest, Timeout)
     publish2(-i);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
 
     if (i < 5)
       continue;
@@ -508,7 +512,7 @@ TEST_F(JoystickMuxTest, ButtonNumberInsufficient)
     publish2(-i);
 
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
 
     if (i < 3)
       continue;
@@ -521,7 +525,7 @@ TEST_F(JoystickMuxTest, ButtonNumberInsufficient)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_joystick_interrupt");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
