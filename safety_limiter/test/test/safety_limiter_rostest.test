@@ -23,7 +23,7 @@
     <param name="ang_vel" value="3.14" />
     <param name="d_margin" value="0.0" />
     <param name="yaw_margin" value="0.0" />
-    <param name="z_range_min" value="-100.0" />
-    <param name="z_range_max" value="100.0" />
+    <param name="z_range_min" value="-3.0" />
+    <param name="z_range_max" value="3.0" />
   </node>
 </launch>
