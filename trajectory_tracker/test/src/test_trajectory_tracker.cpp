@@ -43,7 +43,6 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
   const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
@@ -86,7 +85,6 @@ TEST_F(TrajectoryTrackerTest, StraightStop)
 
 TEST_F(TrajectoryTrackerTest, StraightStopOvershoot)
 {
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   const double resolutions[] =
       {
           0.1,
@@ -155,7 +153,6 @@ TEST_F(TrajectoryTrackerTest, StraightStopConvergence)
 {
   const double vels[] = {0.02, 0.05, 0.1, 0.2, 0.5, 1.0};
   const double path_length = 2.0;
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   for (const double vel : vels)
   {
     const std::string info_message = "linear vel: " + std::to_string(vel);
@@ -225,7 +222,6 @@ TEST_F(TrajectoryTrackerTest, StraightVelocityChange)
   poses.push_back(Eigen::Vector4d(1.5, 0.0, 0.0, 0.5));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPathVelocity, this, poses));
 
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
   const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
@@ -294,7 +290,6 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
   }
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
   const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
@@ -338,7 +333,6 @@ TEST_F(TrajectoryTrackerTest, CurveFollow)
 TEST_F(TrajectoryTrackerTest, InPlaceTurn)
 {
   const float init_yaw_array[] = {0.0, 3.0};
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   for (const float init_yaw : init_yaw_array)
   {
     const std::vector<float> target_angle_array[] =
@@ -447,7 +441,6 @@ TEST_F(TrajectoryTrackerTest, SwitchBack)
   }
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
   const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
@@ -492,7 +485,6 @@ TEST_F(TrajectoryTrackerTest, SwitchBackWithPathUpdate)
 {
   initState(Eigen::Vector2d(0, 0), 0);
 
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   std::vector<Eigen::Vector3d> poses;
   std::vector<Eigen::Vector3d> poses_second_half;
   Eigen::Vector3d p(0.0, 0.0, 0.0);
@@ -580,7 +572,6 @@ TEST_F(TrajectoryTrackerTest, FarAray)
   poses.push_back(Eigen::Vector3d(0.5, y_pos, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  auto nh_ = rclcpp::Node::make_shared("test_trajectory_tracker");
   rclcpp::Rate rate(50);
   const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())

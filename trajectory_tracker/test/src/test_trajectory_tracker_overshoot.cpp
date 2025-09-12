@@ -46,8 +46,7 @@ protected:
     poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-    auto node = rclcpp::Node::make_shared("test_trajectory_tracker_overshoot");
-    auto param_client = std::make_shared<rclcpp::SyncParametersClient>(node, "trajectory_tracker");
+    auto param_client = std::make_shared<rclcpp::SyncParametersClient>(nh_, "trajectory_tracker");
     param_client->wait_for_service();
     auto result = param_client->set_parameters({
       rclcpp::Parameter("goal_tolerance_lin_vel", goal_tolerance_lin_vel),
@@ -76,14 +75,14 @@ protected:
     odom.twist.twist.angular.z = rotation_vel;
 
     rclcpp::Rate rate(50);
-    const rclcpp::Time initial_time = node->now();
+    const rclcpp::Time initial_time = nh_->now();
     const rclcpp::Time time_limit = initial_time + rclcpp::Duration::from_seconds(5.0);
-    while (rclcpp::ok() && time_limit > node->now())
+    while (rclcpp::ok() && time_limit > nh_->now())
     {
-      odom.header.stamp = node->now();
+      odom.header.stamp = nh_->now();
       publishTransform(odom);
       rate.sleep();
-      rclcpp::spin_some(node);
+      rclcpp::spin_some(nh_);
       if ((rclcpp::Time(status_->header.stamp) > initial_time + rclcpp::Duration::from_seconds(0.5)) && (status_->status == expected_status))
       {
         return;

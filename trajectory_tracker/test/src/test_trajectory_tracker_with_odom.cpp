@@ -41,16 +41,15 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  auto node = rclcpp::Node::make_shared("test_trajectory_tracker_frame_rate");
   rclcpp::Rate rate(50);
-  const rclcpp::Time start = node->now();
+  const rclcpp::Time start = nh_->now();
   while (rclcpp::ok())
   {
-    ASSERT_LT(node->now() - start, rclcpp::Duration::from_seconds(10.0));
+    ASSERT_LT(nh_->now() - start, rclcpp::Duration::from_seconds(10.0));
 
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node);
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -59,7 +58,7 @@ TEST_F(TrajectoryTrackerTest, FrameRate)
   {
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node);
+    rclcpp::spin_some(nh_);
   }
   ASSERT_NEAR(getYaw(), 0.0, 1e-2);
   ASSERT_NEAR(getPos()[0], 0.5, 1e-2);
@@ -79,17 +78,16 @@ TEST_F(TrajectoryTrackerTest, Timeout)
   poses.push_back(Eigen::Vector3d(2.0, 0.0, 0.0));
   waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-  auto node = rclcpp::Node::make_shared("test_trajectory_tracker_frame_rate");
   rclcpp::Rate rate(50);
   for (int i = 0; i < 50; ++i)
   {
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node);
+    rclcpp::spin_some(nh_);
   }
   // Wait until odometry timeout
   rclcpp::sleep_for(std::chrono::milliseconds(200));
-  rclcpp::spin_some(node);
+  rclcpp::spin_some(nh_);
 
   ASSERT_FLOAT_EQ(cmd_vel_->linear.x, 0.0);
   ASSERT_FLOAT_EQ(cmd_vel_->angular.z, 0.0);
@@ -101,7 +99,7 @@ TEST_F(TrajectoryTrackerTest, Timeout)
   {
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node);
+    rclcpp::spin_some(nh_);
     if (status_->status == trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL)
       break;
   }
@@ -109,7 +107,7 @@ TEST_F(TrajectoryTrackerTest, Timeout)
   {
     publishTransform();
     rate.sleep();
-    rclcpp::spin_some(node);
+    rclcpp::spin_some(nh_);
   }
   ASSERT_NEAR(getYaw(), 0.0, 1e-2);
   ASSERT_NEAR(getPos()[0], 2.0, 1e-2);

@@ -60,7 +60,6 @@
 class TrajectoryTrackerTest : public ::testing::Test
 {
 private:
-  rclcpp::Node::SharedPtr nh_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
   rclcpp::Subscription<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr sub_status_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
@@ -110,6 +109,7 @@ private:
   }
 
 public:
+  rclcpp::Node::SharedPtr nh_;
   tf2::Transform pose_;
   trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr status_;
   geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
