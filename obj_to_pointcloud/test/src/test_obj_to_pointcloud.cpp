@@ -61,7 +61,7 @@ bool isOnCorner(const float x, const float y, const float z)
 
 TEST(ObjToPointCloud, PointCloud)
 {
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_obj_to_pointcloud");
   sensor_msgs::msg::PointCloud2::ConstPtr cloud;
 
   const boost::function<void(const sensor_msgs::msg::PointCloud2::ConstPtr&)> cb =
@@ -69,13 +69,13 @@ TEST(ObjToPointCloud, PointCloud)
   {
     cloud = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("mapcloud", 1, cb);
+  auto sub = nh->create_subscription<sensor_msgs::msg::PointCloud2>("mapcloud", 1, cb);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 30 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (cloud)
       break;
   }
@@ -100,7 +100,7 @@ TEST(ObjToPointCloud, PointCloud)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_obj_to_pointcloud");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
