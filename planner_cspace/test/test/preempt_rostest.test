@@ -3,5 +3,5 @@
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_preempt" />
 
   <node name="test_preempt" pkg="planner_cspace" exec="test_preempt" time-limit="90.0" />
-  <include file="$(find planner_cspace)/test/test/actionlib_common_rostest.test" />
+  <include file="$(find-pkg-share planner_cspace)/test/test/actionlib_common_rostest.test" />
 </launch>

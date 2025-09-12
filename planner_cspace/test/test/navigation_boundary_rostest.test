@@ -30,8 +30,8 @@
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml"/>
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_local" args="$(find planner_cspace)/test/data/local_map.yaml">
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find-pkg-share planner_cspace)/test/data/global_map.yaml"/>
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_local" args="$(find-pkg-share planner_cspace)/test/data/local_map.yaml">
     <remap from="map" to="map_with_local_objects" />
   </node>
   <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">

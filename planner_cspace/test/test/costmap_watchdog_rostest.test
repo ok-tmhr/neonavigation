@@ -20,7 +20,7 @@
     <param name="sw_wait" value="0.0" />
   </node>
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml" />
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
 
   <node pkg="planner_cspace" exec="dummy_robot" name="dummy_robot">
     <param name="initial_x" value="2.5" />

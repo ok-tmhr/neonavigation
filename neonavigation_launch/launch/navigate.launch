@@ -22,7 +22,7 @@
   <arg name="linear_spread" default="0.3" />
   <arg name="output_info" default="screen" />
 
-  <rosparam command="load" file="$(find neonavigation_launch)/config/navigate.yaml"/>
+  <rosparam command="load" file="$(find-pkg-share neonavigation_launch)/config/navigate.yaml"/>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(var output_info)" >
     <param param="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
