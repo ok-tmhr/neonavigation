@@ -33,13 +33,13 @@
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 
 #include <gtest/gtest.h>
 
 void fillInPointcloudMsg(sensor_msgs::msg::PointCloud2& cloud, const std::initializer_list<float>& points)
 {
-  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2Fields(
       3,
       "x", 1, sensor_msgs::msg::PointField::FLOAT32,
@@ -87,7 +87,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   // check the timestamp difference between the oldest and latest clouds in the accumulator
   const auto& oldest = accum.begin();
   const auto& latest = std::prev(accum.end());
-  ASSERT_LE(latest->header.stamp - oldest->header.stamp, accum_duration);
+  ASSERT_LE(rclcpp::Time(latest->header.stamp) - rclcpp::Time(oldest->header.stamp), accum_duration);
 
   // check the content of the clouds
   float expected_xs[] = {5.0, 6.0, 7.0, 8.0, 9.0};

@@ -47,20 +47,8 @@
 #include <gtest/gtest.h>
 
 const std::string footprint_str(
-    "<value><array><data>"
-    "  <value><array><data>"
-    "    <value><double>1.5</double></value>"
-    "    <value><double>0.0</double></value>"
-    "  </data></array></value>"
-    "  <value><array><data>"
-    "    <value><double>-0.5</double></value>"
-    "    <value><double>-0.5</double></value>"
-    "  </data></array></value>"
-    "  <value><array><data>"
-    "    <value><double>-0.5</double></value>"
-    "    <value><double>0.5</double></value>"
-    "  </data></array></value>"
-    "</data></array></value>");
+    "[[1.5, 0.0], [-0.5, -0.5], [-0.5, 0.5]]"
+  );
 // This footprint with resolution of 0.1 means:
 //  0 0 0
 //  1 1 0  <--x
@@ -85,9 +73,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  ASSERT_TRUE(footprint_xml.fromXml(footprint_str, &footprint_offset));
-  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
+  cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Check local footprint
   const costmap_cspace::Polygon polygon = cm.getFootprint();
@@ -201,9 +187,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  footprint_xml.fromXml(footprint_str, &footprint_offset);
-  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
+  cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Settings: 4 angular grids, no expand/spread
   cm.setAngleResolution(4);
@@ -303,9 +287,7 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  footprint_xml.fromXml(footprint_str, &footprint_offset);
-  cm.setFootprint(costmap_cspace::Polygon(footprint_xml));
+  cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Settings: 4 angular grids, expand 1.0, spread 2.0
   const float expand = 1.0;
@@ -379,9 +361,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
 
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  costmap_cspace::Polygon footprint(footprint_str);
   cm_ref.setFootprint(footprint);
   cm_base.setFootprint(footprint);
 
@@ -527,9 +507,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
 {
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  costmap_cspace::Polygon footprint(footprint_str);
 
   // Settings: 4 angular grids, no expand/spread
   costmap_cspace::Costmap3d cms(4);
@@ -826,9 +804,7 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
 {
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  costmap_cspace::Polygon footprint(footprint_str);
 
   const size_t unknown_x = 3;
   const size_t unknown_y = 4;
@@ -979,9 +955,7 @@ TEST(Costmap3dLayerFootprint, PlainOnFootprint)
 {
   // Set example footprint
   int footprint_offset = 0;
-  XmlRpc::XmlRpcValue footprint_xml;
-  footprint_xml.fromXml(footprint_str, &footprint_offset);
-  costmap_cspace::Polygon footprint(footprint_xml);
+  costmap_cspace::Polygon footprint(footprint_str);
 
   // Settings: 4 angular grids, no expand/spread
   costmap_cspace::Costmap3d cms(4);
