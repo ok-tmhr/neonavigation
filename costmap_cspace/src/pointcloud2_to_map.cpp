@@ -27,7 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -72,13 +71,13 @@ public:
     , publish_interval_(0, 0)
     , accums_(2)
   {
-      this->declare_parameter("z_min", z_min_, 0.1);
-    this->declare_parameter("z_max", z_max_, 1.0);
-    this->declare_parameter("global_frame", global_frame_, std::string("map"));
-    this->declare_parameter("robot_frame", robot_frame_, std::string("base_link"));
+      z_min_ = this->declare_parameter("z_min", 0.1);
+    z_max_ = this->declare_parameter("z_max", 1.0);
+    global_frame_ = this->declare_parameter("global_frame", std::string("map"));
+    robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     double accum_duration;
-    this->declare_parameter("accum_duration", accum_duration, 1.0);
+    accum_duration = this->declare_parameter("accum_duration", 1.0);
     accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
 
@@ -88,25 +87,25 @@ public:
     using std::placeholders::_1;
     sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud", 100,
-        boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, false));
+        [this](sensor_msgs::msg::PointCloud2::SharedPtr msg){this->cbCloud(msg, false);});
     sub_cloud_single_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "cloud_singleshot", 100,
-        boost::bind(&Pointcloud2ToMapNode::cbCloud, this, _1, true));
+        [this](sensor_msgs::msg::PointCloud2::SharedPtr msg){this->cbCloud(msg, true);});
 
     int width_param;
-    this->declare_parameter("width", width_param, 30);
+    width_param = this->declare_parameter("width", 30);
     height_ = width_ = width_param;
     map_.header.frame_id = global_frame_;
 
     double resolution;
-    this->declare_parameter("resolution", resolution, 0.1);
+    resolution = this->declare_parameter("resolution", 0.1);
     map_.info.resolution = resolution;
     map_.info.width = width_;
     map_.info.height = height_;
     map_.data.resize(map_.info.width * map_.info.height);
 
     double hz;
-    this->declare_parameter("hz", hz, 1.0);
+    hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -114,7 +113,7 @@ public:
   }
 
 private:
-  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr& cloud, const bool singleshot)
+  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr cloud, const bool singleshot)
   {
     sensor_msgs::msg::PointCloud2 cloud_global;
     geometry_msgs::msg::TransformStamped trans;

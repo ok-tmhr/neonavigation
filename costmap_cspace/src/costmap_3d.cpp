@@ -190,12 +190,11 @@ public:
     ang_resolution = this->declare_parameter("ang_resolution", 16);
 
     auto footprint_xml = this->declare_parameter("footprint", "");
-    if (!this->has_parameter("footprint"))
+    if (footprint_xml.empty())
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
       throw std::runtime_error("Footprint doesn't specified.");
     }
-    this->get_parameter("footprint", footprint_xml);
     costmap_cspace::Polygon footprint;
     try
     {
@@ -255,18 +254,18 @@ public:
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             layer_xml.name, 1,
-            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
+            [this, layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return this->cbMapOverlay(msg, layer);}));
       }
     }
 
     auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dStaticLayerOutput>();
-    static_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdateStatic, this, _1));
+    static_output_layer->setHandler([this](const costmap_cspace::CSpace3DMsg::Ptr& map){ return cbUpdateStatic(map);});
 
     sub_map_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "map", 1,
-        boost::bind(&Costmap3DOFNode::cbMap, this, _1, root_layer));
+        [this, root_layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMap(msg, root_layer);});
 
-    auto layers_xml = this->declare_parameter<std::vector<std::string>>("layers", {});
+    layers_xml = this->declare_parameter<std::vector<std::string>>("layers", {});
     if (layers_xml.size() > 0)
     {
       for (int i = 0; i < layers_xml.size(); ++i)
@@ -302,7 +301,7 @@ public:
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             layer_xml.name, 1,
-            boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
+            [this, layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMapOverlay(msg, layer);}));
       }
     }
     else
@@ -331,11 +330,11 @@ public:
       layer->loadConfig(layer_xml, *this);
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
           "map_overlay", 1,
-          boost::bind(&Costmap3DOFNode::cbMapOverlay, this, _1, layer)));
+          [this, layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMapOverlay(msg, layer);}));
     }
 
     auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
-    update_output_layer->setHandler(boost::bind(&Costmap3DOFNode::cbUpdate, this, _1, _2));
+    update_output_layer->setHandler([this](const costmap_cspace::CSpace3DMsg::Ptr& map,const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update){ return cbUpdate(map,update); });
 
     const geometry_msgs::msg::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = this->create_wall_timer(

@@ -63,17 +63,17 @@ private:
 public:
   LargeMapToMapNode() : Node("largemap_to_map")
   {
-      this->declare_parameter("robot_frame", robot_frame_, std::string("base_link"));
+      robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map_local",
         rclcpp::QoS(1).transient_local());
     sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 2, std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
 
-    this->declare_parameter("width", width_, 30);
-    this->declare_parameter("round_local_map", round_local_map_, false);
-    this->declare_parameter("simulate_occlusion", simulate_occlusion_, false);
-    this->declare_parameter("simulate_surrounded", simulate_surrounded_, false);
+    width_ = this->declare_parameter("width", 30);
+    round_local_map_ = this->declare_parameter("round_local_map", false);
+    simulate_occlusion_ = this->declare_parameter("simulate_occlusion", false);
+    simulate_surrounded_ = this->declare_parameter("simulate_surrounded", false);
 
     for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
     {
@@ -102,7 +102,7 @@ public:
     }
 
     double hz;
-    this->declare_parameter("hz", hz, 1.0);
+    hz = this->declare_parameter("hz", 1.0);
     timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());

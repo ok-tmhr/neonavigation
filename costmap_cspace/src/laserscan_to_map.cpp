@@ -71,13 +71,13 @@ public:
   , published_(0, 0, RCL_ROS_TIME)
   , publish_interval_(0, 0)
   {
-      this->declare_parameter("z_min", z_min_, std::numeric_limits<double>::lowest());
-    this->declare_parameter("z_max", z_max_, std::numeric_limits<double>::max());
-    this->declare_parameter("global_frame", global_frame_, std::string("map"));
-    this->declare_parameter("robot_frame", robot_frame_, std::string("base_link"));
+      z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
+    z_max_ = this->declare_parameter("z_max", std::numeric_limits<double>::max());
+    global_frame_ = this->declare_parameter("global_frame", std::string("map"));
+    robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     double accum_duration;
-    this->declare_parameter("accum_duration", accum_duration, 1.0);
+    accum_duration = this->declare_parameter("accum_duration", 1.0);
     accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
@@ -86,19 +86,19 @@ public:
     sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan", 2, std::bind(&LaserscanToMapNode::cbScan, this, std::placeholders::_1));
 
     int width_param;
-    this->declare_parameter("width", width_param, 30);
+    width_param = this->declare_parameter("width", 30);
     height_ = width_ = width_param;
     map.header.frame_id = global_frame_;
 
     double resolution;
-    this->declare_parameter("resolution", resolution, 0.1);
+    resolution = this->declare_parameter("resolution", 0.1);
     map.info.resolution = resolution;
     map.info.width = width_;
     map.info.height = height_;
     map.data.resize(map.info.width * map.info.height);
 
     double hz;
-    this->declare_parameter("hz", hz, 1.0);
+    hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
