@@ -58,6 +58,7 @@ public:
   }
 
   explicit PointcloudAccumulator(const rclcpp::Duration& duration)
+  : time_to_hold_(0, 0)
   {
     reset(duration);
   }

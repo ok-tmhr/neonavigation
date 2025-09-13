@@ -33,12 +33,12 @@
 #include <cassert>
 #include <cmath>
 #include <limits>
+#include <regex>
 #include <utility>
 #include <vector>
 
+#include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <rclcpp/rclcpp.hpp>
-
-#include <xmlrpcpp/XmlRpcException.h>
 
 namespace costmap_cspace
 {
@@ -96,28 +96,30 @@ public:
   Polygon()
   {
   }
-  explicit Polygon(const XmlRpc::XmlRpcValue footprint_xml_const)
+  explicit Polygon(const std::string& footprint_str)
   {
-    XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;
-    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
-    {
-      throw std::runtime_error("Invalid footprint xml.");
-    }
+    std::regex pattern(R"(\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\])");
 
-    for (int i = 0; i < footprint_xml.size(); i++)
+    auto begin = std::sregex_iterator(footprint_str.begin(), footprint_str.end(), pattern);
+    auto end = std::sregex_iterator();
+
+    for (auto it = begin; it != end; it++)
     {
       Vec p;
-      try
+
+      p[0] = std::stof((*it)[1].str());
+      p[1] = std::stof((*it)[2].str());
+
+      if (it->length() == 0 || (*it)[1].str().empty() || (*it)[2].str().empty())
       {
-        p[0] = static_cast<double>(footprint_xml[i][0]);
-        p[1] = static_cast<double>(footprint_xml[i][1]);
-      }
-      catch (XmlRpc::XmlRpcException& e)
-      {
-        throw std::runtime_error(("Invalid footprint xml." + e.getMessage()).c_str());
+        throw std::runtime_error("Invalid footprint.");
       }
 
       v.push_back(p);
+    }
+    if (v.size() < 3)
+    {
+      throw std::runtime_error("Invalid footprint.");
     }
     v.push_back(v.front());
   }

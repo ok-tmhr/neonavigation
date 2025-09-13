@@ -80,7 +80,7 @@ protected:
 };
 
 class Costmap3dStaticLayerOutput
-  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
 {
 public:
   using Ptr = std::shared_ptr<Costmap3dStaticLayerOutput>;
@@ -95,7 +95,7 @@ protected:
 };
 
 class Costmap3dUpdateLayerOutput
-  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
                                                      const typename costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr&)>>
 {
 public:
