@@ -475,7 +475,7 @@ void TrackerNode::cbTimer()
 void TrackerNode::cbOdomTimeout()
 {
   odom_timeout_timer_->cancel();
-  RCLCPP_WARN_STREAM(this->get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_.nanoseconds());
+  RCLCPP_WARN_STREAM(this->get_logger(), "Odometry timeout. Last odometry stamp: " << prev_odom_stamp_.seconds());
   v_lim_.clear();
   w_lim_.clear();
   geometry_msgs::msg::Twist cmd_vel;
