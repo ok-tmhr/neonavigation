@@ -8,11 +8,11 @@
 
   <set_parameter name="use_sim_time" value="true" /><!-- clock is provided by the test node -->
 
-  <node name="test_trajectory_tracker" pkg="trajectory_tracker" exec="test_trajectory_tracker" output="screen" if="$(var use_odom)">
+  <node pkg="trajectory_tracker" exec="test_trajectory_tracker" output="screen" if="$(var use_odom)" ros_args="-r trajectory_tracker_test:__node:=test_trajectory_tracker">
     <param name="odom_delay" value="$(var odom_delay)" />
   </node>
 
-  <node name="test_trajectory_tracker" pkg="trajectory_tracker" exec="test_trajectory_tracker" output="screen" unless="$(var use_odom)">
+  <node pkg="trajectory_tracker" exec="test_trajectory_tracker" output="screen" unless="$(var use_odom)" ros_args="-r trajectory_tracker_test:__node:=test_trajectory_tracker">
     <param name="odom_delay" value="$(var odom_delay)" />
     <param name="error_lin" value="0.03" />
     <param name="error_ang" value="0.02" />

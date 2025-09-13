@@ -147,7 +147,7 @@ public:
         break;
     }
 
-    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*nh_);
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
   }
   void initState(const tf2::Transform& pose)
   {

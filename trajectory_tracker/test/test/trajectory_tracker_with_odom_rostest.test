@@ -4,7 +4,7 @@
 
   <set_parameter name="use_sim_time" value="false" />
 
-  <!-- <node name="test_trajectory_tracker_with_odom" pkg="trajectory_tracker" exec="test_trajectory_tracker_with_odom" output="screen" /> -->
+  <node name="test_trajectory_tracker_with_odom" pkg="trajectory_tracker" exec="test_trajectory_tracker_with_odom" output="screen" />
 
   <timer period="120.0">
     <shutdown />
