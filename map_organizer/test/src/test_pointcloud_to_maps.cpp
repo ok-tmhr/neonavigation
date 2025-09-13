@@ -92,7 +92,7 @@ sensor_msgs::msg::PointCloud2 generateMapCloud()
   cloud.header.frame_id = "map";
   cloud.is_bigendian = false;
   cloud.is_dense = false;
-  sensor_msgs::msg::PointCloud2Modifier modifier(cloud);
+  sensor_msgs::PointCloud2Modifier modifier(cloud);
   modifier.setPointCloud2Fields(
       3,
       "x", 1, sensor_msgs::msg::PointField::FLOAT32,
