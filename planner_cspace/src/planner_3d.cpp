@@ -127,7 +127,6 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
-  std::vector<rclcpp::ParameterCallbackHandle::SharedPtr> param_callback_handle_;
   rclcpp::ParameterEventCallbackHandle::SharedPtr param_event_callback_handle_;
 
   Astar as_;
@@ -1360,131 +1359,79 @@ public:
     rcl_interfaces::msg::ParameterDescriptor desc_bool;
     desc_bool.description = "If true, a part of the previous path is preserved to avoid radical path changes.";
 
-    freq_ = this->declare_parameter("freq", 4.0, desc(0., 100.));
-    freq_min_ = this->declare_parameter("freq_min", 2.0, desc(0., 100.));
-    search_timeout_abort_ = this->declare_parameter("search_timeout_abort", 30.0, desc(0., 100.));
-    search_range_ = this->declare_parameter("search_range", 0.4, desc(0., 100.));
-    antialias_start_ = this->declare_parameter("antialias_start", false);
-    costmap_watchdog_ = rclcpp::Duration::from_seconds(this->declare_parameter("costmap_watchdog", 0.0, desc(0., 100.)));
+    this->declare_parameter("freq", 4.0, desc(0., 100.));
+    this->declare_parameter("freq_min", 2.0, desc(0., 100.));
+    this->declare_parameter("search_timeout_abort", 30.0, desc(0., 100.));
+    this->declare_parameter("search_range", 0.4, desc(0., 100.));
+    this->declare_parameter("antialias_start", false);
+    this->declare_parameter("costmap_watchdog", 0.0, desc(0., 100.));
 
-    cc_.max_vel_ = this->declare_parameter("max_vel", 0.3, desc(0., 100.));
-    cc_.max_ang_vel_ = this->declare_parameter("max_ang_vel", 0.6, desc(0., 100.));
-    cc_.min_curve_radius_ = this->declare_parameter("min_curve_radius", 0.1, desc(0., 100.));
-    cc_.weight_decel_ = this->declare_parameter("weight_decel", 50.0, desc(0., 1000.));
-    cc_.weight_backward_ = this->declare_parameter("weight_backward", 0.9, desc(0., 1000.));
-    cc_.weight_ang_vel_ = this->declare_parameter("weight_ang_vel", 1.0, desc(0., 1000.));
-    cc_.weight_costmap_ = this->declare_parameter("weight_costmap", 50.0, desc(0., 1000.));
-    cc_.weight_costmap_turn_ = this->declare_parameter("weight_costmap_turn", 0.0, desc(0., 1000.));
-    cc_.weight_remembered_ = this->declare_parameter("weight_remembered", 1000.0, desc(0., 1000.));
-    cc_.in_place_turn_ = this->declare_parameter("cost_in_place_turn", 30.0, desc(0., 1000.));
-    cc_.hysteresis_max_dist_ = this->declare_parameter("hysteresis_max_dist", 0.1, desc(0., 10.));
-    cc_.hysteresis_expand_ = this->declare_parameter("hysteresis_expand", 0.1, desc(0., 10.));
-    cc_.weight_hysteresis_ = this->declare_parameter("weight_hysteresis", 5.0, desc(0., 1000.));
-    cc_.weight_costmap_turn_heuristics_ = this->declare_parameter("weight_costmap_turn_heuristics", 100.0, desc(0., 1000.,
+    this->declare_parameter("max_vel", 0.3, desc(0., 100.));
+    this->declare_parameter("max_ang_vel", 0.6, desc(0., 100.));
+    this->declare_parameter("min_curve_radius", 0.1, desc(0., 100.));
+    this->declare_parameter("weight_decel", 50.0, desc(0., 1000.));
+    this->declare_parameter("weight_backward", 0.9, desc(0., 1000.));
+    this->declare_parameter("weight_ang_vel", 1.0, desc(0., 1000.));
+    this->declare_parameter("weight_costmap", 50.0, desc(0., 1000.));
+    this->declare_parameter("weight_costmap_turn", 0.0, desc(0., 1000.));
+    this->declare_parameter("weight_remembered", 1000.0, desc(0., 1000.));
+    this->declare_parameter("cost_in_place_turn", 30.0, desc(0., 1000.));
+    this->declare_parameter("hysteresis_max_dist", 0.1, desc(0., 10.));
+    this->declare_parameter("hysteresis_expand", 0.1, desc(0., 10.));
+    this->declare_parameter("weight_hysteresis", 5.0, desc(0., 1000.));
+    this->declare_parameter("weight_costmap_turn_heuristics", 100.0, desc(0., 1000.,
       "The weight of the heuristic cost of in-place turning at grid cells with costs"
     ));
-    cc_.turn_penalty_cost_threshold_ = this->declare_parameter("turn_penalty_cost_threshold", 0, desc_int(0, 100,
+    this->declare_parameter("turn_penalty_cost_threshold", 0, desc_int(0, 100,
       "Penalty costs of in-place turning are not added when the cost of the grid cell is lower than this value"
     ));
 
-    goal_tolerance_lin_f_ = this->declare_parameter("goal_tolerance_lin", 0.05, desc(0., 10.));
-    goal_tolerance_ang_f_ = this->declare_parameter("goal_tolerance_ang", 0.1, desc(0., 3.14159265359));
-    goal_tolerance_ang_finish_ = this->declare_parameter("goal_tolerance_ang_finish", 0.05, desc(0., 3.14159265359));
-    temporary_escape_tolerance_lin_f_ = this->declare_parameter("temporary_escape_tolerance_lin", 0.1, desc(0., 10.));
-    temporary_escape_tolerance_ang_f_ = this->declare_parameter("temporary_escape_tolerance_ang", 1.57, desc(0., 3.14159265359));
+    this->declare_parameter("goal_tolerance_lin", 0.05, desc(0., 10.));
+    this->declare_parameter("goal_tolerance_ang", 0.1, desc(0., 3.14159265359));
+    this->declare_parameter("goal_tolerance_ang_finish", 0.05, desc(0., 3.14159265359));
+    this->declare_parameter("temporary_escape_tolerance_lin", 0.1, desc(0., 10.));
+    this->declare_parameter("temporary_escape_tolerance_ang", 1.57, desc(0., 3.14159265359));
 
-    overwrite_cost_ = this->declare_parameter("overwrite_cost", false);
-    relocation_acceptable_cost_ = this->declare_parameter("relocation_acceptable_cost", 50, desc_int(0, 99,
+    this->declare_parameter("overwrite_cost", false);
+    this->declare_parameter("relocation_acceptable_cost", 50, desc_int(0, 99,
       "Acceptable cost of the relocated position in the first place. Some of the function may fallback to the cost of 99 if acceptable grid is not found."
     ));
-    hist_ignore_range_f_ = this->declare_parameter("hist_ignore_range", 0.6, desc(0., 100.));
-    hist_ignore_range_max_f_ = this->declare_parameter("hist_ignore_range_max", 1.25, desc(0., 100.));
+    this->declare_parameter("hist_ignore_range", 0.6, desc(0., 100.));
+    this->declare_parameter("hist_ignore_range_max", 1.25, desc(0., 100.));
 
-    remember_updates_ = this->declare_parameter("remember_updates", false);
-    remember_hit_odds_ = bbf::probabilityToOdds(this->declare_parameter("remember_hit_prob", 0.6, desc(0., 1.)));
-    remember_miss_odds_ = bbf::probabilityToOdds(this->declare_parameter("remember_miss_prob", 0.3, desc(0., 1.)));
+    this->declare_parameter("remember_updates", false);
+    this->declare_parameter("remember_hit_prob", 0.6, desc(0., 1.));
+    this->declare_parameter("remember_miss_prob", 0.3, desc(0., 1.));
 
-    local_range_f_ = this->declare_parameter("local_range", 2.5, desc(0., 100.));
-    longcut_range_f_ = this->declare_parameter("longcut_range", 0.0, desc(0., 100.));
-    esc_range_f_ = this->declare_parameter("esc_range", 0.25, desc(0., 100.));
-    esc_range_min_ratio_ = this->declare_parameter("esc_range_min_ratio", 0.5, desc(0., 1.));
-    tolerance_range_f_ = this->declare_parameter("tolerance_range", 0.25, desc(0., 1.));
-    tolerance_angle_f_ = this->declare_parameter("tolerance_angle", 0.0, desc(0., 3.14159265359));
-    find_best_ = this->declare_parameter("find_best", true);
-    force_goal_orientation_ = this->declare_parameter("force_goal_orientation", true);
-    temporary_escape_ = this->declare_parameter("temporary_escape", true);
-    fast_map_update_ = this->declare_parameter("fast_map_update", false);
-    max_retry_num_ = this->declare_parameter("max_retry_num", -1, desc_int(-1, 100));
-    sw_wait_ = this->declare_parameter("sw_wait", 2.0, desc(0., 100.));
+    this->declare_parameter("local_range", 2.5, desc(0., 100.));
+    this->declare_parameter("longcut_range", 0.0, desc(0., 100.));
+    this->declare_parameter("esc_range", 0.25, desc(0., 100.));
+    this->declare_parameter("esc_range_min_ratio", 0.5, desc(0., 1.));
+    this->declare_parameter("tolerance_range", 0.25, desc(0., 1.));
+    this->declare_parameter("tolerance_angle", 0.0, desc(0., 3.14159265359));
+    this->declare_parameter("find_best", true);
+    this->declare_parameter("force_goal_orientation", true);
+    this->declare_parameter("temporary_escape", true);
+    this->declare_parameter("fast_map_update", false);
+    this->declare_parameter("max_retry_num", -1, desc_int(-1, 100));
+    this->declare_parameter("sw_wait", 2.0, desc(0., 100.));
 
-    keep_a_part_of_previous_path_ = this->declare_parameter("keep_a_part_of_previous_path", false, desc_bool);
+    this->declare_parameter("keep_a_part_of_previous_path", false, desc_bool);
     this->declare_parameter("dist_stop_to_previous_path", 0.1, desc(0., 1.,
       "Valid only when keep_a_part_of_previous_path is true. This should be the same as dist_stop parameter of trajectory_tracker."
     ));
-    trigger_plan_by_costmap_update_ = this->declare_parameter("trigger_plan_by_costmap_update", false);
+    this->declare_parameter("trigger_plan_by_costmap_update", false);
 
     cbParameter();
 
     auto callback = [this](const rcl_interfaces::msg::ParameterEvent& event){
-      std::regex re(this->get_fully_qualified_name());
-      if (std::regex_match(event.node, re)){
+      if (event.node == get_fully_qualified_name()){
         cbParameter();
       }
     };
 
     param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
     param_event_callback_handle_ = param_event_handler_->add_parameter_event_callback(callback);
-
-    param_callback_handle_ =
-    {
-      param_event_handler_->add_parameter_callback("freq", [this](const rclcpp::Parameter& p){ freq_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("freq_min", [this](const rclcpp::Parameter& p){ freq_min_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("search_timeout_abort", [this](const rclcpp::Parameter& p){ search_timeout_abort_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("search_range", [this](const rclcpp::Parameter& p){ search_range_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("antialias_start", [this](const rclcpp::Parameter& p){ antialias_start_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("costmap_watchdog", [this](const rclcpp::Parameter& p){ costmap_watchdog_ = rclcpp::Duration::from_seconds(p.as_double()); }),
-      param_event_handler_->add_parameter_callback("max_vel", [this](const rclcpp::Parameter& p){ cc_.max_vel_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("max_ang_vel", [this](const rclcpp::Parameter& p){ cc_.max_ang_vel_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("min_curve_radius", [this](const rclcpp::Parameter& p){ cc_.min_curve_radius_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_decel", [this](const rclcpp::Parameter& p){ cc_.weight_decel_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_backward", [this](const rclcpp::Parameter& p){ cc_.weight_backward_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_ang_vel", [this](const rclcpp::Parameter& p){ cc_.weight_ang_vel_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_costmap", [this](const rclcpp::Parameter& p){ cc_.weight_costmap_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_costmap_turn", [this](const rclcpp::Parameter& p){ cc_.weight_costmap_turn_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_remembered", [this](const rclcpp::Parameter& p){ cc_.weight_remembered_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("cost_in_place_turn", [this](const rclcpp::Parameter& p){ cc_.in_place_turn_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("hysteresis_max_dist", [this](const rclcpp::Parameter& p){ cc_.hysteresis_max_dist_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("hysteresis_expand", [this](const rclcpp::Parameter& p){ cc_.hysteresis_expand_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_hysteresis", [this](const rclcpp::Parameter& p){ cc_.weight_hysteresis_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("weight_costmap_turn_heuristics", [this](const rclcpp::Parameter& p){ cc_.weight_costmap_turn_heuristics_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("turn_penalty_cost_threshold", [this](const rclcpp::Parameter& p){ cc_.turn_penalty_cost_threshold_ = p.as_int(); }),
-      param_event_handler_->add_parameter_callback("goal_tolerance_lin", [this](const rclcpp::Parameter& p){ goal_tolerance_lin_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("goal_tolerance_ang", [this](const rclcpp::Parameter& p){ goal_tolerance_ang_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("goal_tolerance_ang_finish", [this](const rclcpp::Parameter& p){ goal_tolerance_ang_finish_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("temporary_escape_tolerance_lin", [this](const rclcpp::Parameter& p){ temporary_escape_tolerance_lin_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("temporary_escape_tolerance_ang", [this](const rclcpp::Parameter& p){ temporary_escape_tolerance_ang_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("overwrite_cost", [this](const rclcpp::Parameter& p){ overwrite_cost_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("relocation_acceptable_cost", [this](const rclcpp::Parameter& p){ relocation_acceptable_cost_ = p.as_int(); }),
-      param_event_handler_->add_parameter_callback("hist_ignore_range", [this](const rclcpp::Parameter& p){ hist_ignore_range_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("hist_ignore_range_max", [this](const rclcpp::Parameter& p){ hist_ignore_range_max_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("remember_updates", [this](const rclcpp::Parameter& p){ remember_updates_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("remember_hit_prob", [this](const rclcpp::Parameter& p){ remember_hit_odds_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("remember_miss_prob", [this](const rclcpp::Parameter& p){ remember_miss_odds_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("local_range", [this](const rclcpp::Parameter& p){ local_range_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("longcut_range", [this](const rclcpp::Parameter& p){ longcut_range_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("esc_range", [this](const rclcpp::Parameter& p){ esc_range_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("esc_range_min_ratio", [this](const rclcpp::Parameter& p){ esc_range_min_ratio_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("tolerance_range", [this](const rclcpp::Parameter& p){ tolerance_range_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("tolerance_angle", [this](const rclcpp::Parameter& p){ tolerance_angle_f_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("find_best", [this](const rclcpp::Parameter& p){ find_best_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("force_goal_orientation", [this](const rclcpp::Parameter& p){ force_goal_orientation_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("temporary_escape", [this](const rclcpp::Parameter& p){ temporary_escape_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("fast_map_update", [this](const rclcpp::Parameter& p){ fast_map_update_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("max_retry_num", [this](const rclcpp::Parameter& p){ max_retry_num_ = p.as_int(); }),
-      param_event_handler_->add_parameter_callback("sw_wait", [this](const rclcpp::Parameter& p){ sw_wait_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("keep_a_part_of_previous_path", [this](const rclcpp::Parameter& p){ keep_a_part_of_previous_path_ = p.as_bool(); }),
-      param_event_handler_->add_parameter_callback("trigger_plan_by_costmap_update", [this](const rclcpp::Parameter& p){ trigger_plan_by_costmap_update_ = p.as_bool(); }),
-    };
 
   }
 
@@ -1525,6 +1472,56 @@ public:
 
   void cbParameter()
   {
+    this->get_parameter("freq", freq_);
+    this->get_parameter("freq_min", freq_min_);
+    this->get_parameter("search_timeout_abort", search_timeout_abort_);
+    this->get_parameter("search_range", search_range_);
+    this->get_parameter("antialias_start", antialias_start_);
+    costmap_watchdog_ = rclcpp::Duration::from_seconds(this->get_parameter("costmap_watchdog").as_double());
+
+    this->get_parameter("max_vel", cc_.max_vel_);
+    this->get_parameter("max_ang_vel", cc_.max_ang_vel_);
+    this->get_parameter("min_curve_radius", cc_.min_curve_radius_);
+    this->get_parameter("weight_decel", cc_.weight_decel_);
+    this->get_parameter("weight_backward", cc_.weight_backward_);
+    this->get_parameter("weight_ang_vel", cc_.weight_ang_vel_);
+    this->get_parameter("weight_costmap", cc_.weight_costmap_);
+    this->get_parameter("weight_costmap_turn", cc_.weight_costmap_turn_);
+    this->get_parameter("weight_remembered", cc_.weight_remembered_);
+    this->get_parameter("cost_in_place_turn", cc_.in_place_turn_);
+    this->get_parameter("hysteresis_max_dist", cc_.hysteresis_max_dist_);
+    this->get_parameter("hysteresis_expand", cc_.hysteresis_expand_);
+    this->get_parameter("weight_hysteresis", cc_.weight_hysteresis_);
+    this->get_parameter("weight_costmap_turn_heuristics", cc_.weight_costmap_turn_heuristics_);
+    this->get_parameter("turn_penalty_cost_threshold", cc_.turn_penalty_cost_threshold_);
+
+    this->get_parameter("goal_tolerance_lin", goal_tolerance_lin_f_);
+    this->get_parameter("goal_tolerance_ang", goal_tolerance_ang_f_);
+    this->get_parameter("goal_tolerance_ang_finish", goal_tolerance_ang_finish_);
+    this->get_parameter("temporary_escape_tolerance_lin", temporary_escape_tolerance_lin_f_);
+    this->get_parameter("temporary_escape_tolerance_ang", temporary_escape_tolerance_ang_f_);
+
+    this->get_parameter("overwrite_cost", overwrite_cost_);
+    this->get_parameter("relocation_acceptable_cost", relocation_acceptable_cost_);
+    this->get_parameter("hist_ignore_range", hist_ignore_range_f_);
+    this->get_parameter("hist_ignore_range_max", hist_ignore_range_max_f_);
+
+    this->get_parameter("remember_updates", remember_updates_);
+    remember_hit_odds_ = bbf::probabilityToOdds(this->get_parameter("remember_hit_prob").as_double());
+    remember_miss_odds_ = bbf::probabilityToOdds(this->get_parameter("remember_miss_prob").as_double());
+
+    this->get_parameter("local_range", local_range_f_);
+    this->get_parameter("longcut_range", longcut_range_f_);
+    this->get_parameter("esc_range", esc_range_f_);
+    this->get_parameter("esc_range_min_ratio", esc_range_min_ratio_);
+    this->get_parameter("tolerance_range", tolerance_range_f_);
+    this->get_parameter("tolerance_angle", tolerance_angle_f_);
+    this->get_parameter("find_best", find_best_);
+    this->get_parameter("force_goal_orientation", force_goal_orientation_);
+    this->get_parameter("temporary_escape", temporary_escape_);
+    this->get_parameter("fast_map_update", fast_map_update_);
+    this->get_parameter("max_retry_num", max_retry_num_);
+    this->get_parameter("sw_wait", sw_wait_);
 
     cost_estim_cache_.setParams(cc_, num_cost_estim_task_);
     cost_estim_cache_static_.setParams(cc_, num_cost_estim_task_);
@@ -1553,18 +1550,26 @@ public:
       }
     }
 
+    this->get_parameter("keep_a_part_of_previous_path", keep_a_part_of_previous_path_);
     StartPosePredictor::Config start_pose_predictor_config;
-    start_pose_predictor_config.lin_vel_ = cc_.max_vel_;
-    start_pose_predictor_config.ang_vel_ = cc_.max_ang_vel_;
+    start_pose_predictor_config.lin_vel_ = this->get_parameter("max_vel").as_double
+    ();
+    start_pose_predictor_config.ang_vel_ = this->get_parameter("max_ang_vel").as_double
+    ();
     start_pose_predictor_config.dist_stop_ = this->get_parameter("dist_stop_to_previous_path").as_double();
     start_pose_predictor_config.prediction_sec_ = 1.0 / freq_;
-    start_pose_predictor_config.switch_back_prediction_sec_ = sw_wait_;
+    start_pose_predictor_config.switch_back_prediction_sec_ = this->get_parameter("sw_wait").as_double();
     if (keep_a_part_of_previous_path_)
     {
       // No need to wait additional times
       sw_wait_ = 1.0 / freq_;
     }
+    else
+    {
+      this->get_parameter("sw_wait", sw_wait_);
+    }
     start_pose_predictor_.setConfig(start_pose_predictor_config);
+    this->get_parameter("trigger_plan_by_costmap_update", trigger_plan_by_costmap_update_);
     no_map_update_timer_->cancel();
   }
 

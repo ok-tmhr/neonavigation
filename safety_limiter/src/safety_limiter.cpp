@@ -104,7 +104,6 @@ protected:
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
-  std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> callback_handle_;
   std::shared_ptr<rclcpp::ParameterEventCallbackHandle> event_callback_handle_;
 
   geometry_msgs::msg::Twist twist_;
