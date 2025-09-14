@@ -140,9 +140,10 @@ public:
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
+  auto args = rclcpp::remove_ros_arguments(argc, argv);
   std::string mapname = "map";
 
-  for (int i = 1; i < argc; i++)
+  for (int i = 1; i < args.size(); i++)
   {
     if (!strcmp(argv[i], "-h"))
     {
