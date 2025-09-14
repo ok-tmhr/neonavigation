@@ -55,7 +55,7 @@ public:
     , saved_map_(false)
   {
     RCLCPP_INFO(this->get_logger(), "Waiting for the map");
-    map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, std::bind(&MapGeneratorNode::mapsCallback, this, std::placeholders::_1));
+    map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(), std::bind(&MapGeneratorNode::mapsCallback, this, std::placeholders::_1));
   }
 
   bool done() const
