@@ -3,21 +3,21 @@
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_debug_outputs" />
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
-        <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+    <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
 
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.0"/>
-    <rosparam>
-    static_layers:
-    - name: unknown
-      type: Costmap3dLayerUnknownHandle
-      unknown_cost: 100
-    layers:
-    - name: overlay
-      type: Costmap3dLayerFootprint
-      overlay_mode: max
-    </rosparam>
+    <param name="static_layers" value="[unknown]" />
+    <param name="unknown" >
+      <param name="type" value="Costmap3dLayerUnknownHandle" />
+      <param name="unknown_cost" value="100" />
+    </param>
+    <param name="layers" value="[overlay]" />
+    <param name="overlay">
+      <param name="type" value="Costmap3dLayerFootprint" />
+      <param name="overlay_mode" value="max" />
+    </param>
   </node>
   <node pkg="planner_cspace" exec="planner_3d" name="planner_3d" output="screen">
     <remap from="move_base_simple/goal" to="goal" />
@@ -45,5 +45,10 @@
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf2"
       args="2.5 0.5 0 3.14 0 0 odom base_link" />
 
-  <node name="test_debug_outputs" pkg="planner_cspace" exec="test_debug_outputs" time-limit="15.0" />
+  <node name="test_debug_outputs" pkg="planner_cspace" exec="test_debug_outputs" output="screen" />
+
+  <timer period="15.0">
+    <shutdown />
+  </timer>
+
 </launch>

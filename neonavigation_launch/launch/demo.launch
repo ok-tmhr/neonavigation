@@ -26,5 +26,5 @@
     <param name="simulate_surrounded" value="$(var simulate_surrounded)" />
   </node>
 
-  <node pkg="rviz" exec="rviz" name="rviz" args="-d $(find-pkg-share neonavigation_launch)/config/visualization.rviz" respawn="true" />
+  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share neonavigation_launch)/config/visualization.rviz" respawn="true" />
 </launch>

@@ -2,10 +2,14 @@
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
 
-  <node name="test_costmap_watchdog" pkg="planner_cspace" exec="test_costmap_watchdog" time-limit="30.0" />
+  <node name="test_costmap_watchdog" pkg="planner_cspace" exec="test_costmap_watchdog" output="screen" />
+
+  <timer period="30.0">
+    <shutdown />
+  </timer>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
-        <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+    <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
 
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>

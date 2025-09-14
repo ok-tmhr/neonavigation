@@ -251,49 +251,29 @@ public:
       return d;
     };
 
-    hz_ = this->declare_parameter("freq", 100.0, desc(0., 100.));
-    timeout_ = this->declare_parameter("cloud_timeout", 10.0, desc(0., 10.));
-    disable_timeout_ = this->declare_parameter("disable_timeout", 10.0, desc(0., 10.));
-    vel_[0] = this->declare_parameter("lin_vel", 10.0, desc(0., 10.));
-    acc_[0] = this->declare_parameter("lin_acc", 10.0, desc(0., 10.));
-    vel_[1] = this->declare_parameter("ang_vel", 10.0, desc(0., 10.));
-    acc_[1] = this->declare_parameter("ang_acc", 10.0, desc(0., 10.));
-    max_values_[0] = this->declare_parameter("max_linear_vel", 10.0, desc(0., 10.));
-    max_values_[1] = this->declare_parameter("max_angular_vel", 10.0, desc(0., 10.));
-    z_range_[0] = this->declare_parameter("z_range_min", 3.0, desc(-3., 3.));
-    z_range_[1] = this->declare_parameter("z_range_max", 3.0, desc(-3., 3.));
-    dt_ = this->declare_parameter("dt", 1.0, desc(0., 1.));
-    d_margin_ = this->declare_parameter("d_margin", 1.0, desc(0., 1.));
-    d_escape_ = this->declare_parameter("d_escape", 1.0, desc(0., 1.));
-    yaw_margin_ = this->declare_parameter("yaw_margin", 0.57, desc(0., 1.57));
-    yaw_escape_ = this->declare_parameter("yaw_escape", 0.57, desc(0., 1.57));
-    downsample_grid_ = this->declare_parameter("downsample_grid", 1.0, desc(0., 1.));
-    hold_ = rclcpp::Duration::from_seconds(std::max(this->declare_parameter("hold", 10.0, desc(0., 10.)), 1.0 / hz_));
-    allow_empty_cloud_ = this->declare_parameter("allow_empty_cloud", false);
+    this->declare_parameter("freq", 100.0, desc(0., 100.));
+    this->declare_parameter("cloud_timeout", 10.0, desc(0., 10.));
+    this->declare_parameter("disable_timeout", 10.0, desc(0., 10.));
+    this->declare_parameter("lin_vel", 10.0, desc(0., 10.));
+    this->declare_parameter("lin_acc", 10.0, desc(0., 10.));
+    this->declare_parameter("ang_vel", 10.0, desc(0., 10.));
+    this->declare_parameter("ang_acc", 10.0, desc(0., 10.));
+    this->declare_parameter("max_linear_vel", 10.0, desc(0., 10.));
+    this->declare_parameter("max_angular_vel", 10.0, desc(0., 10.));
+    this->declare_parameter("z_range_min", 3.0, desc(-3., 3.));
+    this->declare_parameter("z_range_max", 3.0, desc(-3., 3.));
+    this->declare_parameter("dt", 1.0, desc(0., 1.));
+    this->declare_parameter("d_margin", 1.0, desc(0., 1.));
+    this->declare_parameter("d_escape", 1.0, desc(0., 1.));
+    this->declare_parameter("yaw_margin", 0.57, desc(0., 1.57));
+    this->declare_parameter("yaw_escape", 0.57, desc(0., 1.57));
+    this->declare_parameter("downsample_grid", 1.0, desc(0., 1.));
+    this->declare_parameter("hold", 10.0, desc(0., 10.);
+    this->declare_parameter("allow_empty_cloud", false);
+
+    cbParameter();
 
     param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
-
-    callback_handle_ = {
-      param_event_handler_->add_parameter_callback("freq", [this](const rclcpp::Parameter& p){ hz_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("cloud_timeout", [this](const rclcpp::Parameter& p){ timeout_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("disable_timeout", [this](const rclcpp::Parameter& p){ disable_timeout_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("lin_vel", [this](const rclcpp::Parameter& p){ vel_[0] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("lin_acc", [this](const rclcpp::Parameter& p){ acc_[0] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("ang_vel", [this](const rclcpp::Parameter& p){ vel_[1] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("ang_acc", [this](const rclcpp::Parameter& p){ acc_[1] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("max_linear_vel", [this](const rclcpp::Parameter& p){ max_values_[0] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("max_angular_vel", [this](const rclcpp::Parameter& p){ max_values_[1] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("z_range_min", [this](const rclcpp::Parameter& p){ z_range_[0] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("z_range_max", [this](const rclcpp::Parameter& p){ z_range_[1] = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("dt", [this](const rclcpp::Parameter& p){ dt_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("d_margin", [this](const rclcpp::Parameter& p){ d_margin_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("d_escape", [this](const rclcpp::Parameter& p){ d_escape_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("yaw_margin", [this](const rclcpp::Parameter& p){ yaw_margin_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("yaw_escape", [this](const rclcpp::Parameter& p){ yaw_escape_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("downsample_grid", [this](const rclcpp::Parameter& p){ downsample_grid_ = p.as_double(); }),
-      param_event_handler_->add_parameter_callback("allow_empty_cloud", [this](const rclcpp::Parameter& p){ allow_empty_cloud_ = p.as_bool(); }),
-    };
-
     event_callback_handle_ = param_event_handler_->add_parameter_event_callback(
       [this](const rcl_interfaces::msg::ParameterEvent& event){
         if (event.node == this->get_fully_qualified_name())
@@ -370,7 +350,26 @@ protected:
   }
   void cbParameter()
   {
-    hold_ = std::max(hold_, rclcpp::Duration::from_seconds(1.0 / hz_));
+    this->get_parameter("freq", hz_);
+    this->get_parameter("cloud_timeout", timeout_);
+    this->get_parameter("disable_timeout", disable_timeout_);
+    this->get_parameter("lin_vel", vel_[0]);
+    this->get_parameter("lin_acc", acc_[0]);
+    this->get_parameter("ang_vel", vel_[1]);
+    this->get_parameter("ang_acc", acc_[1]);
+    this->get_parameter("max_linear_vel", max_values_[0]);
+    this->get_parameter("max_angular_vel", max_values_[1]);
+    this->get_parameter("z_range_min", z_range_[0]);
+    this->get_parameter("z_range_max", z_range_[1]);
+    this->get_parameter("dt", dt_);
+    this->get_parameter("d_margin", d_margin_);
+    this->get_parameter("d_escape", d_escape_);
+    this->get_parameter("yaw_margin", yaw_margin_);
+    this->get_parameter("yaw_escape", yaw_escape_);
+    this->get_parameter("downsample_grid", downsample_grid_);
+    hold_ = rclcpp::Duration::from_seconds(std::max(this->get_parameter("hold").as_double(), 1.0 / hz_));
+    this->get_parameter("allow_empty_cloud", allow_empty_cloud_);
+
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
     {

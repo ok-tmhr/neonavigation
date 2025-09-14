@@ -2,7 +2,11 @@
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/dynamic_parameter_change" />
 
-  <node name="test_dynamic_parameter_change" pkg="planner_cspace" exec="test_dynamic_parameter_change" time-limit="90.0" />
+  <node name="test_dynamic_parameter_change" pkg="planner_cspace" exec="test_dynamic_parameter_change" output="screen" />
+
+  <timer period="90.0">
+    <shutdown />
+  </timer>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
     <param name="footprint" value="'[[0.01, -0.01], [0.01, 0.01], [-0.01, 0.01], [-0.01, -0.01]]'" />

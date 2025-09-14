@@ -2,30 +2,32 @@
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
 
-  <node name="test_navigate_boundary" pkg="planner_cspace" exec="test_navigate_boundary" time-limit="45.0" />
+  <node name="test_navigate_boundary" pkg="planner_cspace" exec="test_navigate_boundary" output="screen" />
+
+  <timer period="45.0">
+    <shutdown />
+  </timer>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
-        <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+    <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
 
     <param name="ang_resolution" value="16"/>
-    <rosparam>
-    static_layers:
-    - name: unknown
-      type: Costmap3dLayerUnknownHandle
-      unknown_cost: 100
-    layers:
-    - name: overlay
-      type: Costmap3dLayerFootprint
-      overlay_mode: max
-    </rosparam>
+    <param name="static_layers" value="[unknown]" />
+    <param name="unknown" >
+      <param name="type" value="Costmap3dLayerUnknownHandle" />
+      <param name="unknown_cost" value="100" />
+    </param>
+    <param name="layers" value="[overlay]" />
+    <param name="overlay">
+      <param name="type" value="Costmap3dLayerFootprint" />
+      <param name="overlay_mode" value="max" />
+    </param>
   </node>
   <node pkg="planner_cspace" exec="planner_3d_debug" name="planner_3d">
-    <rosparam>
-      freq: 10.0
-      local_range: 0.2
-      antialias_start: true
-      enable_crowd_mode: true
-    </rosparam>
+    <param name="freq" value="10.0" />
+    <param name="local_range" value="0.2" />
+    <param name="antialias_start" value="true" />
+    <param name="enable_crowd_mode" value="true" />
   </node>
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />

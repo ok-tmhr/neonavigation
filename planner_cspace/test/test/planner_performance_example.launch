@@ -36,5 +36,5 @@
             -f $(find-pkg-share planner_cspace)/test/data/planner_performance_example.yaml" />
   <node pkg="planner_cspace" exec="set_planner_debug_level.sh" name="debug" args="debug" />
 
-  <node pkg="rviz" exec="rviz" name="rviz" args="-d $(find-pkg-share neonavigation_launch)/config/visualization.rviz" respawn="true" />
+  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share neonavigation_launch)/config/visualization.rviz" respawn="true" />
 </launch>

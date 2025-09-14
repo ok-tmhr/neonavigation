@@ -11,8 +11,8 @@
   <node pkg="map_organizer" exec="save_maps" name="save_maps" output="screen"
     args="-f $(var tmpfile_prefix)" />
 
-  <group ns="saved">
-    <node pkg="map_organizer" exec="tie_maps" name="tie_maps2" output="screen" respawn="true">
+  <group>
+    <node pkg="map_organizer" exec="tie_maps" name="tie_maps2" output="screen" respawn="true" namespace="saved">
       <param name="map_files"
         value="$(var tmpfile_prefix)0.yaml,$(var tmpfile_prefix)1.yaml" />
       <param name="frame_id" value="map_ground" />
@@ -21,7 +21,7 @@
 
   <node pkg="map_organizer" exec="select_map" name="select_map" output="screen" />
 
-  <node name="test_map_organizer" pkg="map_organizer" exec="test_map_organizer">
+  <node name="test_map_organizer" pkg="map_organizer" exec="test_map_organizer" output="screen">
     <param name="file_prefix" value="$(var tmpfile_prefix)" />
-  </test>
+  </node>
 </launch>

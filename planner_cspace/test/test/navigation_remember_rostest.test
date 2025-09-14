@@ -5,24 +5,28 @@
   <arg name="with_tolerance" default="false" />
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_remember" />
 
-  <node name="test_navigate_remember" pkg="planner_cspace" exec="test_navigate_remember" time-limit="200.0" />
+  <node name="test_navigate_remember" pkg="planner_cspace" exec="test_navigate_remember" output="screen" />
+
+  <timer period="200.0">
+    <shutdown />
+  </timer>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
-        <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+    <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
 
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.1"/>
-    <rosparam>
-    static_layers:
-    - name: unknown
-      type: Costmap3dLayerUnknownHandle
-      unknown_cost: 100
-    layers:
-    - name: overlay
-      type: Costmap3dLayerFootprint
-      overlay_mode: max
-    </rosparam>
+    <param name="static_layers" value="[unknown]" />
+    <param name="unknown" >
+      <param name="type" value="Costmap3dLayerUnknownHandle" />
+      <param name="unknown_cost" value="100" />
+    </param>
+    <param name="layers" value="[overlay]" />
+    <param name="overlay">
+      <param name="type" value="Costmap3dLayerFootprint" />
+      <param name="overlay_mode" value="max" />
+    </param>
   </node>
   <node pkg="planner_cspace" exec="planner_3d" name="planner_3d" output="screen">
     <param name="remember_updates" value="true"/>
