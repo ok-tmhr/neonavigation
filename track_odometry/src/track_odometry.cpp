@@ -328,23 +328,6 @@ public:
         1, std::bind(&TrackOdometryNode::cbResetZ, this, _1));
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
-    if (this->has_parameter("z_filter"))
-    {
-      z_filter_timeconst_ = -1.0;
-      double z_filter;
-      if (this->get_parameter("z_filter", z_filter))
-      {
-        const double odom_freq = 100.0;
-        if (0.0 < z_filter && z_filter < 1.0)
-          z_filter_timeconst_ = (1.0 / odom_freq) / (1.0 - z_filter);
-      }
-      RCLCPP_ERROR(this->get_logger(),
-          "track_odometry: ~z_filter parameter (exponential filter (1 - alpha) value) is deprecated. "
-          "Use ~z_filter_timeconst (in seconds) instead. "
-          "Treated as z_filter_timeconst=%0.6f. (negative value means disabled)",
-          z_filter_timeconst_);
-    }
-    else
     {
       z_filter_timeconst_ = this->declare_parameter("z_filter_timeconst", -1.0);
     }

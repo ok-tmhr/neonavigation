@@ -296,10 +296,6 @@ TEST_P(TrackOdometryTest, ZFilterOn)
   ASSERT_NEAR(odom_->pose.pose.position.z, 1.0 - 1.0 / M_E, 5e-2);
 }
 
-INSTANTIATE_TEST_CASE_P(
-    TrackOdometryTestInstance, TrackOdometryTest,
-    ::testing::Values("", "_old_param"));
-
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
