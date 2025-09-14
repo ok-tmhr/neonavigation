@@ -291,7 +291,7 @@ public:
     if (watchdog_interval_ != rclcpp::Duration::from_seconds(0.0))
     {
       watchdog_timer_ =
-          this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::seconds>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
+          this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::duration<double>>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     }
 
     rclcpp::spin(shared_from_this());
@@ -300,7 +300,7 @@ public:
 protected:
   void cbWatchdogReset(const std_msgs::msg::Empty::ConstPtr& msg)
   {
-    watchdog_timer_ = this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::seconds>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
+    watchdog_timer_ = this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::duration<double>>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     watchdog_stop_ = false;
   }
   void cbWatchdogTimer()
