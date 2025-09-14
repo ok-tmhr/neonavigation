@@ -60,7 +60,7 @@ public:
   {
       sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
-        1, std::bind(&PointcloudToMapsNode::cbPoints, this, std::placeholders::_1));
+        rclcpp::QoS(1).transient_local(), std::bind(&PointcloudToMapsNode::cbPoints, this, std::placeholders::_1));
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
   }
   void cbPoints(const sensor_msgs::msg::PointCloud2::Ptr msg)

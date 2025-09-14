@@ -95,7 +95,7 @@ public:
 
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());
     sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&DummyRobotNode::cbTwist, this, std::placeholders::_1));
-    sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
+    sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local(), std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);

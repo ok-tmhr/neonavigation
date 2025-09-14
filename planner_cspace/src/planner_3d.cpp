@@ -1158,13 +1158,13 @@ public:
     using std::placeholders::_2;
       sub_map_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3D>(
         "costmap",
-        1, std::bind(&Planner3dNode::cbMap, this, _1));
+        rclcpp::QoS(1).transient_local(), std::bind(&Planner3dNode::cbMap, this, _1));
     sub_map_update_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3DUpdate>(
         "costmap_update",
         1, std::bind(&Planner3dNode::cbMapUpdate, this, _1));
     sub_goal_ = this->create_subscription<geometry_msgs::msg::PoseStamped>(
         "move_base_simple/goal",
-        1, std::bind(&Planner3dNode::cbGoal, this, _1));
+        rclcpp::QoS(1).transient_local(), std::bind(&Planner3dNode::cbGoal, this, _1));
     sub_temporary_escape_trigger_ = this->create_subscription<std_msgs::msg::Empty>(
         "~/temporary_escape", 1, std::bind(&Planner3dNode::cbTemporaryEscape, this, _1));
     pub_start_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/path_start", rclcpp::QoS(1).transient_local());

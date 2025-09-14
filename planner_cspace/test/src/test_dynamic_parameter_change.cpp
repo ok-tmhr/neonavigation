@@ -51,7 +51,7 @@ public:
     path_ = nullptr;
     planner_3d_client_.reset(
         new dynamic_reconfigure::Client<planner_cspace::Planner3DConfig>("/planner_3d/"));
-    sub_path_ = node_.subscribe("path", 1, &DynamicParameterChangeTest::cbPath, this);
+    sub_path_ = node_.subscribe("path", rclcpp::QoS(1).transient_local(), &DynamicParameterChangeTest::cbPath, this);
     pub_map_overlay_ = node_.advertise<nav_msgs::msg::OccupancyGrid>("map_overlay", rclcpp::QoS(1).transient_local());
     pub_odom_ = node_.advertise<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());  // not actually used
 

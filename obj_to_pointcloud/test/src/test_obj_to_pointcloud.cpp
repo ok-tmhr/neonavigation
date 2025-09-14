@@ -69,7 +69,7 @@ TEST(ObjToPointCloud, PointCloud)
   {
     cloud = msg;
   };
-  auto sub = nh->create_subscription<sensor_msgs::msg::PointCloud2>("mapcloud", 1, cb);
+  auto sub = nh->create_subscription<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local(), cb);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 30 && rclcpp::ok(); ++i)

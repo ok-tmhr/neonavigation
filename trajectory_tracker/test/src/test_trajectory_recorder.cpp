@@ -51,7 +51,7 @@ TEST(TrajectoryRecorder, TfToPath)
     ++received_count;
     path = msg;
   };
-  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), cb_path);
   auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(nh);
 
   const tf2::Transform points[] =

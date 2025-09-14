@@ -85,13 +85,13 @@ protected:
     : pnh_("~")
     , local_map_apply_cnt_(0)
   {
-    sub_map_ = nh_->create_subscription("map_global", 1, &Navigate::cbMap, this);
-    sub_map_local_ = nh_->create_subscription("map_local", 1, &Navigate::cbMapLocal, this);
-    sub_costmap_ = nh_->create_subscription("costmap", 1, &Navigate::cbCostmap, this);
+    sub_map_ = nh_->create_subscription("map_global", rclcpp::QoS(1).transient_local(), &Navigate::cbMap, this);
+    sub_map_local_ = nh_->create_subscription("map_local", rclcpp::QoS(1).transient_local(), &Navigate::cbMapLocal, this);
+    sub_costmap_ = nh_->create_subscription("costmap", rclcpp::QoS(1).transient_local(), &Navigate::cbCostmap, this);
     sub_status_ = nh_->create_subscription(
         "/planner_3d/status", 10, &Navigate::cbStatus, this);
-    sub_path_ = nh_->create_subscription("path", 1, &Navigate::cbPath, this);
-    sub_path_vel_ = nh_->create_subscription("path_velocity", 1, &Navigate::cbPathVel, this);
+    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &Navigate::cbPath, this);
+    sub_path_vel_ = nh_->create_subscription("path_velocity", rclcpp::QoS(1).transient_local(), &Navigate::cbPathVel, this);
     srv_forget_ =
         nh_.->create_client<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
             "forget_planning_cost");

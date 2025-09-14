@@ -45,7 +45,7 @@ TEST(Planner2DOFSerialJoints, Plan)
   {
     planned = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub_plan = nh.subscribe<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", 1, cb_plan);
+  rclcpp::Subscription<>::SharedPtr sub_plan = nh.subscribe<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", rclcpp::QoS(1).transient_local(), cb_plan);
 
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)

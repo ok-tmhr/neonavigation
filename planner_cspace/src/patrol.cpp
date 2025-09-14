@@ -77,7 +77,7 @@ public:
   {
       sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
         "patrol_nodes",
-        1, std::bind(&PatrolActionNode::cbPath, this, std::placeholders::_1));
+        rclcpp::QoS(1).transient_local(), std::bind(&PatrolActionNode::cbPath, this, std::placeholders::_1));
 
     with_tolerance_ = this->declare_parameter("with_tolerance", false);
     tolerance_lin_ = this->declare_parameter("tolerance_lin", 0.1);

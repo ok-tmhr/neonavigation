@@ -80,7 +80,7 @@ protected:
   virtual void SetUp()
   {
     sub_status_ = nh_->create_subscription("/planner_3d/status", 100, &NavigateBoundary::cbStatus, this);
-    sub_path_ = nh_->create_subscription("path", 1, &NavigateBoundary::cbPath, this);
+    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &NavigateBoundary::cbPath, this);
 
     publishTransform(1.0, 0.6);
     rclcpp::sleep_for(std::chrono::milliseconds(500));

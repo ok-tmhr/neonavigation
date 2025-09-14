@@ -48,10 +48,10 @@ public:
   {
     sub_status_ = nh_->create_subscription("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
     sub_metrics_ = nh_->create_subscription("/planner_3d/metrics", 1, &DebugOutputsTest::cbMetrics, this);
-    sub_path_ = nh_->create_subscription("path", 1, &DebugOutputsTest::cbPath, this);
-    sub_hysteresis_ = nh_->create_subscription("/planner_3d/hysteresis_map", 1, &DebugOutputsTest::cbHysteresis, this);
-    sub_remembered_ = nh_->create_subscription("/planner_3d/remembered_map", 1, &DebugOutputsTest::cbRemembered, this);
-    sub_distance_ = nh_->create_subscription("/planner_3d/distance_map", 1, &DebugOutputsTest::cbDistance, this);
+    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbPath, this);
+    sub_hysteresis_ = nh_->create_subscription("/planner_3d/hysteresis_map", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbHysteresis, this);
+    sub_remembered_ = nh_->create_subscription("/planner_3d/remembered_map", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbRemembered, this);
+    sub_distance_ = nh_->create_subscription("/planner_3d/distance_map", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbDistance, this);
 
     // Wait planner
     while (rclcpp::ok())

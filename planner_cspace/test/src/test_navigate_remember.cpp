@@ -71,10 +71,10 @@ protected:
   NavigateWithRememberUpdates()
     : tfl_(tfbuf_)
   {
-    sub_costmap_ = nh_->create_subscription("costmap", 1, &NavigateWithRememberUpdates::cbCostmap, this);
+    sub_costmap_ = nh_->create_subscription("costmap", rclcpp::QoS(1).transient_local(), &NavigateWithRememberUpdates::cbCostmap, this);
     sub_status_ = nh_->create_subscription(
         "/planner_3d/status", 10, &NavigateWithRememberUpdates::cbStatus, this);
-    sub_path_ = nh_->create_subscription("path", 1, &NavigateWithRememberUpdates::cbPath, this);
+    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &NavigateWithRememberUpdates::cbPath, this);
     srv_forget_ =
         nh_.->create_client<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
             "forget_planning_cost");
