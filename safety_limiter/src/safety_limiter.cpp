@@ -267,7 +267,7 @@ public:
     this->declare_parameter("yaw_margin", 0.57, desc(0., 1.57));
     this->declare_parameter("yaw_escape", 0.57, desc(0., 1.57));
     this->declare_parameter("downsample_grid", 1.0, desc(0., 1.));
-    this->declare_parameter("hold", 10.0, desc(0., 10.);
+    this->declare_parameter("hold", 10.0, desc(0., 10.));
     this->declare_parameter("allow_empty_cloud", false);
 
     cbParameter();

@@ -122,6 +122,8 @@ public:
     sub_status_ = nh_->create_subscription<safety_limiter_msgs::msg::SafetyLimiterStatus>("/safety_limiter/status", 1, std::bind(&SafetyLimiterTest::cbStatus, this, _1));
     sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&SafetyLimiterTest::cbCmdVel, this, _1));
 
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
+
     rclcpp::Rate wait(10.0);
     // Skip initial state
     for (int i = 0; i < 10 && rclcpp::ok(); ++i)

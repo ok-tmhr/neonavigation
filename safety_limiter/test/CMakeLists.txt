@@ -26,5 +26,5 @@ install(TARGETS
 )
 
 install(DIRECTORY test
-  DESTINATION share/${PROJECT_NAME}
+  DESTINATION share/${PROJECT_NAME}/test
 )
