@@ -77,7 +77,7 @@ void validateMap1(const nav_msgs::msg::OccupancyGrid& map, const double z)
 
 TEST(MapOrganizer, MapArray)
 {
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
   const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
@@ -85,13 +85,13 @@ TEST(MapOrganizer, MapArray)
   {
     maps = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("maps", 1, cb);
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, cb);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (maps)
       break;
   }
@@ -104,7 +104,7 @@ TEST(MapOrganizer, MapArray)
 
 TEST(MapOrganizer, Maps)
 {
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   nav_msgs::msg::OccupancyGrid::ConstPtr map[2];
   const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&, int)>
@@ -113,16 +113,16 @@ TEST(MapOrganizer, Maps)
   {
     map[id] = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub0 =
-      nh.subscribe<nav_msgs::msg::OccupancyGrid>("map0", 1, boost::bind(cb, _1, 0));
-  rclcpp::Subscription<>::SharedPtr sub1 =
-      nh.subscribe<nav_msgs::msg::OccupancyGrid>("map1", 1, boost::bind(cb, _1, 1));
+  auto sub0 =
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", 1, [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 0); });
+  auto sub1 =
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", 1, [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 1); });
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (map[0] && map[1])
       break;
   }
@@ -136,7 +136,7 @@ TEST(MapOrganizer, Maps)
 
 TEST(MapOrganizer, SelectMap)
 {
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   nav_msgs::msg::OccupancyGrid::ConstPtr map;
   const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>
@@ -144,15 +144,15 @@ TEST(MapOrganizer, SelectMap)
   {
     map = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub =
-      nh.subscribe<nav_msgs::msg::OccupancyGrid>("map", 1, cb);
-  rclcpp::Publisher<>::SharedPtr pub = nh.advertise<std_msgs::msg::Int32>("floor", 1);
+  auto sub =
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map", 1, cb);
+  auto pub = nh->create_publisher<std_msgs::msg::Int32>("floor", 1);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (pub->get_subscription_count() > 0 && map)
       break;
   }
@@ -168,7 +168,7 @@ TEST(MapOrganizer, SelectMap)
   for (int i = 0; i < 10 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (map)
       break;
   }
@@ -181,7 +181,7 @@ TEST(MapOrganizer, SelectMap)
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (map)
       break;
   }
@@ -191,7 +191,7 @@ TEST(MapOrganizer, SelectMap)
 
 TEST(MapOrganizer, SavedMapArray)
 {
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
   const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
@@ -199,13 +199,13 @@ TEST(MapOrganizer, SavedMapArray)
   {
     maps = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("saved/maps", 1, cb);
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("saved/maps", 1, cb);
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (maps)
       break;
   }
@@ -216,9 +216,8 @@ TEST(MapOrganizer, SavedMapArray)
   validateMap1(maps->maps[1], 10.0);
 
   // clean temporary files
-  rclcpp::Node::SharedPtr pnh("~");
   std::string file_prefix;
-  if (pnh->get_parameter("file_prefix", file_prefix))
+  if (nh->get_parameter("file_prefix", file_prefix))
   {
     ASSERT_EQ(0, system(std::string("rm -f " + file_prefix + "*").c_str()));
   }
@@ -227,7 +226,7 @@ TEST(MapOrganizer, SavedMapArray)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_map_organizer");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

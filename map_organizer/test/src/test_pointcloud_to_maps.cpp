@@ -118,7 +118,7 @@ sensor_msgs::msg::PointCloud2 generateMapCloud()
 
 TEST(PointcloudToMaps, Convert)
 {
-  rclcpp::Node::SharedPtr nh;
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_pointcloud_to_maps");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
   const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
@@ -126,15 +126,15 @@ TEST(PointcloudToMaps, Convert)
   {
     maps = msg;
   };
-  rclcpp::Subscription<>::SharedPtr sub = nh.subscribe("maps", 1, cb);
-  rclcpp::Publisher<>::SharedPtr pub = nh.advertise<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local());
+  auto sub = nh->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", 1, cb);
+  auto pub = nh->create_publisher<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local());
 
   pub->publish(generateMapCloud());
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 50 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     if (maps)
       break;
   }
@@ -193,7 +193,7 @@ TEST(PointcloudToMaps, Convert)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_pointcloud_to_maps");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
