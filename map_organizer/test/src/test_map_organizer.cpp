@@ -114,9 +114,9 @@ TEST(MapOrganizer, Maps)
     map[id] = msg;
   };
   auto sub0 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", 1, [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 0); });
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 0); });
   auto sub1 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", 1, [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 1); });
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 1); });
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
