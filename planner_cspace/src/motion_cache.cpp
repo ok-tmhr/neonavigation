@@ -212,7 +212,7 @@ std::list<CyclicVecFloat<3, 2>> MotionCache::interpolatePath(const std::list<Cyc
     const auto motion_it = find(*it_prev, *it);
     if (motion_it == end((*it)[2]))
     {
-      RCLCPP_ERROR(this->get_logger(), "Failed to find motion between [%d %d %d] and [%d %d %d]",
+      RCLCPP_ERROR(rclcpp::get_logger("motion_cache"), "Failed to find motion between [%d %d %d] and [%d %d %d]",
                 (*it_prev)[0], (*it_prev)[1], (*it_prev)[2], (*it)[0], (*it)[1], (*it)[2]);
       result.push_back(CyclicVecFloat<3, 2>((*it_prev)[0], (*it_prev)[1], (*it_prev)[2]));
     }
