@@ -86,11 +86,11 @@ public:
 
     if (with_tolerance_)
     {
-      act_cli_tolerant_.reset(new MoveWithToleranceClient("tolerant_move", false));
+      act_cli_tolerant_ = rclcpp_action::create_client<planner_cspace_msgs::action::MoveWithTolerance>(this, "tolerant_move");
     }
     else
     {
-      act_cli_.reset(new MoveBaseClient("move_base", false));
+      act_cli_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(this, "move_base");
     }
 
     pos_ = 0;

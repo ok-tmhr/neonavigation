@@ -124,6 +124,8 @@ protected:
   std::shared_ptr<Planner3DActionServer> act_;
   std::shared_ptr<Planner3DTolerantActionServer> act_tolerant_;
   planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal_tolerant_;
+  std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle_;
+  std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle_tolerant_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
@@ -194,7 +196,7 @@ protected:
   bool trigger_plan_by_costmap_update_;
   bool enable_crowd_mode_;
 
-  JumpDetector jump_;
+  std::shared_ptr<JumpDetector> jump_;
   std::string robot_frame_;
 
   int max_retry_num_;
@@ -236,7 +238,7 @@ protected:
   int cnt_stuck_;
   bool is_start_occupied_;
 
-  diagnostic_updater::Updater diag_updater_;
+  std::shared_ptr<diagnostic_updater::Updater> diag_updater_;
   rclcpp::Duration costmap_watchdog_;
   rclcpp::Time last_costmap_;
 
@@ -340,21 +342,21 @@ protected:
       return false;
     }
 
-    if (req.start.header.frame_id != map_header_.frame_id ||
-        req.goal.header.frame_id != map_header_.frame_id)
+    if (req->start.header.frame_id != map_header_.frame_id ||
+        req->goal.header.frame_id != map_header_.frame_id)
     {
       RCLCPP_ERROR(this->get_logger(), "Start [%s] and Goal [%s] poses must be in the map frame [%s].",
-                req.start.header.frame_id.c_str(),
-                req.goal.header.frame_id.c_str(),
+                req->start.header.frame_id.c_str(),
+                req->goal.header.frame_id.c_str(),
                 map_header_.frame_id.c_str());
       return false;
     }
 
-    Astar::Vec s = metric2Grid(req.start.pose);
-    Astar::Vec e = metric2Grid(req.goal.pose);
+    Astar::Vec s = metric2Grid(req->start.pose);
+    Astar::Vec e = metric2Grid(req->goal.pose);
     RCLCPP_INFO(this->get_logger(), "Path plan from (%d, %d) to (%d, %d)", s[0], s[1], e[0], e[1]);
 
-    const int tolerance_range = std::lround(req.tolerance / map_info_.linear_resolution);
+    const int tolerance_range = std::lround(req->tolerance / map_info_.linear_resolution);
     const DiscretePoseStatus start_status = relocateDiscretePoseIfNeeded(s, tolerance_range, tolerance_angle_, true);
     const DiscretePoseStatus goal_status = relocateDiscretePoseIfNeeded(e, tolerance_range, tolerance_angle_, true);
     switch (start_status)
@@ -418,36 +420,54 @@ protected:
     const std::list<Astar::Vecf> path_interpolated = model_->interpolatePath(path_grid);
     grid_metric_converter::appendGridPath2MetricPath(map_info_, path_interpolated, path);
 
-    res.plan.header = map_header_;
-    res.plan.poses.resize(path.poses.size());
+    res->plan.header = map_header_;
+    res->plan.poses.resize(path.poses.size());
     for (size_t i = 0; i < path.poses.size(); ++i)
     {
-      res.plan.poses[i] = path.poses[i];
+      res->plan.poses[i] = path.poses[i];
     }
     return true;
   }
 
   void cbGoal(const geometry_msgs::msg::PoseStamped::ConstPtr& msg)
   {
-    if (act_->isActive() || act_tolerant_->isActive())
+    if (goal_handle_ || goal_handle_tolerant_)
     {
       RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding the action.");
       return;
     }
     setGoal(*msg);
+
+    goal_handle_ = std::make_shared<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>>();
   }
-  void cbPreempt()
+  rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if (act_->isActive())
-      act_->setPreempted(nav2_msgs::action::NavigateToPose::Result(), "Preempted.");
+    if (goal_handle_)
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
 
-    if (act_tolerant_->isActive())
-      act_tolerant_->setPreempted(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Preempted.");
+    if (goal_handle_tolerant_)
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
 
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
+    return rclcpp_action::CancelResponse::ACCEPT;
+  }
+
+  rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle)
+  {
+    RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
+    if (goal_handle_)
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
+
+    if (goal_handle_tolerant_)
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
+
+    has_goal_ = false;
+    escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
+    status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
+    return rclcpp_action::CancelResponse::ACCEPT;
   }
 
   bool setGoal(const geometry_msgs::msg::PoseStamped& msg)
@@ -479,15 +499,25 @@ protected:
       status_.status = planner_cspace_msgs::msg::PlannerStatus::DOING;
       status_.header.stamp = this->now();
       pub_status_->publish(status_);
-      diag_updater_.update();
+      diag_updater_->force_update();
     }
     else
     {
       has_goal_ = false;
-      if (act_->isActive())
-        act_->setSucceeded(nav2_msgs::action::NavigateToPose::Result(), "Goal cleared.");
-      if (act_tolerant_->isActive())
-        act_tolerant_->setSucceeded(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Goal cleared.");
+      if (goal_handle_)
+      {
+        RCLCPP_INFO(this->get_logger(), "Goal cleared.");
+        auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
+        goal_handle_->succeed(result);
+        goal_handle_.reset();
+      }
+      if (goal_handle_tolerant_)
+      {
+        RCLCPP_INFO(this->get_logger(), "Goal cleared.");
+        auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
+        goal_handle_tolerant_->succeed(result);
+        goal_handle_tolerant_.reset();
+      }
     }
     return true;
   }
@@ -952,9 +982,9 @@ protected:
 
   void cbNoMapUpdateTimer()
   {
-    planPath(e.current_real);
+    planPath(this->now());
     no_map_update_timer_ =
-        this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this), true);
+        this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this));
   }
   void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
   {
@@ -970,7 +1000,7 @@ protected:
       if (costmap_watchdog_ > rclcpp::Duration::from_seconds(0))
       {
         no_map_update_timer_ =
-            this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this), true);
+            this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this));
       }
     }
     else
@@ -1010,7 +1040,7 @@ protected:
       map_info_ = msg->info;
     }
     map_header_ = msg->header;
-    jump_.setMapFrame(map_header_.frame_id);
+    jump_->setMapFrame(map_header_.frame_id);
 
     const int size[3] =
         {
@@ -1085,37 +1115,54 @@ protected:
 
     createCostEstimCache();
 
-    if (map_update_retained_ && map_update_retained_->header.stamp >= msg->header.stamp)
+    if (map_update_retained_ && rclcpp::Time(map_update_retained_->header.stamp) >= msg->header.stamp)
     {
       RCLCPP_INFO(this->get_logger(), "Applying retained map update");
       cbMapUpdate(map_update_retained_);
     }
     map_update_retained_ = nullptr;
   }
-  void cbAction()
-  {
-    if (act_tolerant_->isActive())
-    {
-      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding by tolerant_move action.");
-      return;
-    }
 
-    nav2_msgs::action::NavigateToPose::Goal::ConstPtr goal = act_->acceptNewGoal();
-    if (!setGoal(goal->target_pose))
-      act_->setAborted(nav2_msgs::action::NavigateToPose::Result(), "Given goal is invalid.");
+  void cbAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
+  {
+    goal_handle_ = goal_handle;
   }
 
-  void cbTolerantAction()
+  void cbTolerantAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle)
   {
-    if (act_->isActive())
+    goal_handle_tolerant_ = goal_handle;
+  }
+
+  rclcpp_action::GoalResponse cbAction(const rclcpp_action::GoalUUID&, nav2_msgs::action::NavigateToPose::Goal::ConstPtr goal)
+  {
+    if (goal_handle_tolerant_)
     {
-      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding by move_base action.");
-      return;
+      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding by tolerant_move action.");
+      return rclcpp_action::GoalResponse::REJECT;
     }
 
-    goal_tolerant_ = act_tolerant_->acceptNewGoal();
-    if (!setGoal(goal_tolerant_->target_pose))
-      act_tolerant_->setAborted(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Given goal is invalid.");
+    if (!setGoal(goal->pose))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Given goal is invalid.");
+      return rclcpp_action::GoalResponse::REJECT;
+    }
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  }
+
+  rclcpp_action::GoalResponse cbTolerantAction(const rclcpp_action::GoalUUID&, planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal)
+  {
+    if (goal_handle_)
+    {
+      RCLCPP_ERROR(this->get_logger(), "Setting new goal is ignored since planner_3d is proceeding by move_base action.");
+      return rclcpp_action::GoalResponse::REJECT;
+    }
+
+    if (!setGoal(goal->target_pose))
+    {
+      RCLCPP_ERROR(this->get_logger(), "Given goal is invalid");
+      return rclcpp_action::GoalResponse::REJECT;
+    }
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
 
   void updateStart()
@@ -1152,11 +1199,10 @@ public:
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
-    , jump_(tfbuf_)
   {
     using std::placeholders::_1;
     using std::placeholders::_2;
-      sub_map_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3D>(
+    sub_map_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3D>(
         "costmap",
         rclcpp::QoS(1).transient_local(), std::bind(&Planner3dNode::cbMap, this, _1));
     sub_map_update_ = this->create_subscription<costmap_cspace_msgs::msg::CSpace3DUpdate>(
@@ -1182,19 +1228,30 @@ public:
     pub_hysteresis_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/hysteresis_map", rclcpp::QoS(1).transient_local());
     pub_remembered_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/remembered_map", rclcpp::QoS(1).transient_local());
 
-    act_.reset(new Planner3DActionServer(rclcpp::Node::SharedPtr(), "move_base", false));
-    act_->registerGoalCallback(boost::bind(&Planner3dNode::cbAction, this));
-    act_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    jump_ = std::make_shared<JumpDetector>(*tfbuf_);
 
-    act_tolerant_.reset(new Planner3DTolerantActionServer(rclcpp::Node::SharedPtr(), "tolerant_move", false));
-    act_tolerant_->registerGoalCallback(boost::bind(&Planner3dNode::cbTolerantAction, this));
-    act_tolerant_->registerPreemptCallback(boost::bind(&Planner3dNode::cbPreempt, this));
+    diag_updater_ = std::make_shared<diagnostic_updater::Updater>(this);
+
+    act_ = rclcpp_action::create_server<nav2_msgs::action::NavigateToPose>(
+      this,
+      "move_base",
+      std::bind(&Planner3dNode::cbAction, this, _1, _2),
+      std::bind(&Planner3dNode::cbPreempt, this, _1),
+      std::bind(&Planner3dNode::cbAccepted, this, _1));
+
+    act_tolerant_ = rclcpp_action::create_server<planner_cspace_msgs::action::MoveWithTolerance>(
+      this,
+      "tolerant_move",
+      std::bind(&Planner3dNode::cbTolerantAction, _1, _2),
+      std::bind(&Planner3dNode::cbTolerantPreempt, this, _1),
+      std::bind(&Planner3dNode::cbTolerantAccepted, this, _1));
     goal_tolerant_ = nullptr;
 
     use_path_with_velocity_ = this->declare_parameter("use_path_with_velocity", false);
     if (use_path_with_velocity_)
     {
-      pub_path_velocity_ = nh_->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
+      pub_path_velocity_ = this->create_publisher<trajectory_tracker_msgs::msg::PathWithVelocity>(
           "path_velocity", rclcpp::QoS(1).transient_local());
     }
     else
@@ -1274,8 +1331,8 @@ public:
     pos_jump = this->declare_parameter("pos_jump", 1.0);
     yaw_jump = this->declare_parameter("yaw_jump", 1.5);
     jump_detect_frame = this->declare_parameter("jump_detect_frame", std::string("base_link"));
-    jump_.setBaseFrame(jump_detect_frame);
-    jump_.setThresholds(pos_jump, yaw_jump);
+    jump_->setBaseFrame(jump_detect_frame);
+    jump_->setThresholds(pos_jump, yaw_jump);
 
     force_goal_orientation_ = this->declare_parameter("force_goal_orientation", true);
 
@@ -1330,11 +1387,8 @@ public:
     cnt_stuck_ = 0;
     is_path_switchback_ = false;
 
-    diag_updater_.setHardwareID("none");
-    diag_updater_.add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
-
-    act_->start();
-    act_tolerant_->start();
+    diag_updater_->setHardwareID("none");
+    diag_updater_->add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
@@ -1585,7 +1639,7 @@ public:
       {
         updateStart();
 
-        if (jump_.detectJump())
+        if (jump_->detectJump())
         {
           bbf_costmap_->clear();
           // Robot pose jumped.
@@ -1667,18 +1721,17 @@ public:
 
     if (has_map_ && has_goal_ && has_start_ && has_costmap)
     {
-      if (act_->isActive())
+      if (goal_handle_)
       {
-        nav2_msgs::action::NavigateToPose::Feedback feedback;
-        feedback.base_position = start_;
-        act_->publish_feedback(feedback);
+        nav2_msgs::action::NavigateToPose::Feedback::SharedPtr feedback = std::make_shared<nav2_msgs::action::NavigateToPose::Feedback>();
+        goal_handle_->publish_feedback(feedback);
       }
 
-      if (act_tolerant_->isActive())
+      if (goal_handle_tolerant_)
       {
-        planner_cspace_msgs::action::MoveWithTolerance::Feedback feedback;
-        feedback.base_position = start_;
-        act_tolerant_->publish_feedback(feedback);
+        planner_cspace_msgs::action::MoveWithTolerance::Feedback::SharedPtr feedback = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Feedback>();
+        feedback->base_position = start_;
+        goal_handle_tolerant_->publish_feedback(feedback);
       }
 
       is_path_switchback_ = false;
@@ -1695,7 +1748,7 @@ public:
         else if (yaw_diff < -M_PI)
           yaw_diff += M_PI * 2.0;
         if (std::abs(yaw_diff) <
-            (act_tolerant_->isActive() ? goal_tolerant_->goal_tolerance_ang_finish : goal_tolerance_ang_finish_))
+            (goal_handle_tolerant_ ? goal_tolerant_->goal_tolerance_ang_finish : goal_tolerance_ang_finish_))
         {
           status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
           has_goal_ = false;
@@ -1703,10 +1756,19 @@ public:
           // to minimize the error to the desired final pose
           RCLCPP_INFO(this->get_logger(), "Path plan finished");
 
-          if (act_->isActive())
-            act_->setSucceeded(nav2_msgs::action::NavigateToPose::Result(), "Goal reached.");
-          if (act_tolerant_->isActive())
-            act_tolerant_->setSucceeded(planner_cspace_msgs::action::MoveWithTolerance::Result(), "Goal reached.");
+          if (goal_handle_)
+          {
+            RCLCPP_INFO(this->get_logger(), "Goal reached.");
+            auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
+            goal_handle_->succeed(result);
+            goal_handle_.reset();
+          }
+          if (goal_handle_tolerant_)
+          {
+            RCLCPP_INFO(this->get_logger(), "Goal reached.");
+            auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
+            goal_handle_tolerant_->succeed(result);
+          }
         }
         else
         {
@@ -1726,12 +1788,19 @@ public:
           publishEmptyPath();
           RCLCPP_ERROR(this->get_logger(), "Exceeded max_retry_num:%d", max_retry_num_);
 
-          if (act_->isActive())
-            act_->setAborted(
-                nav2_msgs::action::NavigateToPose::Result(), "Goal is in Rock");
-          if (act_tolerant_->isActive())
-            act_tolerant_->setAborted(
-                planner_cspace_msgs::action::MoveWithTolerance::Result(), "Goal is in Rock");
+          if (goal_handle_)
+          {
+            RCLCPP_WARN(this->get_logger(), "Goal is in Rock");
+            auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
+            goal_handle_->abort(result);
+            goal_handle_.reset();
+          }
+          if (goal_handle_tolerant_)
+          {
+            RCLCPP_WARN(this->get_logger(), "Goal is in Rock");
+            auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
+            goal_handle_tolerant_->abort(result);
+          }
           return;
         }
         else if (!cost_estim_cache_created_)
@@ -1787,7 +1856,7 @@ public:
     publishCurrentGoal();
     status_.header.stamp = now;
     pub_status_->publish(status_);
-    diag_updater_.force_update();
+    diag_updater_->force_update();
 
     metrics_.header.stamp = now;
     metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
@@ -1816,7 +1885,7 @@ public:
     {
       if (trigger_plan_by_costmap_update_)
       {
-        if (jump_.detectJump())
+        if (jump_->detectJump())
         {
           bbf_costmap_->clear();
         }
@@ -1867,7 +1936,7 @@ protected:
       g_tolerance_lin = temporary_escape_tolerance_lin_;
       g_tolerance_ang = temporary_escape_tolerance_ang_;
     }
-    else if (act_tolerant_->isActive())
+    else if (goal_handle_tolerant_)
     {
       g_tolerance_lin = std::lround(goal_tolerant_->goal_tolerance_lin / map_info_.linear_resolution);
       g_tolerance_ang = std::lround(goal_tolerant_->goal_tolerance_ang / map_info_.angular_resolution);
@@ -1994,11 +2063,12 @@ protected:
           RCLCPP_INFO(this->get_logger(), "Escaped");
           return true;
         }
-        if (act_tolerant_->isActive() && goal_tolerant_->continuous_movement_mode)
+        if (goal_handle_tolerant_ && goal_tolerant_->continuous_movement_mode)
         {
           RCLCPP_INFO(this->get_logger(), "Robot reached near the goal.");
-          act_tolerant_->setSucceeded(planner_cspace_msgs::action::MoveWithTolerance::Result(),
-                                      "Goal reached (Continuous movement mode).");
+          auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
+          RCLCPP_INFO(this->get_logger(), "Goal reached (Continuous movement mode).");
+          goal_handle_tolerant_->succeed(result);
           goal_tolerant_ = nullptr;
         }
         else
