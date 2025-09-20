@@ -214,7 +214,7 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
   pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", rclcpp::QoS(10).transient_local());
   if (use_odom_)
   {
-    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(10), std::bind(&TrackerNode::cbOdometry, this, _1)
+    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackerNode::cbOdometry, this, _1)
                                                   );
   }
 
@@ -508,8 +508,6 @@ void TrackerNode::control(
         v_lim_.set(
             trajectory_tracker::timeOptimalControl(tracking_result.signed_local_distance, acc_toc_[0]),
             tracking_result.target_linear_vel, acc_[0], dt);
-        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 200, "v_lim_.set(%.3f, %.3f, %.3f, %.3f, %.3f)", tracking_result.signed_local_distance, acc_toc_[0],
-          tracking_result.target_linear_vel, acc_[0], dt);
 
         float wref = std::abs(v_lim_.get()) * tracking_result.tracking_point_curv;
 
