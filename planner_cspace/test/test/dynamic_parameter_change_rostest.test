@@ -17,8 +17,15 @@
   <node pkg="planner_cspace" exec="planner_3d" name="planner_3d">
     <remap from="move_base_simple/goal" to="/goal" />
   </node>
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  </node>
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
         args="0 0 0 0 0 0 map odom" />
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
+    <param name="node_names" value="[map_server_global]" />
+    <param name="autostart" value="true" />
+  </node>
 
 </launch>

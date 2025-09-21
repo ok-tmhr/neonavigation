@@ -30,7 +30,9 @@
     <param name="yaw_jump" value="100.0" />
   </node>
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  </node>
   <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
     <remap from="map_local" to="overlay" />
     <param name="width" value="15" />
@@ -50,5 +52,10 @@
   <timer period="15.0">
     <shutdown />
   </timer>
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
+    <param name="node_names" value="[map_server_global]" />
+    <param name="autostart" value="true" />
+  </node>
 
 </launch>

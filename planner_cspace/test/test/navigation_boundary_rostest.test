@@ -32,14 +32,22 @@
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find-pkg-share planner_cspace)/test/data/global_map.yaml"/>
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_local" args="$(find-pkg-share planner_cspace)/test/data/local_map.yaml">
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  </node>
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_local">
     <remap from="map" to="map_with_local_objects" />
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/local_map.yaml" />
   </node>
   <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
     <remap from="map" to="map_with_local_objects" />
     <remap from="map_local" to="overlay" />
     <param name="width" value="6" />
     <param name="hz" value="5.0" />
+  </node>
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
+    <param name="node_names" value="[map_server_global, map_server_local]" />
+    <param name="autostart" value="true" />
   </node>
 </launch>

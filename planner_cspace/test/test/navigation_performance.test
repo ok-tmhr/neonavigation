@@ -14,6 +14,9 @@
     <param name="print_planning_duration" value="true" />
   </node>
 
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+  </node>
   <node pkg="nav2_map_server" exec="map_server" name="map_server_global" args="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
   <node pkg="rostopic" exec="rostopic" name="pub_goal"
     args="pub -l /goal geometry_msgs/PoseStamped -f $(find-pkg-share planner_cspace)/test/data/goal_performance.yaml" />
@@ -22,4 +25,9 @@
       args="0 0 0 0 0 0 map odom" />
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf2"
       args="2.5 0.45 0 3.14 0 0 odom base_link" />
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
+    <param name="node_names" value="[map_server_global]" />
+    <param name="autostart" value="true" />
+  </node>
 </launch>
