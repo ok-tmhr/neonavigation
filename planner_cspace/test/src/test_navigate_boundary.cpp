@@ -50,18 +50,19 @@ protected:
 
   rclcpp::Node::SharedPtr nh_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
-  rclcpp::Subscription<>::SharedPtr sub_status_;
-  rclcpp::Subscription<>::SharedPtr sub_path_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status_;
   nav_msgs::msg::Path::ConstPtr path_;
   ActionClientPtr move_base_;
 
   NavigateBoundary()
   {
-    move_base_ = std::make_shared<ActionClient>("/move_base");
-    if (!move_base_->waitForServer(rclcpp::Duration::from_seconds(10.0)))
+    nh_ = rclcpp::Node::make_shared("test_navigate_boundary");
+    move_base_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(nh_, "/move_base");
+    if (!move_base_->wait_for_action_server(std::chrono::duration<double>(10.0)))
     {
-      RCLCPP_ERROR(this->get_logger(), "Failed to connect move_base action");
+      RCLCPP_ERROR(nh_->get_logger(), "Failed to connect move_base action");
       exit(EXIT_FAILURE);
     }
   }
@@ -69,7 +70,7 @@ protected:
   void publishTransform(const double x, const double y)
   {
     geometry_msgs::msg::TransformStamped trans;
-    trans.header.stamp = this->now();
+    trans.header.stamp = nh_->now();
     trans.header.frame_id = "odom";
     trans.child_frame_id = "base_link";
     trans.transform.translation.x = x;
@@ -79,18 +80,19 @@ protected:
   }
   virtual void SetUp()
   {
-    sub_status_ = nh_->create_subscription("/planner_3d/status", 100, &NavigateBoundary::cbStatus, this);
-    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &NavigateBoundary::cbPath, this);
+    using std::placeholders::_1;
+    sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("/planner_3d/status", 100, std::bind(&NavigateBoundary::cbStatus, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&NavigateBoundary::cbPath, this, _1));
 
     publishTransform(1.0, 0.6);
     rclcpp::sleep_for(std::chrono::milliseconds(500));
 
     nav2_msgs::action::NavigateToPose::Goal goal;
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = this->now();
-    goal.target_pose.pose.orientation.w = 1;
-    goal.target_pose.pose.position.x = 1.4;
-    goal.target_pose.pose.position.y = 0.6;
+    goal.pose.header.frame_id = "map";
+    goal.pose.header.stamp = nh_->now();
+    goal.pose.pose.orientation.w = 1;
+    goal.pose.pose.position.x = 1.4;
+    goal.pose.pose.position.y = 0.6;
     move_base_->async_send_goal(goal);
     rclcpp::sleep_for(std::chrono::milliseconds(500));
   }
@@ -118,7 +120,7 @@ TEST_F(NavigateBoundary, StartPositionScan)
       for (int i = 0; i < 100; ++i)
       {
         rclcpp::sleep_for(std::chrono::milliseconds(50));
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
         if (path_ && status_)
           break;
       }
@@ -132,7 +134,7 @@ TEST_F(NavigateBoundary, StartPositionScan)
 
 TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
 {
-  rclcpp::Publisher<>::SharedPtr pub_trigger = nh_->create_publisher<std_msgs::msg::Empty>("/planner_3d/temporary_escape", 1);
+  auto pub_trigger = nh_->create_publisher<std_msgs::msg::Empty>("/planner_3d/temporary_escape", 1);
 
   // map width/height is 32px * 0.1m = 3.2m
   for (double x = -10; x < 13; x += 2.0)
@@ -149,7 +151,7 @@ TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
         pub_trigger->publish(msg);
 
         rclcpp::sleep_for(std::chrono::milliseconds(200));
-        rclcpp::spin_some(shared_from_this());
+        rclcpp::spin_some(nh_);
         if (path_ && status_)
           break;
       }
@@ -164,7 +166,7 @@ TEST_F(NavigateBoundary, StartPositionScanWithTemporaryEscape)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_navigate_boundary");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

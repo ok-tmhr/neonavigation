@@ -438,7 +438,7 @@ protected:
     }
     setGoal(*msg);
 
-    goal_handle_ = std::make_shared<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>>();
+    // goal_handle_ = std::make_shared<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>>();
   }
   rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
   {
@@ -1243,7 +1243,7 @@ public:
     act_tolerant_ = rclcpp_action::create_server<planner_cspace_msgs::action::MoveWithTolerance>(
       this,
       "tolerant_move",
-      std::bind(&Planner3dNode::cbTolerantAction, _1, _2),
+      std::bind(&Planner3dNode::cbTolerantAction, this, _1, _2),
       std::bind(&Planner3dNode::cbTolerantPreempt, this, _1),
       std::bind(&Planner3dNode::cbTolerantAccepted, this, _1));
     goal_tolerant_ = nullptr;

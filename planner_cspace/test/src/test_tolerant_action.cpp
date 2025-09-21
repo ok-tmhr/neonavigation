@@ -51,7 +51,7 @@ protected:
   planner_cspace_msgs::action::MoveWithTolerance::Goal createGoalInFree()
   {
     planner_cspace_msgs::action::MoveWithTolerance::Goal goal;
-    goal.target_pose.header.stamp = this->now();
+    goal.target_pose.header.stamp = node_->now();
     goal.target_pose.header.frame_id = "map";
     goal.target_pose.pose.position.x = 2.1;
     goal.target_pose.pose.position.y = 0.45;
@@ -85,28 +85,27 @@ protected:
 
 TEST_F(TolerantActionTest, GoalWithTolerance)
 {
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
-  const rclcpp::Duration wait(1.0);
+  const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10);
+  const rclcpp::Rate wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
   rclcpp::sleep_for(std::chrono::milliseconds(500));
   const planner_cspace_msgs::action::MoveWithTolerance::Goal goal = createGoalInFree();
-  move_base_->async_send_goal(goal);
+  auto future = move_base_->async_send_goal(goal);
 
-  while (rclcpp::ok() && move_base_->getState().state_ != rclcpp_action::ResultCode::ACTIVE)
+  while (rclcpp::ok() && !future.valid())
   {
-    ASSERT_LT(this->now(), deadline)
-        << "Action didn't get active: " << move_base_->getState().toString()
-        << " " << statusString();
-    rclcpp::spin_some(shared_from_this());
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get active: " << statusString();
+    rclcpp::spin_some(node_);
   }
 
-  while (rclcpp::ok() && move_base_->getState().state_ != rclcpp_action::ResultCode::SUCCEEDED)
+  while (rclcpp::ok() && future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_SUCCEEDED)
   {
-    ASSERT_LT(this->now(), deadline)
-        << "Action didn't succeeded: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't succeeded: " << future.get()->get_status()
         << " " << statusString();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
   }
 
   const double dist_to_goal = getDistBetweenRobotAndGoal(goal);
@@ -119,10 +118,10 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
 
   while (rclcpp::ok() && planner_status_->status != planner_cspace_msgs::msg::PlannerStatus::DONE)
   {
-    ASSERT_LT(this->now(), deadline)
-        << "Navigation didn't finished: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Navigation didn't finished: " << future.get()->get_status()
         << " " << statusString();
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(node_);
   }
   EXPECT_LT(getDistBetweenRobotAndGoal(goal), 0.05);
 }
@@ -130,6 +129,6 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_tolerant_action");
+  rclcpp::init(argc, argv);
   return RUN_ALL_TESTS();
 }

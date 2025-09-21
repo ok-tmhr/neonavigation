@@ -53,51 +53,55 @@ class ActionTestBase : public ::testing::Test
 {
 public:
   ActionTestBase()
-    , map_ready_(false)
+    : map_ready_(false)
   {
-    move_base_ = std::make_shared<ActionClient>(TOPIC);
-    sub_status_ = node_.subscribe(
-        "/planner_3d/status", 10, &ActionTestBase::cbStatus, this);
+    node_ = rclcpp::Node::make_shared("action_test_base");
+    move_base_ = rclcpp_action::create_client<ACTION>(node_, TOPIC);
+    sub_status_ = node_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
+        "/planner_3d/status", 10, std::bind(&ActionTestBase::cbStatus, this, std::placeholders::_1));
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp()
   {
-    if (!move_base_->waitForServer(rclcpp::Duration::from_seconds(30.0)))
+    if (!move_base_->wait_for_action_server(std::chrono::duration<double>(30.0)))
     {
       FAIL() << "Failed to connect move_base action";
     }
 
-    rclcpp::ServiceClient srv_plan =
-        node_.->create_client<nav_msgs::srv::GetPlanRequest, nav_msgs::srv::GetPlanResponse>(
+    auto srv_plan =
+        node_->create_client<nav_msgs::srv::GetPlan>(
             "/planner_3d/make_plan");
 
-    const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10.0);
+    const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10.0);
     while (rclcpp::ok())
     {
-      nav_msgs::srv::GetPlanRequest req;
-      nav_msgs::srv::GetPlanResponse res;
-      req.tolerance = 10.0;
-      req.start.header.frame_id = "map";
-      req.start.pose.position.x = 1.24;
-      req.start.pose.position.y = 0.65;
-      req.start.pose.orientation.w = 1;
-      req.goal.header.frame_id = "map";
-      req.goal.pose.position.x = 1.25;
-      req.goal.pose.position.y = 0.75;
-      req.goal.pose.orientation.w = 1;
-      if (srv_plan.call(req, res))
+      nav_msgs::srv::GetPlan::Request::SharedPtr req;
+      nav_msgs::srv::GetPlan::Response::SharedPtr res;
+      req->tolerance = 10.0;
+      req->start.header.frame_id = "map";
+      req->start.pose.position.x = 1.24;
+      req->start.pose.position.y = 0.65;
+      req->start.pose.orientation.w = 1;
+      req->goal.header.frame_id = "map";
+      req->goal.pose.position.x = 1.25;
+      req->goal.pose.position.y = 0.75;
+      req->goal.pose.orientation.w = 1;
+      auto future = srv_plan->async_send_request(req);
+      rclcpp::spin_until_future_complete(node_, future);
+      res = future.get();
+      if (!res->plan.header.frame_id.empty())
       {
         // Planner is ready.
         break;
       }
-      if (this->now() > deadline)
+      if (node_->now() > deadline)
       {
         FAIL() << "planner_3d didn't receive map";
       }
       rclcpp::sleep_for(std::chrono::seconds(1));
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(node_);
     }
   }
   ~ActionTestBase()

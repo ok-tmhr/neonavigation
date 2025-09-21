@@ -47,6 +47,9 @@ protected:
   std::shared_ptr<MoveBaseClient> act_cli_;
   std::shared_ptr<MoveWithToleranceClient> act_cli_tolerant_;
 
+  std::shared_future<std::shared_ptr<rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>>> goal_handle_;
+  std::shared_future<std::shared_ptr<rclcpp_action::ClientGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>>> goal_handle_tolerant_;
+
   nav_msgs::msg::Path path_;
   size_t pos_;
   bool with_tolerance_;
@@ -116,7 +119,7 @@ public:
       goal.goal_tolerance_ang = tolerance_ang_;
       goal.goal_tolerance_ang_finish = tolerance_ang_finish_;
 
-      act_cli_tolerant_->async_send_goal(goal);
+      goal_handle_tolerant_ = act_cli_tolerant_->async_send_goal(goal);
     }
     else
     {
@@ -126,7 +129,7 @@ public:
       goal.pose.header.stamp = this->now();
       goal.pose.pose = path_.poses[pos_].pose;
 
-      act_cli_->async_send_goal(goal);
+      goal_handle_ = act_cli_->async_send_goal(goal);
     }
     pos_++;
 
@@ -152,10 +155,20 @@ public:
         continue;
       }
 
-      rclcpp_action::ResultCode state =
-          with_tolerance_ ?
-              act_cli_tolerant_->getState() :
-              act_cli_->getState();
+      rclcpp_action::ResultCode state;
+      if (with_tolerance_)
+      {
+        auto future = act_cli_tolerant_->async_get_result(goal_handle_tolerant_.get());
+        rclcpp::spin_until_future_complete(shared_from_this(), future);
+        state = future.get().code;
+      }
+      else
+      {
+        auto future = act_cli_->async_get_result(goal_handle_.get());
+        rclcpp::spin_until_future_complete(shared_from_this(), future);
+        state = future.get().code;
+      }
+
       if (state == rclcpp_action::ResultCode::SUCCEEDED)
       {
         RCLCPP_INFO(this->get_logger(), "Action has been finished.");
