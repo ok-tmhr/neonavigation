@@ -443,11 +443,6 @@ protected:
   rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if (goal_handle_)
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
-
-    if (goal_handle_tolerant_)
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
 
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
@@ -993,7 +988,7 @@ protected:
     RCLCPP_DEBUG(this->get_logger(), "Map updated");
     if (trigger_plan_by_costmap_update_)
     {
-      if (!no_map_update_timer_)
+      if (no_map_update_timer_)
         no_map_update_timer_->cancel();
       updateStart();
       applyCostmapUpdate(msg);
@@ -1230,12 +1225,6 @@ public:
     pub_hysteresis_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/hysteresis_map", rclcpp::QoS(1).transient_local());
     pub_remembered_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/remembered_map", rclcpp::QoS(1).transient_local());
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
-    jump_ = std::make_shared<JumpDetector>(*tfbuf_);
-
-    diag_updater_ = std::make_shared<diagnostic_updater::Updater>(this);
-
     act_ = rclcpp_action::create_server<nav2_msgs::action::NavigateToPose>(
       this,
       "move_base",
@@ -1265,6 +1254,11 @@ public:
     }
     pub_path_poses_ = this->create_publisher<geometry_msgs::msg::PoseArray>("~/path_poses", rclcpp::QoS(1).transient_local());
     pub_preserved_path_poses_ = this->create_publisher<nav_msgs::msg::Path>("~/preserved_path_poses", rclcpp::QoS(1).transient_local());
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
+    jump_ = std::make_shared<JumpDetector>(*tfbuf_);
+    diag_updater_ = std::make_shared<diagnostic_updater::Updater>(this);
 
     auto desc = [](const double from_, const double to_, const std::string& description = ""){
       rcl_interfaces::msg::ParameterDescriptor d;
@@ -1557,10 +1551,8 @@ public:
 
     this->get_parameter("keep_a_part_of_previous_path", keep_a_part_of_previous_path_);
     StartPosePredictor::Config start_pose_predictor_config;
-    start_pose_predictor_config.lin_vel_ = this->get_parameter("max_vel").as_double
-    ();
-    start_pose_predictor_config.ang_vel_ = this->get_parameter("max_ang_vel").as_double
-    ();
+    start_pose_predictor_config.lin_vel_ = this->get_parameter("max_vel").as_double();
+    start_pose_predictor_config.ang_vel_ = this->get_parameter("max_ang_vel").as_double();
     start_pose_predictor_config.dist_stop_ = this->get_parameter("dist_stop_to_previous_path").as_double();
     start_pose_predictor_config.prediction_sec_ = 1.0 / freq_;
     start_pose_predictor_config.switch_back_prediction_sec_ = this->get_parameter("sw_wait").as_double();
@@ -1637,6 +1629,18 @@ public:
 
   void planPath(const rclcpp::Time& now)
   {
+    if (goal_handle_->is_canceling()){
+      auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
+      goal_handle_->canceled(result);
+      goal_handle_.reset();
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
+    }
+    if (goal_handle_tolerant_->is_canceling()){
+      auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
+      goal_handle_tolerant_->canceled(result);
+      goal_handle_tolerant_.reset();
+      RCLCPP_INFO(this->get_logger(), "Preempted.");
+    }
     if (has_map_ && !cost_estim_cache_created_ && has_goal_)
     {
       createCostEstimCache();
@@ -1710,16 +1714,17 @@ public:
 
           if (goal_handle_)
           {
-            RCLCPP_INFO(this->get_logger(), "Goal reached.");
             auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
             goal_handle_->succeed(result);
             goal_handle_.reset();
+            RCLCPP_INFO(this->get_logger(), "Goal reached.");
           }
           if (goal_handle_tolerant_)
           {
-            RCLCPP_INFO(this->get_logger(), "Goal reached.");
             auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
             goal_handle_tolerant_->succeed(result);
+            goal_handle_tolerant_.reset();
+            RCLCPP_INFO(this->get_logger(), "Goal reached.");
           }
         }
         else
@@ -1752,6 +1757,7 @@ public:
             RCLCPP_WARN(this->get_logger(), "Goal is in Rock");
             auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
             goal_handle_tolerant_->abort(result);
+            goal_handle_tolerant_.reset();
           }
           return;
         }
