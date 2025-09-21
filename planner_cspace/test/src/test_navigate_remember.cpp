@@ -129,8 +129,8 @@ protected:
       }
     }
 
-    std_srvs::srv::Empty::Request::SharedPtr req;
-    std_srvs::srv::Empty::Response::SharedPtr res;
+    auto req = std::make_shared<std_srvs::srv::Empty::Request>();
+    auto res = std::make_shared<std_srvs::srv::Empty::Response>();
     srv_forget_->async_send_request(req);
 
     rclcpp::sleep_for(std::chrono::seconds(1));

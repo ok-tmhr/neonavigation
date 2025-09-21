@@ -240,6 +240,6 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY data test
+install(DIRECTORY data script test
   DESTINATION share/${PROJECT_NAME}/test
 )

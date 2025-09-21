@@ -77,8 +77,8 @@ public:
     const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10.0);
     while (rclcpp::ok())
     {
-      nav_msgs::srv::GetPlan::Request::SharedPtr req;
-      nav_msgs::srv::GetPlan::Response::SharedPtr res;
+      auto req = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+      auto res = std::make_shared<nav_msgs::srv::GetPlan::Response>();
       req->tolerance = 10.0;
       req->start.header.frame_id = "map";
       req->start.pose.position.x = 1.24;
