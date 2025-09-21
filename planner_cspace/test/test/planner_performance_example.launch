@@ -26,10 +26,11 @@
     <param name="hz" value="1.5" />
   </node>
 
-  <node pkg="rostopic" exec="rostopic" name="goal"
+  <executable name="goal"
       launch-prefix="$(find-pkg-share planner_cspace)/test/script/delayed_launch.sh 3"
-      args="pub -l /move_base_simple/goal geometry_msgs/PoseStamped
-            -f $(find-pkg-share planner_cspace)/test/data/planner_performance_example.yaml" />
+      cmd="ros2 topic pub -1 /move_base_simple/goal geometry_msgs/msg/PoseStamped
+        '{header: {frame_id: map}, pose: {position: {x: 1.5}, orientation: {z: 0.707, w: 0.707}}}'
+        --qos-durability transient_local --keep-alive 3 -n goal" />
   <node pkg="planner_cspace" exec="set_planner_debug_level.sh" name="debug" args="debug" />
 
   <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share neonavigation_launch)/config/visualization.rviz" respawn="true" />

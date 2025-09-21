@@ -39,8 +39,10 @@
     <param name="hz" value="5.0" />
   </node>
 
-  <node pkg="rostopic" exec="rostopic" name="pub_goal"
-    args="pub -l /goal geometry_msgs/PoseStamped -f $(find-pkg-share planner_cspace)/test/data/goal_debug_outputs.yaml" />
+  <executable name="pub_goal"
+    cmd="ros2 topic pub -1 /goal geometry_msgs/PoseStamped
+      '{header: {frame_id: map}, pose: {position: {x: 1.0, y: 0.525}, orientation: {z: 1.0, w: 0.0}}}'
+      --qos-durability transient_local --keep-alive 3 -n pub_goal" />
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
