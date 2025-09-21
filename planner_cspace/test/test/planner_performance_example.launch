@@ -1,14 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-  <rosparam param="safety_limiter/footprint">
-    [[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]
-  </rosparam>
-  <rosparam param="costmap_3d/footprint">
-    [[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]
-  </rosparam>
-  <rosparam param="planner_3d">
-    weight_hysteresis: 0.0
-  </rosparam>
+
+  <set_parameter name="safety_limiter/footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" />
+  <set_parameter name="costmap_3d/footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" />
+  <set_parameter name="planner_3d/weight_hysteresis" value="0.0" />
   <include file="$(find-pkg-share neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="false" />
     <arg name="map_file" value="$(find-pkg-share neonavigation_launch)/map/demo_map.yaml" />
