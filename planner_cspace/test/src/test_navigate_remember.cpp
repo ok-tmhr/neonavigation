@@ -59,35 +59,39 @@ protected:
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::msg::CSpace3D::ConstPtr costmap_;
   nav_msgs::msg::Path::ConstPtr path_;
-  rclcpp::Subscription<>::SharedPtr sub_costmap_;
-  rclcpp::Subscription<>::SharedPtr sub_status_;
-  rclcpp::Subscription<>::SharedPtr sub_path_;
-  rclcpp::ServiceClient srv_forget_;
-  rclcpp::Publisher<>::SharedPtr pub_initial_pose_;
-  rclcpp::Publisher<>::SharedPtr pub_patrol_nodes_;
+  rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr sub_costmap_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr srv_forget_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_initial_pose_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_patrol_nodes_;
   std::vector<tf2::Stamped<tf2::Transform>> traj_;
   std::string test_scope_;
 
   NavigateWithRememberUpdates()
-    : tfl_(tfbuf_)
   {
-    sub_costmap_ = nh_->create_subscription("costmap", rclcpp::QoS(1).transient_local(), &NavigateWithRememberUpdates::cbCostmap, this);
-    sub_status_ = nh_->create_subscription(
-        "/planner_3d/status", 10, &NavigateWithRememberUpdates::cbStatus, this);
-    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &NavigateWithRememberUpdates::cbPath, this);
+    nh_ = rclcpp::Node::make_shared("test_navigate_remember");
+    using std::placeholders::_1;
+    sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", rclcpp::QoS(1).transient_local(), std::bind(&NavigateWithRememberUpdates::cbCostmap, this, _1));
+    sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
+        "/planner_3d/status", 10, std::bind(&NavigateWithRememberUpdates::cbStatus, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&NavigateWithRememberUpdates::cbPath, this, _1));
     srv_forget_ =
-        nh_.->create_client<std_srvs::srv::Empty::Request, std_srvs::srv::Empty::Response>(
+        nh_->create_client<std_srvs::srv::Empty>(
             "forget_planning_cost");
     pub_initial_pose_ =
         nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
     pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(nh_->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
   virtual void SetUp()
   {
     test_scope_ = "[" + std::to_string(getpid()) + "] ";
 
-    srv_forget_.waitForExistence(rclcpp::Duration::from_seconds(10.0));
+    srv_forget_->wait_for_service(std::chrono::duration<double>(10.0));
     rclcpp::Rate rate(10.0);
 
     geometry_msgs::msg::PoseWithCovarianceStamped pose;
@@ -97,16 +101,16 @@ protected:
     pose.pose.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 1.57));
     pub_initial_pose_->publish(pose);
 
-    const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(15);
+    const rclcpp::Time deadline = nh_->now() + rclcpp::Duration::from_seconds(15);
 
     while (rclcpp::ok())
     {
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       rate.sleep();
-      const rclcpp::Time now = this->now();
+      const rclcpp::Time now = nh_->now();
       if (now > deadline)
       {
-        FAIL() << test_scope_ << now << " SetUp: transform timeout" << std::endl;
+        FAIL() << test_scope_ << now.seconds() << " SetUp: transform timeout" << std::endl;
       }
       if (tfbuf_->canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
@@ -116,31 +120,31 @@ protected:
 
     while (rclcpp::ok() && !costmap_)
     {
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       rate.sleep();
-      const rclcpp::Time now = this->now();
+      const rclcpp::Time now = nh_->now();
       if (now > deadline)
       {
-        FAIL() << test_scope_ << now << " SetUp: costmap timeout" << std::endl;
+        FAIL() << test_scope_ << now.seconds() << " SetUp: costmap timeout" << std::endl;
       }
     }
 
-    std_srvs::srv::Empty::Request req;
-    std_srvs::srv::Empty::Response res;
-    srv_forget_.call(req, res);
+    std_srvs::srv::Empty::Request::SharedPtr req;
+    std_srvs::srv::Empty::Response::SharedPtr res;
+    srv_forget_->async_send_request(req);
 
     rclcpp::sleep_for(std::chrono::seconds(1));
   }
   void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
     costmap_ = msg;
-    std::cerr << test_scope_ << msg->header.stamp << " Costmap received." << std::endl;
+    std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Costmap received." << std::endl;
   }
   void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
-      std::cerr << test_scope_ << msg->header.stamp << " Status updated." << msg << std::endl;
+      std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
   }
@@ -150,12 +154,12 @@ protected:
     {
       if (msg->poses.size() == 0)
       {
-        std::cerr << test_scope_ << msg->header.stamp << " Path updated. (empty)" << std::endl;
+        std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Path updated. (empty)" << std::endl;
       }
       else
       {
         std::cerr
-            << test_scope_ << msg->header.stamp << " Path updated." << std::endl
+            << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Path updated." << std::endl
             << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
@@ -189,31 +193,31 @@ protected:
         x_prev = x;
         y_prev = y;
         rot_prev = rot;
-        std::cerr << t.stamp_ << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
+        std::cerr << tf2::timeToSec(t.stamp_) << " " << x << " " << y << " " << tf2::getYaw(rot) << std::endl;
       }
     }
   }
 
   void waitForPlannerStatus(const std::string& name, const int expected_error)
   {
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     rclcpp::sleep_for(std::chrono::milliseconds(200));
 
     rclcpp::Rate wait(10);
-    rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(10);
+    rclcpp::Time deadline = nh_->now() + rclcpp::Duration::from_seconds(10);
     while (rclcpp::ok())
     {
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       wait.sleep();
 
-      const rclcpp::Time now = this->now();
+      const rclcpp::Time now = nh_->now();
 
       if (now > deadline)
       {
         dumpRobotTrajectory();
         FAIL()
             << test_scope_ << "/" << name << ": Navigation timeout." << std::endl
-            << "now: " << now << std::endl
+            << "now: " << now.seconds() << std::endl
             << "status: " << planner_status_ << " (expected: " << expected_error << ")";
       }
 
@@ -227,7 +231,7 @@ protected:
 
 TEST_F(NavigateWithRememberUpdates, Navigate)
 {
-  rclcpp::spin_some(shared_from_this());
+  rclcpp::spin_some(nh_);
   rclcpp::sleep_for(std::chrono::milliseconds(200));
 
   nav_msgs::msg::Path path;
@@ -243,20 +247,20 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(120);
+  const rclcpp::Time deadline = nh_->now() + rclcpp::Duration::from_seconds(120);
   while (rclcpp::ok())
   {
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh_);
     wait.sleep();
 
-    const rclcpp::Time now = this->now();
+    const rclcpp::Time now = nh_->now();
 
     if (now > deadline)
     {
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now << std::endl
+          << "now: " << now.seconds() << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -277,7 +281,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
         std::abs(tf2::getYaw(goal_rel.getRotation())) < 0.2)
     {
       std::cerr << test_scope_ << "Navagation success." << std::endl;
-      rclcpp::Duration::from_seconds(2.0).sleep();
+      rclcpp::sleep_for(std::chrono::seconds(2));
       return;
     }
   }
@@ -287,7 +291,7 @@ TEST_F(NavigateWithRememberUpdates, Navigate)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_navigate_remember");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

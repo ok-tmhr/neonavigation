@@ -32,7 +32,7 @@
 #include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include <diagnostic_msgs/DiagnosticArray.h>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
 
@@ -65,12 +65,12 @@ TEST(Planner3D, CostmapWatchdog)
     diag = msg;
   };
 
-  rclcpp::Node::SharedPtr nh("");
-  rclcpp::Publisher<>::SharedPtr pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
-  rclcpp::Publisher<>::SharedPtr pub_cost_update = nh.advertise<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
-  rclcpp::Subscription<>::SharedPtr sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
-  rclcpp::Subscription<>::SharedPtr sub_path = nh.subscribe("path", rclcpp::QoS(1).transient_local(), cb_path);
-  rclcpp::Subscription<>::SharedPtr sub_diag = nh.subscribe("diagnostics", 1, cb_diag);
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_navigate");
+  auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), cb_path);
+  auto sub_diag = nh->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, cb_diag);
 
   geometry_msgs::msg::PoseStamped goal;
   goal.header.frame_id = "map";
@@ -88,13 +88,13 @@ TEST(Planner3D, CostmapWatchdog)
     if (cnt == 0 || cnt > 8)
     {
       costmap_cspace_msgs::msg::CSpace3DUpdate update;
-      update.header.stamp = this->now();
+      update.header.stamp = nh->now();
       update.header.frame_id = "map";
       update.width = update.height = update.angle = 0;
       pub_cost_update->publish(update);
     }
 
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     rate.sleep();
 
     if (!status)
@@ -145,11 +145,11 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
     path = msg;
   };
 
-  rclcpp::Node::SharedPtr nh("");
-  rclcpp::Publisher<>::SharedPtr pub_goal = nh.advertise<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
-  rclcpp::Publisher<>::SharedPtr pub_cost_update = nh.advertise<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
-  rclcpp::Subscription<>::SharedPtr sub_status = nh.subscribe("planner_3d/status", 1, cb_status);
-  rclcpp::Subscription<>::SharedPtr sub_path = nh.subscribe("path", rclcpp::QoS(1).transient_local(), cb_path);
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_navigate");
+  auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
+  auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), cb_path);
 
   geometry_msgs::msg::PoseStamped goal;
   goal.header.frame_id = "map";
@@ -165,49 +165,49 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   update.header.frame_id = "map";
   update.width = update.height = update.angle = 0;
 
-  const rclcpp::Time deadline = this->now() + rclcpp::Duration::from_seconds(2.0);
+  const rclcpp::Time deadline = nh->now() + rclcpp::Duration::from_seconds(2.0);
   rclcpp::Rate rate(10);
   while (rclcpp::ok())
   {
-    update.header.stamp = this->now();
+    update.header.stamp = nh->now();
     pub_cost_update->publish(update);
 
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (status && status->status == planner_cspace_msgs::msg::PlannerStatus::FINISHING)
       break;
 
-    ASSERT_LT(update.header.stamp, deadline)
+    ASSERT_LT(rclcpp::Time(update.header.stamp), deadline)
         << "Planner didn't enter FINISHING state: "
         << (status ? status->status : -1);
   }
   while (rclcpp::ok())
   {
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (status->error == planner_cspace_msgs::msg::PlannerStatus::DATA_MISSING)
       break;
 
     ASSERT_EQ(status->status, planner_cspace_msgs::msg::PlannerStatus::FINISHING)
         << "Wrong test condition";
-    ASSERT_LT(update.header.stamp, deadline)
+    ASSERT_LT(rclcpp::Time(update.header.stamp), deadline)
         << "Planner didn't enter DATA_MISSING state"
         << status->error;
   }
   path = nullptr;
   while (rclcpp::ok())
   {
-    update.header.stamp = this->now();
+    update.header.stamp = nh->now();
     pub_cost_update->publish(update);
 
-    rclcpp::spin_some(shared_from_this());
+    rclcpp::spin_some(nh);
     rate.sleep();
     if (path)
       break;
 
     ASSERT_EQ(status->status, planner_cspace_msgs::msg::PlannerStatus::FINISHING)
         << "Wrong test condition";
-    ASSERT_LT(update.header.stamp, deadline)
+    ASSERT_LT(rclcpp::Time(update.header.stamp), deadline)
         << "No path was published";
   }
   ASSERT_TRUE(rclcpp::ok());
@@ -216,7 +216,7 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_navigate");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

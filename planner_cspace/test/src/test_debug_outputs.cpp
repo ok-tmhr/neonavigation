@@ -46,18 +46,20 @@ public:
     , cnt_hysteresis_(0)
     , cnt_remembered_(0)
   {
-    sub_status_ = nh_->create_subscription("/planner_3d/status", 1, &DebugOutputsTest::cbStatus, this);
-    sub_metrics_ = nh_->create_subscription("/planner_3d/metrics", 1, &DebugOutputsTest::cbMetrics, this);
-    sub_path_ = nh_->create_subscription("path", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbPath, this);
-    sub_hysteresis_ = nh_->create_subscription("/planner_3d/hysteresis_map", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbHysteresis, this);
-    sub_remembered_ = nh_->create_subscription("/planner_3d/remembered_map", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbRemembered, this);
-    sub_distance_ = nh_->create_subscription("/planner_3d/distance_map", rclcpp::QoS(1).transient_local(), &DebugOutputsTest::cbDistance, this);
+    nh_ = rclcpp::Node::make_shared("test_debug_outputs");
+    using std::placeholders::_1;
+    sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("/planner_3d/status", 1, std::bind(&DebugOutputsTest::cbStatus, this, _1));
+    sub_metrics_ = nh_->create_subscription<neonavigation_metrics_msgs::msg::Metrics>("/planner_3d/metrics", 1, std::bind(&DebugOutputsTest::cbMetrics, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbPath, this, _1));
+    sub_hysteresis_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/hysteresis_map", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbHysteresis, this, _1));
+    sub_remembered_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/remembered_map", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbRemembered, this, _1));
+    sub_distance_ = nh_->create_subscription<sensor_msgs::msg::PointCloud>("/planner_3d/distance_map", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbDistance, this, _1));
 
     // Wait planner
     while (rclcpp::ok())
     {
       rclcpp::sleep_for(std::chrono::milliseconds(100));
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       if (cnt_planner_ready_ > 5 && cnt_path_ > 5)
         break;
     }
@@ -72,7 +74,7 @@ public:
     while (rclcpp::ok())
     {
       rclcpp::sleep_for(std::chrono::milliseconds(100));
-      rclcpp::spin_some(shared_from_this());
+      rclcpp::spin_some(nh_);
       // First hysteresis map doesn't have previous path information.
       if (cnt_hysteresis_ > 2 && cnt_remembered_ > 2)
         break;
@@ -141,12 +143,12 @@ protected:
   sensor_msgs::msg::PointCloud::ConstPtr map_distance_;
   nav_msgs::msg::Path::ConstPtr path_;
   neonavigation_metrics_msgs::msg::Metrics::ConstPtr metrics_;
-  rclcpp::Subscription<>::SharedPtr sub_status_;
-  rclcpp::Subscription<>::SharedPtr sub_path_;
-  rclcpp::Subscription<>::SharedPtr sub_hysteresis_;
-  rclcpp::Subscription<>::SharedPtr sub_remembered_;
-  rclcpp::Subscription<>::SharedPtr sub_distance_;
-  rclcpp::Subscription<>::SharedPtr sub_metrics_;
+  rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_hysteresis_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_remembered_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud>::SharedPtr sub_distance_;
+  rclcpp::Subscription<neonavigation_metrics_msgs::msg::Metrics>::SharedPtr sub_metrics_;
   int cnt_planner_ready_;
   int cnt_path_;
   int cnt_hysteresis_;
@@ -241,7 +243,7 @@ TEST_F(DebugOutputsTest, Metrics)
 {
   metrics_ = nullptr;
   rclcpp::sleep_for(std::chrono::milliseconds(500));
-  rclcpp::spin_some(shared_from_this());
+  rclcpp::spin_some(nh_);
   ASSERT_TRUE(metrics_);
   ASSERT_NE(0u, metrics_->data.size());
 }
@@ -249,7 +251,7 @@ TEST_F(DebugOutputsTest, Metrics)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  rclcpp::init(argc, argv, "test_debug_outputs");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }
