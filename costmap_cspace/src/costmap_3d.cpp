@@ -218,12 +218,12 @@ public:
     root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
-    std::vector<std::string> layers_xml;
-    layers_xml = this->declare_parameter("static_layers", layers_xml);
+    std::vector<std::string> static_layers;
+    static_layers = this->declare_parameter("static_layers", static_layers);
     {
-      for (int i = 0; i < layers_xml.size(); ++i)
+      for (int i = 0; i < static_layers.size(); ++i)
       {
-        costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml{.name = layers_xml[i]};
+        costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml{.name = static_layers[i]};
         RCLCPP_INFO(this->get_logger(), "New static layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
@@ -265,12 +265,13 @@ public:
         "map", rclcpp::QoS(1).transient_local(),
         [this, root_layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMap(msg, root_layer);});
 
-    layers_xml = this->declare_parameter<std::vector<std::string>>("layers", {});
-    if (layers_xml.size() > 0)
+    std::vector<std::string> layers;
+    layers = this->declare_parameter("layers", layers);
+    if (layers.size() > 0)
     {
-      for (int i = 0; i < layers_xml.size(); ++i)
+      for (int i = 0; i < layers.size(); ++i)
       {
-        auto layer_xml = costmap_cspace::Costmap3dLayerBase::LayerConfig{ .name = layers_xml[i] };
+        auto layer_xml = costmap_cspace::Costmap3dLayerBase::LayerConfig{ .name = layers[i] };
         RCLCPP_INFO(this->get_logger(), "New layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
