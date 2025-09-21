@@ -1266,56 +1266,78 @@ public:
     pub_path_poses_ = this->create_publisher<geometry_msgs::msg::PoseArray>("~/path_poses", rclcpp::QoS(1).transient_local());
     pub_preserved_path_poses_ = this->create_publisher<nav_msgs::msg::Path>("~/preserved_path_poses", rclcpp::QoS(1).transient_local());
 
-    freq_ = this->declare_parameter("freq", 4.0f);
-    freq_min_ = this->declare_parameter("freq_min", 2.0f);
-    search_timeout_abort_ = this->declare_parameter("search_timeout_abort", 30.0f);
-    search_range_ = this->declare_parameter("search_range", 0.4f);
+    auto desc = [](const double from_, const double to_, const std::string& description = ""){
+      rcl_interfaces::msg::ParameterDescriptor d;
+      d.floating_point_range.resize(1);
+      d.floating_point_range[0].from_value = from_;
+      d.floating_point_range[0].to_value = to_;
+      d.description = description;
+      return d;
+    };
+    auto desc_int = [](const int from_, const int to_, const std::string& description = ""){
+      rcl_interfaces::msg::ParameterDescriptor d;
+      d.integer_range.resize(1);
+      d.integer_range[0].from_value = from_;
+      d.integer_range[0].to_value = to_;
+      d.description = description;
+      return d;
+    };
+
+    rcl_interfaces::msg::ParameterDescriptor desc_bool;
+    desc_bool.description = "If true, a part of the previous path is preserved to avoid radical path changes.";
+
+    freq_ = this->declare_parameter("freq", 4.0f, desc(0., 100.));
+    freq_min_ = this->declare_parameter("freq_min", 2.0f, desc(0., 100.));
+    search_timeout_abort_ = this->declare_parameter("search_timeout_abort", 30.0f, desc(0., 100.));
+    search_range_ = this->declare_parameter("search_range", 0.4f, desc(0., 100.));
     antialias_start_ = this->declare_parameter("antialias_start", false);
 
     double costmap_watchdog;
-    costmap_watchdog = this->declare_parameter("costmap_watchdog", 0.0);
+    costmap_watchdog = this->declare_parameter("costmap_watchdog", 0.0, desc(0., 100.));
     costmap_watchdog_ = rclcpp::Duration::from_seconds(costmap_watchdog);
 
-    cc_.max_vel_ = this->declare_parameter("max_vel", 0.3f);
-    cc_.max_ang_vel_ = this->declare_parameter("max_ang_vel", 0.6f);
-    cc_.min_curve_radius_ = this->declare_parameter("min_curve_radius", 0.1f);
+    cc_.max_vel_ = this->declare_parameter("max_vel", 0.3f, desc(0., 100.));
+    cc_.max_ang_vel_ = this->declare_parameter("max_ang_vel", 0.6f, desc(0., 100.));
+    cc_.min_curve_radius_ = this->declare_parameter("min_curve_radius", 0.1f, desc(0., 100.));
 
-    cc_.weight_decel_ = this->declare_parameter("weight_decel", 50.0f);
-    cc_.weight_backward_ = this->declare_parameter("weight_backward", 0.9f);
-    cc_.weight_ang_vel_ = this->declare_parameter("weight_ang_vel", 1.0f);
-    cc_.weight_costmap_ = this->declare_parameter("weight_costmap", 50.0f);
-    cc_.weight_costmap_turn_ = this->declare_parameter("weight_costmap_turn", 0.0f);
-    cc_.weight_remembered_ = this->declare_parameter("weight_remembered", 1000.0f);
-    cc_.in_place_turn_ = this->declare_parameter("cost_in_place_turn", 30.0f);
-    cc_.hysteresis_max_dist_ = this->declare_parameter("hysteresis_max_dist", 0.1f);
-    cc_.hysteresis_expand_ = this->declare_parameter("hysteresis_expand", 0.1f);
-    cc_.weight_hysteresis_ = this->declare_parameter("weight_hysteresis", 5.0f);
+    cc_.weight_decel_ = this->declare_parameter("weight_decel", 50.0f, desc(0., 1000.));
+    cc_.weight_backward_ = this->declare_parameter("weight_backward", 0.9f, desc(0., 1000.));
+    cc_.weight_ang_vel_ = this->declare_parameter("weight_ang_vel", 1.0f, desc(0., 1000.));
+    cc_.weight_costmap_ = this->declare_parameter("weight_costmap", 50.0f, desc(0., 1000.));
+    cc_.weight_costmap_turn_ = this->declare_parameter("weight_costmap_turn", 0.0f, desc(0., 1000.));
+    cc_.weight_remembered_ = this->declare_parameter("weight_remembered", 1000.0f, desc(0., 1000.));
+    cc_.in_place_turn_ = this->declare_parameter("cost_in_place_turn", 30.0f, desc(0., 1000.));
+    cc_.hysteresis_max_dist_ = this->declare_parameter("hysteresis_max_dist", 0.1f, desc(0., 10.));
+    cc_.hysteresis_expand_ = this->declare_parameter("hysteresis_expand", 0.1f, desc(0., 10.));
+    cc_.weight_hysteresis_ = this->declare_parameter("weight_hysteresis", 5.0f, desc(0., 1000.));
 
-    goal_tolerance_lin_f_ = this->declare_parameter("goal_tolerance_lin", 0.05);
-    goal_tolerance_ang_f_ = this->declare_parameter("goal_tolerance_ang", 0.1);
-    goal_tolerance_ang_finish_ = this->declare_parameter("goal_tolerance_ang_finish", 0.05);
-    temporary_escape_tolerance_lin_f_ = this->declare_parameter("temporary_escape_tolerance_lin", 0.1);
-    temporary_escape_tolerance_ang_f_ = this->declare_parameter("temporary_escape_tolerance_ang", 1.57);
+    goal_tolerance_lin_f_ = this->declare_parameter("goal_tolerance_lin", 0.05, desc(0., 10.));
+    goal_tolerance_ang_f_ = this->declare_parameter("goal_tolerance_ang", 0.1, desc(0., 3.14159265359));
+    goal_tolerance_ang_finish_ = this->declare_parameter("goal_tolerance_ang_finish", 0.05, desc(0., 3.14159265359));
+    temporary_escape_tolerance_lin_f_ = this->declare_parameter("temporary_escape_tolerance_lin", 0.1, desc(0., 10.));
+    temporary_escape_tolerance_ang_f_ = this->declare_parameter("temporary_escape_tolerance_ang", 1.57, desc(0., 3.14159265359));
 
     unknown_cost_ = this->declare_parameter("unknown_cost", 100);
     overwrite_cost_ = this->declare_parameter("overwrite_cost", false);
-    relocation_acceptable_cost_ = this->declare_parameter("relocation_acceptable_cost", 50);
+    relocation_acceptable_cost_ = this->declare_parameter("relocation_acceptable_cost", 50, desc_int(0, 99,
+      "Acceptable cost of the relocated position in the first place. Some of the function may fallback to the cost of 99 if acceptable grid is not found."
+    ));
 
-    hist_ignore_range_f_ = this->declare_parameter("hist_ignore_range", 0.6);
-    hist_ignore_range_max_f_ = this->declare_parameter("hist_ignore_range_max", 1.25);
+    hist_ignore_range_f_ = this->declare_parameter("hist_ignore_range", 0.6, desc(0., 100.));
+    hist_ignore_range_max_f_ = this->declare_parameter("hist_ignore_range_max", 1.25, desc(0., 100.));
     remember_updates_ = this->declare_parameter("remember_updates", false);
     double remember_hit_prob, remember_miss_prob;
-    remember_hit_prob = this->declare_parameter("remember_hit_prob", 0.6);
-    remember_miss_prob = this->declare_parameter("remember_miss_prob", 0.3);
+    remember_hit_prob = this->declare_parameter("remember_hit_prob", 0.6, desc(0., 1.));
+    remember_miss_prob = this->declare_parameter("remember_miss_prob", 0.3, desc(0., 1.));
     remember_hit_odds_ = bbf::probabilityToOdds(remember_hit_prob);
     remember_miss_odds_ = bbf::probabilityToOdds(remember_miss_prob);
 
-    local_range_f_ = this->declare_parameter("local_range", 2.5);
-    longcut_range_f_ = this->declare_parameter("longcut_range", 0.0);
-    esc_range_f_ = this->declare_parameter("esc_range", 0.25);
-    esc_range_min_ratio_ = this->declare_parameter("esc_range_min_ratio", 0.5);
-    tolerance_range_f_ = this->declare_parameter("tolerance_range", 0.25);
-    tolerance_angle_f_ = this->declare_parameter("tolerance_angle", 0.0);
+    local_range_f_ = this->declare_parameter("local_range", 2.5, desc(0., 100.));
+    longcut_range_f_ = this->declare_parameter("longcut_range", 0.0, desc(0., 100.));
+    esc_range_f_ = this->declare_parameter("esc_range", 0.25, desc(0., 100.));
+    esc_range_min_ratio_ = this->declare_parameter("esc_range_min_ratio", 0.5, desc(0., 1.));
+    tolerance_range_f_ = this->declare_parameter("tolerance_range", 0.25, desc(0., 1.));
+    tolerance_angle_f_ = this->declare_parameter("tolerance_angle", 0.0, desc(0., 3.14159265359));
     path_interpolation_resolution_ = this->declare_parameter("path_interpolation_resolution", 0.5);
     grid_enumeration_resolution_ = this->declare_parameter("grid_enumeration_resolution", 0.1);
     if (path_interpolation_resolution_ < grid_enumeration_resolution_)
@@ -1324,7 +1346,7 @@ public:
       path_interpolation_resolution_ = grid_enumeration_resolution_;
     }
 
-    sw_wait_ = this->declare_parameter("sw_wait", 2.0f);
+    sw_wait_ = this->declare_parameter("sw_wait", 2.0f, desc(0., 100.));
     find_best_ = this->declare_parameter("find_best", true);
 
     robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
@@ -1361,7 +1383,7 @@ public:
       rcutils_logging_set_logger_level(this->get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG);
     }
 
-    max_retry_num_ = this->declare_parameter("max_retry_num", -1);
+    max_retry_num_ = this->declare_parameter("max_retry_num", -1, desc_int(-1, 100));
 
     int queue_size_limit;
     queue_size_limit = this->declare_parameter("queue_size_limit", 0);
@@ -1393,86 +1415,12 @@ public:
     diag_updater_->setHardwareID("none");
     diag_updater_->add("Path Planner Status", this, &Planner3dNode::diagnoseStatus);
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
-
-    auto desc = [](const double from_, const double to_, const std::string& description = ""){
-      rcl_interfaces::msg::ParameterDescriptor d;
-      d.floating_point_range.resize(1);
-      d.floating_point_range[0].from_value = from_;
-      d.floating_point_range[0].to_value = to_;
-      d.description = description;
-      return d;
-    };
-    auto desc_int = [](const int from_, const int to_, const std::string& description = ""){
-      rcl_interfaces::msg::ParameterDescriptor d;
-      d.integer_range.resize(1);
-      d.integer_range[0].from_value = from_;
-      d.integer_range[0].to_value = to_;
-      d.description = description;
-      return d;
-    };
-
-    rcl_interfaces::msg::ParameterDescriptor desc_bool;
-    desc_bool.description = "If true, a part of the previous path is preserved to avoid radical path changes.";
-
-    this->declare_parameter("freq", 4.0, desc(0., 100.));
-    this->declare_parameter("freq_min", 2.0, desc(0., 100.));
-    this->declare_parameter("search_timeout_abort", 30.0, desc(0., 100.));
-    this->declare_parameter("search_range", 0.4, desc(0., 100.));
-    this->declare_parameter("antialias_start", false);
-    this->declare_parameter("costmap_watchdog", 0.0, desc(0., 100.));
-
-    this->declare_parameter("max_vel", 0.3, desc(0., 100.));
-    this->declare_parameter("max_ang_vel", 0.6, desc(0., 100.));
-    this->declare_parameter("min_curve_radius", 0.1, desc(0., 100.));
-    this->declare_parameter("weight_decel", 50.0, desc(0., 1000.));
-    this->declare_parameter("weight_backward", 0.9, desc(0., 1000.));
-    this->declare_parameter("weight_ang_vel", 1.0, desc(0., 1000.));
-    this->declare_parameter("weight_costmap", 50.0, desc(0., 1000.));
-    this->declare_parameter("weight_costmap_turn", 0.0, desc(0., 1000.));
-    this->declare_parameter("weight_remembered", 1000.0, desc(0., 1000.));
-    this->declare_parameter("cost_in_place_turn", 30.0, desc(0., 1000.));
-    this->declare_parameter("hysteresis_max_dist", 0.1, desc(0., 10.));
-    this->declare_parameter("hysteresis_expand", 0.1, desc(0., 10.));
-    this->declare_parameter("weight_hysteresis", 5.0, desc(0., 1000.));
     this->declare_parameter("weight_costmap_turn_heuristics", 100.0, desc(0., 1000.,
       "The weight of the heuristic cost of in-place turning at grid cells with costs"
     ));
     this->declare_parameter("turn_penalty_cost_threshold", 0, desc_int(0, 100,
       "Penalty costs of in-place turning are not added when the cost of the grid cell is lower than this value"
     ));
-
-    this->declare_parameter("goal_tolerance_lin", 0.05, desc(0., 10.));
-    this->declare_parameter("goal_tolerance_ang", 0.1, desc(0., 3.14159265359));
-    this->declare_parameter("goal_tolerance_ang_finish", 0.05, desc(0., 3.14159265359));
-    this->declare_parameter("temporary_escape_tolerance_lin", 0.1, desc(0., 10.));
-    this->declare_parameter("temporary_escape_tolerance_ang", 1.57, desc(0., 3.14159265359));
-
-    this->declare_parameter("overwrite_cost", false);
-    this->declare_parameter("relocation_acceptable_cost", 50, desc_int(0, 99,
-      "Acceptable cost of the relocated position in the first place. Some of the function may fallback to the cost of 99 if acceptable grid is not found."
-    ));
-    this->declare_parameter("hist_ignore_range", 0.6, desc(0., 100.));
-    this->declare_parameter("hist_ignore_range_max", 1.25, desc(0., 100.));
-
-    this->declare_parameter("remember_updates", false);
-    this->declare_parameter("remember_hit_prob", 0.6, desc(0., 1.));
-    this->declare_parameter("remember_miss_prob", 0.3, desc(0., 1.));
-
-    this->declare_parameter("local_range", 2.5, desc(0., 100.));
-    this->declare_parameter("longcut_range", 0.0, desc(0., 100.));
-    this->declare_parameter("esc_range", 0.25, desc(0., 100.));
-    this->declare_parameter("esc_range_min_ratio", 0.5, desc(0., 1.));
-    this->declare_parameter("tolerance_range", 0.25, desc(0., 1.));
-    this->declare_parameter("tolerance_angle", 0.0, desc(0., 3.14159265359));
-    this->declare_parameter("find_best", true);
-    this->declare_parameter("force_goal_orientation", true);
-    this->declare_parameter("temporary_escape", true);
-    this->declare_parameter("fast_map_update", false);
-    this->declare_parameter("max_retry_num", -1, desc_int(-1, 100));
-    this->declare_parameter("sw_wait", 2.0, desc(0., 100.));
-
     this->declare_parameter("keep_a_part_of_previous_path", false, desc_bool);
     this->declare_parameter("dist_stop_to_previous_path", 0.1, desc(0., 1.,
       "Valid only when keep_a_part_of_previous_path is true. This should be the same as dist_stop parameter of trajectory_tracker."
@@ -2517,5 +2465,6 @@ int main(int argc, char* argv[])
   auto node = std::make_shared<planner_cspace::planner_3d::Planner3dNode>();
   node->spin();
 
+  rclcpp::shutdown();
   return 0;
 }
