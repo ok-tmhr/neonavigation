@@ -437,8 +437,6 @@ protected:
       return;
     }
     setGoal(*msg);
-
-    // goal_handle_ = std::make_shared<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>>();
   }
   rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
   {
@@ -453,11 +451,6 @@ protected:
   rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
-    if (goal_handle_)
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
-
-    if (goal_handle_tolerant_)
-      RCLCPP_INFO(this->get_logger(), "Preempted.");
 
     has_goal_ = false;
     escape_status_ = TemporaryEscapeStatus::NOT_ESCAPING;
@@ -1374,7 +1367,7 @@ public:
     print_planning_duration = this->declare_parameter("print_planning_duration", false);
     if (print_planning_duration)
     {
-      rcutils_logging_set_logger_level(this->get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG);
+      this->get_logger().set_level(rclcpp::Logger::Level::Debug);
     }
 
     max_retry_num_ = this->declare_parameter("max_retry_num", -1, desc_int(-1, 100));
@@ -1629,13 +1622,13 @@ public:
 
   void planPath(const rclcpp::Time& now)
   {
-    if (goal_handle_->is_canceling()){
+    if (goal_handle_ && goal_handle_->is_canceling()){
       auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
       goal_handle_->canceled(result);
       goal_handle_.reset();
       RCLCPP_INFO(this->get_logger(), "Preempted.");
     }
-    if (goal_handle_tolerant_->is_canceling()){
+    if (goal_handle_tolerant_ && goal_handle_tolerant_->is_canceling()){
       auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
       goal_handle_tolerant_->canceled(result);
       goal_handle_tolerant_.reset();
@@ -1714,17 +1707,17 @@ public:
 
           if (goal_handle_)
           {
+            RCLCPP_INFO(this->get_logger(), "Goal reached.");
             auto result = std::make_shared<nav2_msgs::action::NavigateToPose::Result>();
             goal_handle_->succeed(result);
             goal_handle_.reset();
-            RCLCPP_INFO(this->get_logger(), "Goal reached.");
           }
           if (goal_handle_tolerant_)
           {
+            RCLCPP_INFO(this->get_logger(), "Goal reached.");
             auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
             goal_handle_tolerant_->succeed(result);
             goal_handle_tolerant_.reset();
-            RCLCPP_INFO(this->get_logger(), "Goal reached.");
           }
         }
         else
@@ -2027,6 +2020,7 @@ protected:
           auto result = std::make_shared<planner_cspace_msgs::action::MoveWithTolerance::Result>();
           RCLCPP_INFO(this->get_logger(), "Goal reached (Continuous movement mode).");
           goal_handle_tolerant_->succeed(result);
+          goal_handle_tolerant_.reset();
           goal_tolerant_ = nullptr;
         }
         else
