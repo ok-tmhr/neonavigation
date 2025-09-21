@@ -38,6 +38,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
 
+include_directories(include ${neonavigation_metrics_msgs_INCLUDE_DIRS} ${trajectory_tracker_INCLUDE_DIRS} ${trajectory_tracker_msgs_INCLUDE_DIRS})
 
 add_executable(planner_3d
   src/costmap_bbf.cpp
@@ -53,7 +54,7 @@ target_include_directories(planner_3d PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(planner_3d ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-ament_target_dependencies(planner_3d)
+ament_target_dependencies(planner_3d ${COLCON_DEPENDS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
@@ -72,21 +73,21 @@ target_include_directories(planner_2dof_serial_joints PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(planner_2dof_serial_joints ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-ament_target_dependencies(planner_2dof_serial_joints)
+ament_target_dependencies(planner_2dof_serial_joints ${COLCON_DEPENDS})
 
 add_executable(dummy_robot src/dummy_robot.cpp)
 target_include_directories(dummy_robot PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(dummy_robot)
-ament_target_dependencies(dummy_robot)
+ament_target_dependencies(dummy_robot ${COLCON_DEPENDS})
 
 add_executable(patrol src/patrol.cpp)
 target_include_directories(patrol PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(patrol)
-ament_target_dependencies(patrol)
+ament_target_dependencies(patrol ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
