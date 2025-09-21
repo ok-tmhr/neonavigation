@@ -993,7 +993,8 @@ protected:
     RCLCPP_DEBUG(this->get_logger(), "Map updated");
     if (trigger_plan_by_costmap_update_)
     {
-      no_map_update_timer_->cancel();
+      if (!no_map_update_timer_)
+        no_map_update_timer_->cancel();
       updateStart();
       applyCostmapUpdate(msg);
       planPath(last_costmap_);
@@ -1194,11 +1195,12 @@ protected:
 
 public:
   Planner3dNode() : Node("planner_3d")
-    , costmap_watchdog_(0, 0)
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
     , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , costmap_watchdog_(0, 0)
+    , last_costmap_(0, 0, RCL_ROS_TIME)
   {
     using std::placeholders::_1;
     using std::placeholders::_2;
@@ -1229,6 +1231,7 @@ public:
     pub_remembered_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/remembered_map", rclcpp::QoS(1).transient_local());
 
     tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
     jump_ = std::make_shared<JumpDetector>(*tfbuf_);
 
     diag_updater_ = std::make_shared<diagnostic_updater::Updater>(this);
@@ -1624,7 +1627,8 @@ public:
     }
     start_pose_predictor_.setConfig(start_pose_predictor_config);
     this->get_parameter("trigger_plan_by_costmap_update", trigger_plan_by_costmap_update_);
-    no_map_update_timer_->cancel();
+    if (no_map_update_timer_)
+      no_map_update_timer_->cancel();
   }
 
   void waitUntil(const rclcpp::Time& next_replan_time)
