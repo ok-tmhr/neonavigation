@@ -50,10 +50,12 @@ public:
   void SetUp() final
   {
     path_ = nullptr;
-    planner_3d_client_ = std::make_unique<rclcpp::AsyncParametersClient>(node_, "/planner_3d/");
+    planner_3d_client_ = std::make_unique<rclcpp::AsyncParametersClient>(node_, "/planner_3d");
     sub_path_ = node_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&DynamicParameterChangeTest::cbPath, this, std::placeholders::_1));
     pub_map_overlay_ = node_->create_publisher<nav_msgs::msg::OccupancyGrid>("map_overlay", rclcpp::QoS(1).transient_local());
     pub_odom_ = node_->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());  // not actually used
+
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(node_);
 
     const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(2);
     while (sub_path_->get_publisher_count() < 1 || pub_map_overlay_->get_subscription_count() < 1)
@@ -351,19 +353,19 @@ TEST_F(DynamicParameterChangeTest, TriggerPlanByCostmapUpdate)
   rclcpp::sleep_for(std::chrono::milliseconds(500));
   sendGoalAndWaitForPath();
 
-  auto get_future = planner_3d_client_->get_parameters({"freq", "costmap_watchdog"});
+  auto get_future = planner_3d_client_->get_parameters({"freq"});
   rclcpp::spin_until_future_complete(node_, get_future);
   auto freq = get_future.get()[0].as_double();
-  auto costmap_watchdog = get_future.get()[1].as_double();
   const rclcpp::Duration costmap_publishing_interval(0, 100000000);
   // The path planning frequency is 4.0 Hz (Designated by the "freq" paramteer)
   const double default_interval = getAveragePathInterval(costmap_publishing_interval);
   EXPECT_NEAR(default_interval, 1.0 / freq, (1.0 / freq) * 0.1);
 
+  auto costmap_watchdog = 0.5;
   auto future = planner_3d_client_->set_parameters(
     {
       rclcpp::Parameter("trigger_plan_by_costmap_update", true),
-      rclcpp::Parameter("costmap_watchdog", 0.5),
+      rclcpp::Parameter("costmap_watchdog", costmap_watchdog),
     }
   );
   rclcpp::spin_until_future_complete(node_, future);
