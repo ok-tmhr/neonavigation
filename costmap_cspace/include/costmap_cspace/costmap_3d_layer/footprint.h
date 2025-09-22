@@ -98,8 +98,8 @@ public:
     const int linear_spread_min_cost =
         node.declare_parameter(config.name + ".linear_spread_min_cost", 0);
     setExpansion(
-        node.declare_parameter<float>(config.name + ".linear_expand"),
-        node.declare_parameter<float>(config.name + ".linear_spread"),
+        node.declare_parameter<float>(config.name + ".linear_expand", 0.2f),
+        node.declare_parameter<float>(config.name + ".linear_spread", 0.5f),
         linear_spread_min_cost);
     setFootprint(costmap_cspace::Polygon(config.footprint));
     setKeepUnknown(node.declare_parameter(config.name + ".keep_unknown", false));
