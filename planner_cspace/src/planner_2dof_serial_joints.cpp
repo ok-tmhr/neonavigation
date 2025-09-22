@@ -668,6 +668,7 @@ private:
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor executor;
   rclcpp::Node::SharedPtr pnh = rclcpp::Node::make_shared("planner_2dof_serial_joints");
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
@@ -682,9 +683,11 @@ int main(int argc, char* argv[])
 
     jy.reset(new planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode(name));
     jys.push_back(jy);
+    executor.add_node(jy);
   }
 
-  rclcpp::spin(pnh);
+  executor.add_node(pnh);
+  executor.spin();
 
   return 0;
 }
