@@ -32,6 +32,7 @@
 
 #include <bitset>
 #include <cassert>
+#include <functional>
 #include <limits>
 #include <memory>
 

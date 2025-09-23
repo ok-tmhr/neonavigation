@@ -32,9 +32,9 @@
 
 #include <vector>
 
-#include <nav_msgs/Path.h>
+#include <nav_msgs/msg/path.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <trajectory_tracker/path2d.h>
@@ -62,13 +62,13 @@ public:
     config_ = config;
     clear();
   }
-  bool process(const geometry_msgs::Pose& robot_pose,
+  bool process(const geometry_msgs::msg::Pose& robot_pose,
                const GridAstar<3, 2>::Gridmap<char, 0x40>& cm,
-               const costmap_cspace_msgs::MapMetaData3D& map_info,
-               const nav_msgs::Path& previous_path_msg,
+               const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
+               const nav_msgs::msg::Path& previous_path_msg,
                Astar::Vec& result_start_grid);
   void clear();
-  const nav_msgs::Path& getPreservedPath() const
+  const nav_msgs::msg::Path& getPreservedPath() const
   {
     return preserved_path_;
   }
@@ -78,11 +78,11 @@ public:
   }
 
 private:
-  bool removeAlreadyPassed(const geometry_msgs::Pose& robot_pose);
+  bool removeAlreadyPassed(const geometry_msgs::msg::Pose& robot_pose);
   double getInitialETA(
-      const geometry_msgs::Pose& robot_pose, const trajectory_tracker::Pose2D& initial_path_pose) const;
+      const geometry_msgs::msg::Pose& robot_pose, const trajectory_tracker::Pose2D& initial_path_pose) const;
   bool buildResults(const trajectory_tracker::Path2D::ConstIterator& expected_start_pose_it,
-                    const geometry_msgs::Pose& start_metric,
+                    const geometry_msgs::msg::Pose& start_metric,
                     const GridAstar<3, 2>::Gridmap<char, 0x40>& cm,
                     Astar::Vec& start_grid);
   bool isGridCenter(const trajectory_tracker::Pose2D& pose) const;
@@ -93,9 +93,9 @@ private:
   trajectory_tracker::Path2D::ConstIterator getExpectedPose(const std::vector<double>& etas) const;
 
   Config config_;
-  costmap_cspace_msgs::MapMetaData3D map_info_;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info_;
   trajectory_tracker::Path2D previous_path_2d_;
-  nav_msgs::Path preserved_path_;
+  nav_msgs::msg::Path preserved_path_;
   double preserved_path_length_ = 0.0;
 };
 
