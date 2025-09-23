@@ -27,7 +27,8 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "linear_spread_min_cost" (int, default: 0)
 * "unknown_cost" (int, default: 0)
 * "overlay_mode" (string, default: std::string(""))
-* "footprint" (?, default: footprint_xml)
+* "footprint" (string, default: "")
+* "keep_unknown" (bool, false)
 
 ### multiple layer mode
 
