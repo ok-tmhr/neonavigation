@@ -24,9 +24,11 @@
 
   <set_parameters_from_file filename="$(find-pkg-share neonavigation_launch)/config/navigate.yaml"/>
 
-  <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(var output_info)" >
-    <param param="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
-  </node>
+  <group>
+    <set_parameter name="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
+    <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(var output_info)" >
+    </node>
+  </group>
   <node pkg="nav2_map_server" exec="map_server" name="map_server" if="$(var use_map_server)">
     <param name="yaml_filename" value="$(var map_file)" />
   </node>
@@ -36,29 +38,32 @@
     <param name="enable_crowd_mode" value="$(var enable_crowd_mode)" />
   </node>
 
-  <node pkg="trajectory_tracker" exec="trajectory_tracker" name="spur">
-    <remap from="cmd_vel" to="$(var cmd_vel_output)" unless="$(var use_safety_limiter)" />
-    <remap from="cmd_vel" to="cmd_vel_raw" if="$(var use_safety_limiter)" />
+  <group>
+    <set_remap from="cmd_vel" to="$(var cmd_vel_output)" unless="$(var use_safety_limiter)" />
+    <set_remap from="cmd_vel" to="cmd_vel_raw" if="$(var use_safety_limiter)" />
+    <set_parameter name="rotate_ang" value="0.4" unless="$(var slow_and_precise)" />
+    <set_parameter name="rotate_ang" value="0.2" if="$(var slow_and_precise)" />
+    <node pkg="trajectory_tracker" exec="trajectory_tracker" name="spur">
 
-    <param name="max_vel" value="$(var vel)" />
-    <param name="max_acc" value="$(var acc)" />
-    <param name="max_angvel" value="$(var ang_vel)" />
-    <param name="max_angacc" value="$(var ang_acc)" />
+      <param name="max_vel" value="$(var vel)" />
+      <param name="max_acc" value="$(var acc)" />
+      <param name="max_angvel" value="$(var ang_vel)" />
+      <param name="max_angacc" value="$(var ang_acc)" />
 
-    <param name="curv_forward" value="$(var curv_forward)" />
-    <param name="look_forward" value="$(var look_forward)" />
+      <param name="curv_forward" value="$(var curv_forward)" />
+      <param name="look_forward" value="$(var look_forward)" />
 
-    <param name="rotate_ang" value="0.2" if="$(var slow_and_precise)" />
-    <param name="rotate_ang" value="0.4" unless="$(var slow_and_precise)" />
-
-  </node>
-  <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" if="$(var use_safety_limiter)" output="screen">
-    <remap from="cmd_vel_in" to="cmd_vel_raw" />
-    <remap from="cmd_vel" to="$(var cmd_vel_output)" />
-    <param param="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
-    <param name="allow_empty_cloud" value="true" />
-    <param name="watchdog_interval" value="0.0" />
-  </node>
+    </node>
+  </group>
+  <group>
+    <set_parameter name="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
+    <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" if="$(var use_safety_limiter)" output="screen">
+      <remap from="cmd_vel_in" to="cmd_vel_raw" />
+      <remap from="cmd_vel" to="$(var cmd_vel_output)" />
+      <param name="allow_empty_cloud" value="true" />
+      <param name="watchdog_interval" value="0.0" />
+    </node>
+  </group>
 
   <node pkg="planner_cspace" exec="patrol" name="patrol" />
 
