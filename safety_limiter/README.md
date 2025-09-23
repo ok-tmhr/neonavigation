@@ -40,4 +40,4 @@ safety_limiter node limits vehicle velocity to avoid collisions based on the lin
 * "yaw_margin" (double, default: 0.2)
 * "downsample_grid" (double, default: 0.05)
 * "frame_id" (string, default: std::string("base_link"))
-* "footprint" (?, default: footprint_xml)
+* "footprint" (string, default: "")
