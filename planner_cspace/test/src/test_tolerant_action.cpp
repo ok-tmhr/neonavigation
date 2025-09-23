@@ -93,21 +93,20 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
   const planner_cspace_msgs::action::MoveWithTolerance::Goal goal = createGoalInFree();
   auto future = move_base_->async_send_goal(goal);
 
-  while (rclcpp::ok() && !future.valid())
+  while (rclcpp::ok() && rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
     ASSERT_LT(node_->now(), deadline)
         << "Action didn't get active: " << statusString();
-    rclcpp::spin_some(node_);
   }
 
-  while (rclcpp::ok() && future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_SUCCEEDED)
+  auto result_future = move_base_->async_get_result(future.get());
+  while (rclcpp::ok() && rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't succeeded: " << future.get()->get_status()
-        << " " << statusString();
-    rclcpp::spin_some(node_);
+        << "Action didn't succeeded: " << statusString();
   }
 
+  EXPECT_EQ(rclcpp_action::ResultCode::SUCCEEDED, result_future.get().code);
   const double dist_to_goal = getDistBetweenRobotAndGoal(goal);
   // distance_remains is less than updated goal_tolerance_lin (set in planner_cspace_msgs::action::MoveWithTolerance::Goal).
   EXPECT_LT(dist_to_goal, goal.goal_tolerance_lin);

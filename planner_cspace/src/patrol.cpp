@@ -120,6 +120,7 @@ public:
       goal.goal_tolerance_ang_finish = tolerance_ang_finish_;
 
       goal_handle_tolerant_ = act_cli_tolerant_->async_send_goal(goal);
+      rclcpp::spin_until_future_complete(shared_from_this(), goal_handle_tolerant_);
     }
     else
     {
@@ -130,6 +131,7 @@ public:
       goal.pose.pose = path_.poses[pos_].pose;
 
       goal_handle_ = act_cli_->async_send_goal(goal);
+      rclcpp::spin_until_future_complete(shared_from_this(), goal_handle_);
     }
     pos_++;
 

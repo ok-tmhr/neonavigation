@@ -1146,6 +1146,7 @@ protected:
       return rclcpp_action::GoalResponse::REJECT;
     }
 
+    goal_tolerant_ = goal;
     if (!setGoal(goal->target_pose))
     {
       RCLCPP_ERROR(this->get_logger(), "Given goal is invalid");

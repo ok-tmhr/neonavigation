@@ -223,10 +223,7 @@ protected:
     publishMapAndRobot(2.55, 0.45, M_PI);
     rclcpp::sleep_for(std::chrono::milliseconds(300));
     auto future = move_base_->async_send_goal(CreateGoalInFree());
-    while (rclcpp::ok() && !future.valid())
-    {
-      rclcpp::spin_some(node_);
-    }
+    rclcpp::spin_until_future_complete(node_, future);
 
     last_path_received_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
     publishMapAndRobot(2.55, 0.45, M_PI);
