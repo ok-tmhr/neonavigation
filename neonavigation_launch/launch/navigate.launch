@@ -24,11 +24,10 @@
 
   <set_parameters_from_file filename="$(find-pkg-share neonavigation_launch)/config/navigate.yaml"/>
 
-  <group>
-    <set_parameter name="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
-    <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(var output_info)" >
-    </node>
-  </group>
+  <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(var output_info)" if="$(var simulate)">
+    <param name="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'"  />
+  </node>
+  <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d" output="$(var output_info)" unless="$(var simulate)" />
   <node pkg="nav2_map_server" exec="map_server" name="map_server" if="$(var use_map_server)">
     <param name="yaml_filename" value="$(var map_file)" />
   </node>
@@ -54,10 +53,16 @@
       <param name="look_forward" value="$(var look_forward)" />
 
     </node>
-  </group>
-  <group>
-    <set_parameter name="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'" if="$(var simulate)" />
-    <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" if="$(var use_safety_limiter)" output="screen">
+  </group >
+  <group if="$(var use_safety_limiter)">
+    <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" if="$(var simulate)" output="screen">
+      <remap from="cmd_vel_in" to="cmd_vel_raw" />
+      <remap from="cmd_vel" to="$(var cmd_vel_output)" />
+      <param name="footprint" value="'[[0.35, -0.22], [0.35, 0.22], [-0.35, 0.22], [-0.35, -0.22]]'"/>
+      <param name="allow_empty_cloud" value="true" />
+      <param name="watchdog_interval" value="0.0" />
+    </node>
+    <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" unless="$(var simulate)" output="screen">
       <remap from="cmd_vel_in" to="cmd_vel_raw" />
       <remap from="cmd_vel" to="$(var cmd_vel_output)" />
       <param name="allow_empty_cloud" value="true" />
