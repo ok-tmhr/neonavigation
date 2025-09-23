@@ -82,57 +82,48 @@ TEST_F(AbortTest, AbortByGoalInRock)
   rclcpp::sleep_for(std::chrono::milliseconds(500));
   // Send a goal which is in Rock
   auto future = move_base_->async_send_goal(createGoalInRock());
-  while (!future.valid())
+  while (rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    rclcpp::spin_some(node_);
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
         << "Action didn't get active: " << statusString();
   }
 
+  auto result_future = move_base_->async_get_result(future.get());
   // Try to replan
-  while (future.get()->get_status() <
-         rclcpp_action::GoalStatus::STATUS_SUCCEEDED)
+  while (rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    rclcpp::spin_some(node_);
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << future.get()->get_status()
-        << " " << statusString();
+        << "Action didn't get inactive: " << statusString();
   }
   wait.sleep();
 
   ASSERT_TRUE(planner_status_);
 
   // Abort after exceeding max_retry_num
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_ABORTED,
-            future.get()->get_status());
+  ASSERT_EQ(rclcpp_action::ResultCode::ABORTED,
+            result_future.get().code);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND,
             planner_status_->error);
 
   // Send another goal which is not in Rock
   future = move_base_->async_send_goal(createGoalInFree());
-  while (!future.valid())
+  while (rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    rclcpp::spin_some(node_);
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
         << "Action didn't get active: " << statusString();
   }
 
-  while (future.get()->get_status() < rclcpp_action::GoalStatus::STATUS_SUCCEEDED)
+  result_future = move_base_->async_get_result(future.get());
+  while (rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    rclcpp::spin_some(node_);
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << future.get()->get_status()
-        << " " << statusString();
+        << "Action didn't get inactive: " << statusString();
   }
   wait.sleep();
 
   // Succeed
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_SUCCEEDED,
-            future.get()->get_status());
+  ASSERT_EQ(rclcpp_action::ResultCode::SUCCEEDED,
+            result_future.get().code);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
 }

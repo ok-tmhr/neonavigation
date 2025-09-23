@@ -94,8 +94,8 @@ protected:
     goal.pose.pose.orientation.w = 1;
     goal.pose.pose.position.x = 1.4;
     goal.pose.pose.position.y = 0.6;
-    move_base_->async_send_goal(goal);
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    auto future = move_base_->async_send_goal(goal);
+    rclcpp::spin_until_future_complete(nh_, future, std::chrono::milliseconds(500));
   }
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {

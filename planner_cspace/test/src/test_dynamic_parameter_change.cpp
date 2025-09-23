@@ -176,6 +176,7 @@ protected:
   void sendGoalAndWaitForPath()
   {
     auto future = move_base_->async_send_goal(CreateGoalInFree());
+    rclcpp::spin_until_future_complete(node_, future);
 
     rclcpp::spin_some(node_);  // Flush message buffer
     path_ = nullptr;

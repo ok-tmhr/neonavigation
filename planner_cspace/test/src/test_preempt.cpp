@@ -65,27 +65,23 @@ TEST_F(PreemptTest, Preempt)
   rclcpp::Rate wait(1.0);
 
   auto future = move_base_->async_send_goal(CreateGoalInFree());
-  while (!future.valid())
+  while (rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    rclcpp::spin_some(node_);
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
         << "Action didn't get active: " << statusString();
   }
-  while (future.get()->get_status() < rclcpp_action::GoalStatus::STATUS_SUCCEEDED)
+  auto result_future = move_base_->async_get_result(future.get());
+  while (rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
     move_base_->async_cancel_all_goals();
-    rclcpp::spin_some(node_);
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << future.get()->get_status()
-        << statusString();
+        << "Action didn't get inactive: " << statusString();
   }
 
   ASSERT_TRUE(planner_status_);
 
-  ASSERT_EQ(rclcpp_action::GoalStatus::STATUS_CANCELED,
-            future.get()->get_status());
+  ASSERT_EQ(rclcpp_action::ResultCode::CANCELED,
+            result_future.get().code);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::GOING_WELL,
             planner_status_->error);
   ASSERT_EQ(planner_cspace_msgs::msg::PlannerStatus::DONE,
