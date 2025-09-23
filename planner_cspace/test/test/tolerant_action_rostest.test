@@ -2,7 +2,11 @@
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_test_tolerant_action" />
 
-  <!-- TODO time-limit="90.0" -->
-  <executable name="test_tolerant_action" cmd="./build/planner_cspace/test/test_tolerant_action" output="screen"/>
+  <node name="test_tolerant_action" pkg="planner_cspace" exec="test_tolerant_action" output="screen" />
+
+  <timer period="90.0">
+    <shutdown />
+  </timer>
+
   <include file="$(find-pkg-share planner_cspace)/test/test/actionlib_common_rostest.test" />
 </launch>

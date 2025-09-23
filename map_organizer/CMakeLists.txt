@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(map_organizer)
 
-set(AMENT_CMAKE_DEPENDS
+set(COLCON_DEPENDS
   rclcpp
 
   geometry_msgs
@@ -17,10 +17,9 @@ set(AMENT_CMAKE_DEPENDS
 )
 
 find_package(ament_cmake REQUIRED)
-foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
-  find_package(${DEPEND} REQUIRED)
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
@@ -30,10 +29,11 @@ if(NEW_YAMLCPP_FOUND)
 endif()
 
 
+
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 
@@ -57,24 +57,39 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 
 add_executable(pointcloud_to_maps src/pointcloud_to_maps.cpp)
+target_include_directories(pointcloud_to_maps PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(pointcloud_to_maps ${PCL_LIBRARIES})
-ament_target_dependencies(pointcloud_to_maps ${AMENT_CMAKE_DEPENDS})
+ament_target_dependencies(pointcloud_to_maps ${COLCON_DEPENDS})
 
 add_executable(tie_maps src/tie_maps.cpp)
+target_include_directories(tie_maps PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(tie_maps yaml-cpp ${PCL_LIBRARIES})
-ament_target_dependencies(tie_maps ${AMENT_CMAKE_DEPENDS})
+ament_target_dependencies(tie_maps ${COLCON_DEPENDS})
 
 add_executable(save_maps src/save_maps.cpp)
+target_include_directories(save_maps PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(save_maps ${PCL_LIBRARIES})
-ament_target_dependencies(save_maps ${AMENT_CMAKE_DEPENDS})
+ament_target_dependencies(save_maps ${COLCON_DEPENDS})
 
 add_executable(select_map src/select_map.cpp)
+target_include_directories(select_map PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(select_map ${PCL_LIBRARIES})
-ament_target_dependencies(select_map ${AMENT_CMAKE_DEPENDS})
+ament_target_dependencies(select_map ${COLCON_DEPENDS})
 
 add_executable(pose_transform src/pose_transform.cpp)
+target_include_directories(pose_transform PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(pose_transform ${PCL_LIBRARIES})
-ament_target_dependencies(pose_transform ${AMENT_CMAKE_DEPENDS})
+ament_target_dependencies(pose_transform ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -98,3 +113,4 @@ install(TARGETS
 )
 
 ament_package()
+

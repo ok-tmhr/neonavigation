@@ -42,31 +42,32 @@ class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
 protected:
   std::vector<nav_msgs::msg::Odometry> odom_msg_buffer_;
+  rclcpp::Node::SharedPtr nh_;
 
 public:
   void initializeNode(const std::string& ns)
   {
-    node_ = rclcpp::Node::make_shared("test_track_odometry", ns);
-    pub_odom_ = node_->create_publisher<nav_msgs::msg::Odometry>("odom_raw", 10);
-    pub_imu_ = node_->create_publisher<sensor_msgs::msg::Imu>("imu/data", 10);
-    sub_odom_ = node_->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackOdometryTest::cbOdom, this, std::placeholders::_1));
+    nh_ = rclcpp::Node::make_shared("test_track_odometry", ns);
+    pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom_raw", 10);
+    pub_imu_ = nh_->create_publisher<sensor_msgs::msg::Imu>("imu/data", 10);
+    sub_odom_ = nh_->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackOdometryTest::cbOdom, this, std::placeholders::_1));
   }
   bool initializeTrackOdometry(
       nav_msgs::msg::Odometry& odom_raw,
       sensor_msgs::msg::Imu& imu)
   {
-    rclcpp::sleep_for(std::chrono::microseconds(100));
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
     rclcpp::Rate rate(100);
     odom_ = nullptr;
     for (int i = 0; i < 1000 && rclcpp::ok(); ++i)
     {
-      odom_raw.header.stamp = node_->now();
+      odom_raw.header.stamp = nh_->now();
       imu.header.stamp = rclcpp::Time(odom_raw.header.stamp) + rclcpp::Duration::from_seconds(0.0001);
       pub_odom_->publish(odom_raw);
       pub_imu_->publish(imu);
       rate.sleep();
       odom_.reset();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(nh_);
       if (odom_ && i > 50)
         break;
     }
@@ -102,7 +103,7 @@ public:
       stepAndPublish(odom_raw, imu, dt);
 
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(nh_);
       if (++cnt >= steps)
         break;
     }
@@ -142,7 +143,7 @@ public:
     while (true)
     {
       rclcpp::sleep_for(std::chrono::milliseconds(100));
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(nh_);
       if (odom_prev == odom_)
       {
         // no more new messages
@@ -153,7 +154,6 @@ public:
   }
 
 protected:
-  rclcpp::Node::SharedPtr node_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;

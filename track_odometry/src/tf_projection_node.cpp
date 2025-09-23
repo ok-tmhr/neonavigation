@@ -32,8 +32,8 @@
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
-#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <string>
@@ -43,7 +43,7 @@
 class TfProjectionNode : public rclcpp::Node
 {
 private:
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -60,14 +60,8 @@ private:
   std::string projected_frame_;
 
 public:
-  TfProjectionNode()
-    : Node("tf_projection")
+  TfProjectionNode() : Node("tf_projection")
   {
-    tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-    tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
-    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-
     if (this->has_parameter("base_link_frame") ||
         this->has_parameter("projection_frame") ||
         this->has_parameter("target_frame") ||
@@ -96,6 +90,11 @@ public:
 
     project_posture_ = this->declare_parameter("project_posture", false);
     align_all_posture_to_source_ = this->declare_parameter("align_all_posture_to_source", false);
+
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   }
   void process()
   {
@@ -104,7 +103,7 @@ public:
     try
     {
       tf2::fromMsg(
-          tf_buffer_->lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1)),
+          tf_buffer_->lookupTransform(projection_surface_frame_, source_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1)),
           trans);
       tf2::fromMsg(
           tf_buffer_->lookupTransform(parent_frame_, projection_surface_frame_, trans.stamp_, tf2::durationFromSec(0.1)),

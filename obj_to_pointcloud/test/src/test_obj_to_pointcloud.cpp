@@ -30,6 +30,7 @@
 #include <cmath>
 #include <string>
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -60,10 +61,10 @@ bool isOnCorner(const float x, const float y, const float z)
 
 TEST(ObjToPointCloud, PointCloud)
 {
-  auto nh = rclcpp::Node::make_shared("test_obj_to_pointcloud");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_obj_to_pointcloud");
   sensor_msgs::msg::PointCloud2::ConstPtr cloud;
 
-  const std::function<void(const sensor_msgs::msg::PointCloud2::ConstPtr&)> cb =
+  const boost::function<void(const sensor_msgs::msg::PointCloud2::ConstPtr&)> cb =
       [&cloud](const sensor_msgs::msg::PointCloud2::ConstPtr& msg) -> void
   {
     cloud = msg;

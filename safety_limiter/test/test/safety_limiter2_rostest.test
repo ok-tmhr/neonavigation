@@ -2,8 +2,11 @@
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/safety_limiter_safert_limiter2" />
 
-  <!-- TODO: time-limit="30.0" -->
-  <executable name="test_safety_limiter2" cmd="./build/safety_limiter/test/test_safety_limiter2" output="screen" />
+  <node name="test_safety_limiter2" pkg="safety_limiter" exec="test_safety_limiter2" output="screen" />
+
+  <timer period="30.0">
+    <shutdown />
+  </timer>
 
   <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" output="screen">
     <param name="footprint" value="'[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]'" />

@@ -52,7 +52,8 @@ public:
     }
   };
 
-  PointcloudAccumulator() : time_to_hold_(rclcpp::Duration::from_seconds(0.))
+  PointcloudAccumulator()
+  : time_to_hold_(0, 0)
   {
   }
 

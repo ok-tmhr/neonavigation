@@ -40,6 +40,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+
 class LargeMapToMapNode : public rclcpp::Node
 {
 private:
@@ -48,8 +49,8 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string robot_frame_;
 
@@ -60,20 +61,19 @@ private:
   std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
-  LargeMapToMapNode()
-    : Node("largemap_to_map")
-    , tfbuf_(this->get_clock())
-    , tfl_(tfbuf_)
+  LargeMapToMapNode() : Node("largemap_to_map")
   {
-    robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
+      robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-        "map_local", rclcpp::QoS(1).transient_local());
+        "map_local",
+        rclcpp::QoS(1).transient_local());
     sub_largemap_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>("map", rclcpp::QoS(2).transient_local(), std::bind(&LargeMapToMapNode::cbLargeMap, this, std::placeholders::_1));
 
     width_ = this->declare_parameter("width", 30);
     round_local_map_ = this->declare_parameter("round_local_map", false);
     simulate_occlusion_ = this->declare_parameter("simulate_occlusion", false);
+    simulate_surrounded_ = this->declare_parameter("simulate_surrounded", false);
 
     for (size_t addr = 0; addr < static_cast<size_t>(width_ * width_); ++addr)
     {
@@ -104,6 +104,9 @@ public:
     double hz;
     hz = this->declare_parameter("hz", 1.0);
     timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
 private:
@@ -122,7 +125,7 @@ private:
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      tf2::fromMsg(tfbuf_.lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
     }
     catch (tf2::TransformException& e)
     {
@@ -131,7 +134,7 @@ private:
 
     nav_msgs::msg::OccupancyGrid map;
     map.header.frame_id = large_map_->header.frame_id;
-    map.header.stamp = this->get_clock()->now();
+    map.header.stamp = this->now();
     map.info = large_map_->info;
     map.info.width = width_;
     map.info.height = width_;

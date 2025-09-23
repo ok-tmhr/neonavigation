@@ -57,8 +57,8 @@ class Navigate : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   nav_msgs::msg::OccupancyGrid::ConstPtr map_;
   nav_msgs::msg::OccupancyGrid::Ptr map_local_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
@@ -81,19 +81,17 @@ protected:
   std::string test_scope_;
 
   Navigate()
-    : nh_(rclcpp::Node::make_shared("test_navigate"))
-    , tfbuf_(nh_->get_clock())
-    , tfl_(tfbuf_)
-    , local_map_apply_cnt_(0)
+    : local_map_apply_cnt_(0)
   {
+    nh_ = rclcpp::Node::make_shared("test_navigate");
     using std::placeholders::_1;
     sub_map_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("map_global", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbMap, this, _1));
     sub_map_local_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("map_local", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbMapLocal, this, _1));
     sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbCostmap, this, _1));
     sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
         "/planner_3d/status", 10, std::bind(&Navigate::cbStatus, this, _1));
-    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&Navigate::cbPath, this, _1));
-    sub_path_vel_ = nh_->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>("path_velocity", 1, std::bind(&Navigate::cbPathVel, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbPath, this, _1));
+    sub_path_vel_ = nh_->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>("path_velocity", rclcpp::QoS(1).transient_local(), std::bind(&Navigate::cbPathVel, this, _1));
     srv_forget_ =
         nh_->create_client<std_srvs::srv::Empty>(
             "forget_planning_cost");
@@ -102,6 +100,9 @@ protected:
     pub_initial_pose_ =
         nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
     pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(nh_->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
   void SetUp() override
@@ -153,7 +154,7 @@ protected:
       rate.sleep();
       const rclcpp::Time now = nh_->now();
       ASSERT_LT(now, deadline) << test_scope_ << "Initial transform timeout";
-      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
+      if (tfbuf_->canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }
@@ -182,11 +183,9 @@ protected:
       ASSERT_LT(nh_->now(), deadline) << test_scope_ << "Initial costmap timeout";
     }
 
-    auto req = std::make_shared<std_srvs::srv::Empty_Request>();
-    std_srvs::srv::Empty_Response::SharedPtr res;
-    auto future = srv_forget_->async_send_request(req);
-    rclcpp::spin_until_future_complete(nh_, future);
-    res = future.get();
+    auto req = std::make_shared<std_srvs::srv::Empty::Request>();
+    auto res = std::make_shared<std_srvs::srv::Empty::Response>();
+    srv_forget_->async_send_request(req);
 
     rclcpp::sleep_for(std::chrono::seconds(1));
   }
@@ -200,12 +199,12 @@ protected:
   void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
     costmap_ = msg;
-    std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Costmap received." << std::endl;
+    std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Costmap received." << std::endl;
   }
   void cbMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     map_ = msg;
-    std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Map received." << std::endl;
+    std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Map received." << std::endl;
   }
   void cbMapLocal(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
@@ -214,13 +213,13 @@ protected:
       return;
     }
     map_local_.reset(new nav_msgs::msg::OccupancyGrid(*msg));
-    std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Local map received." << std::endl;
+    std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Local map received." << std::endl;
   }
   void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
-      std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Status updated." << msg << std::endl;
+      std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
   }
@@ -230,12 +229,12 @@ protected:
     {
       if (msg->poses.size() == 0)
       {
-        std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Path updated. (empty)" << std::endl;
+        std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Path updated. (empty)" << std::endl;
       }
       else
       {
         std::cerr
-            << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Path updated." << std::endl
+            << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Path updated." << std::endl
             << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
@@ -248,12 +247,12 @@ protected:
     {
       if (msg->poses.size() == 0)
       {
-        std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " PathWithVelocity updated. (empty)" << std::endl;
+        std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " PathWithVelocity updated. (empty)" << std::endl;
       }
       else
       {
         std::cerr
-            << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " PathWithVelocity updated." << std::endl
+            << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " PathWithVelocity updated." << std::endl
             << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
@@ -283,7 +282,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
+        tfbuf_->lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);
@@ -335,7 +334,7 @@ protected:
         dumpRobotTrajectory();
         FAIL()
             << test_scope_ << "/" << name << ": Navigation timeout." << std::endl
-            << "now: " << now.seconds() << std::endl
+            << "now: " << tf2_ros::timeToSec(now) << std::endl
             << "status: " << planner_status_ << " (expected: " << expected_error << ")";
       }
 
@@ -382,7 +381,7 @@ TEST_F(Navigate, Navigate)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -462,7 +461,7 @@ TEST_F(Navigate, NavigateWithLocalMap)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -517,8 +516,8 @@ TEST_F(Navigate, GlobalPlan)
   rclcpp::spin_some(nh_);
   ASSERT_TRUE(static_cast<bool>(map_));
 
-  auto req = std::make_shared<nav_msgs::srv::GetPlan_Request>();
-  nav_msgs::srv::GetPlan_Response::SharedPtr res;
+  auto req = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+  auto res = std::make_shared<nav_msgs::srv::GetPlan::Response>();
 
   req->tolerance = 0.0;
   req->start.header.frame_id = "map";
@@ -533,17 +532,26 @@ TEST_F(Navigate, GlobalPlan)
   req->goal.pose.orientation =
       tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -3.14));
   // Planning failes as (12, 21, 0) is in rock.
-  ASSERT_FALSE(rclcpp::spin_until_future_complete(nh_, srv_plan->async_send_request(req)) == rclcpp::FutureReturnCode::SUCCESS);
+  auto future = srv_plan->async_send_request(req);
+  rclcpp::spin_until_future_complete(nh_, future);
+  res = future.get();
+  ASSERT_FALSE(!res->plan.header.frame_id.empty());
 
   // Goal grid is moved to (12, 22, 0).
   req->tolerance = 0.1;
-  ASSERT_TRUE(rclcpp::spin_until_future_complete(nh_, srv_plan->async_send_request(req)) == rclcpp::FutureReturnCode::SUCCESS);
+  future = srv_plan->async_send_request(req);
+  rclcpp::spin_until_future_complete(nh_, future);
+  res = future.get();
+  ASSERT_TRUE(!res->plan.header.frame_id.empty());
   EXPECT_NEAR(1.25, res->plan.poses.back().pose.position.x, 1.0e-5);
   EXPECT_NEAR(2.25, res->plan.poses.back().pose.position.y, 1.0e-5);
 
   // Goal grid is moved to (12, 23, 0). This is because cost of (12, 22, 0) is larger than 50.
   req->tolerance = 0.2f;
-  ASSERT_TRUE(rclcpp::spin_until_future_complete(nh_, srv_plan->async_send_request(req)) == rclcpp::FutureReturnCode::SUCCESS);
+  future = srv_plan->async_send_request(req);
+  rclcpp::spin_until_future_complete(nh_, future);
+  res = future.get();
+  ASSERT_TRUE(!res->plan.header.frame_id.empty());
   EXPECT_NEAR(1.25, res->plan.poses.back().pose.position.x, 1.0e-5);
   EXPECT_NEAR(2.35, res->plan.poses.back().pose.position.y, 1.0e-5);
 
@@ -553,7 +561,10 @@ TEST_F(Navigate, GlobalPlan)
   req->goal.pose.position.y = 2.75;
   req->goal.pose.orientation =
       tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), -1.57));
-  ASSERT_TRUE(rclcpp::spin_until_future_complete(nh_, srv_plan->async_send_request(req)) == rclcpp::FutureReturnCode::SUCCESS);
+  future = srv_plan->async_send_request(req);
+  rclcpp::spin_until_future_complete(nh_, future);
+  res = future.get();
+  ASSERT_TRUE(!res->plan.header.frame_id.empty());
 
   EXPECT_NEAR(req->start.pose.position.x, res->plan.poses.front().pose.position.x, 1.0e-5);
   EXPECT_NEAR(req->start.pose.position.y, res->plan.poses.front().pose.position.y, 1.0e-5);
@@ -611,7 +622,7 @@ TEST_F(Navigate, RobotIsInRockOnSetGoal)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -745,7 +756,7 @@ TEST_F(Navigate, CrowdEscapeOnSurrounded)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -835,7 +846,7 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -907,7 +918,7 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }
@@ -1000,7 +1011,7 @@ TEST_F(Navigate, ForceTemporaryEscape)
     GTEST_SKIP() << "enable_crowd_mode is not set";
   }
 
-  auto pub_trigger = nh_->create_publisher<std_msgs::msg::Empty>("/planner_3d/temporary_escape", 1);
+  rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr pub_trigger = nh_->create_publisher<std_msgs::msg::Empty>("/planner_3d/temporary_escape", 1);
 
   rclcpp::spin_some(nh_);
   ASSERT_TRUE(static_cast<bool>(map_));
@@ -1040,7 +1051,7 @@ TEST_F(Navigate, ForceTemporaryEscape)
       dumpRobotTrajectory();
       FAIL()
           << test_scope_ << "Navigation timeout." << std::endl
-          << "now: " << now.seconds() << std::endl
+          << "now: " << tf2_ros::timeToSec(now) << std::endl
           << "status: " << planner_status_;
       break;
     }

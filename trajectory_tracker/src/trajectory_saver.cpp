@@ -39,12 +39,14 @@
 #include <fstream>
 #include <string>
 
+#include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/serialized_message.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/path.hpp>
+
 
 class SaverNode : public rclcpp::Node
 {
@@ -56,22 +58,19 @@ public:
 private:
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
 
-  std::string topic_path_;
   std::string filename_;
   bool saved_;
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg);
 };
 
-SaverNode::SaverNode()
-  : rclcpp::Node("trajectory_saver")
+SaverNode::SaverNode() : Node("trajectory_saver")
   , saved_(false)
 {
-  topic_path_ = this->declare_parameter<std::string>("path", "recpath");
-  filename_ = this->declare_parameter<std::string>("file", "a.path");
+  filename_ = this->declare_parameter("file", std::string("a.path"));
 
-  using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
-    "path", rclcpp::QoS(10).transient_local(), std::bind(&SaverNode::cbPath, this, _1));
+      "path",
+      rclcpp::QoS(10).transient_local(), std::bind(&SaverNode::cbPath, this, std::placeholders::_1));
 }
 SaverNode::~SaverNode()
 {

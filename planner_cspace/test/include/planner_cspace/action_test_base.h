@@ -53,18 +53,19 @@ class ActionTestBase : public ::testing::Test
 {
 public:
   ActionTestBase()
-    : node_(rclcpp::Node::make_shared("test_preempt"))
-    , tfbuf_(node_->get_clock())
-    , tfl_(tfbuf_)
-    , map_ready_(false)
+    : map_ready_(false)
   {
+    node_ = rclcpp::Node::make_shared("action_test_base");
     move_base_ = rclcpp_action::create_client<ACTION>(node_, TOPIC);
     sub_status_ = node_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
         "/planner_3d/status", 10, std::bind(&ActionTestBase::cbStatus, this, std::placeholders::_1));
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp()
   {
-    if (!move_base_->wait_for_action_server(std::chrono::seconds(30)))
+    if (!move_base_->wait_for_action_server(std::chrono::duration<double>(30.0)))
     {
       FAIL() << "Failed to connect move_base action";
     }
@@ -76,8 +77,8 @@ public:
     const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10.0);
     while (rclcpp::ok())
     {
-      auto req = std::make_shared<nav_msgs::srv::GetPlan_Request>();
-      nav_msgs::srv::GetPlan_Response::SharedPtr res;
+      auto req = std::make_shared<nav_msgs::srv::GetPlan::Request>();
+      auto res = std::make_shared<nav_msgs::srv::GetPlan::Response>();
       req->tolerance = 10.0;
       req->start.header.frame_id = "map";
       req->start.pose.position.x = 1.24;
@@ -87,7 +88,10 @@ public:
       req->goal.pose.position.x = 1.25;
       req->goal.pose.position.y = 0.75;
       req->goal.pose.orientation.w = 1;
-      if (rclcpp::spin_until_future_complete(node_, srv_plan->async_send_request(req), std::chrono::seconds(1)) == rclcpp::FutureReturnCode::SUCCESS)
+      auto future = srv_plan->async_send_request(req);
+      rclcpp::spin_until_future_complete(node_, future);
+      res = future.get();
+      if (!res->plan.header.frame_id.empty())
       {
         // Planner is ready.
         break;
@@ -127,8 +131,8 @@ protected:
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   bool map_ready_;
 };
 

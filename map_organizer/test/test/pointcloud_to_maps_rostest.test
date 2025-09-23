@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <launch>
+
   <node pkg="map_organizer" exec="pointcloud_to_maps" name="pointcloud_to_maps" output="screen">
     <param name="min_floor_area" value="0.2" />
     <param name="points_thresh_rate" value="0.0" />
     <param name="floor_area_thresh_rate" value="0.0" />
   </node>
 
-  <executable name="test_pointcloud_to_maps" cmd="./build/map_organizer/test/test_pointcloud_to_maps" output="screen" />
+  <node name="test_pointcloud_to_maps" pkg="map_organizer" exec="test_pointcloud_to_maps" output="screen" />
 </launch>

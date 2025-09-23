@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(track_odometry)
 
-set(AMENT_CMAKE_DEPENDS
+set(COLCON_DEPENDS
   rclcpp
 
   geometry_msgs
@@ -13,24 +13,36 @@ set(AMENT_CMAKE_DEPENDS
   tf2_geometry_msgs
   tf2_ros
   trajectory_msgs
+
 )
 
 find_package(ament_cmake REQUIRED)
-foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
-  find_package(${DEPEND})
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
 find_package(Eigen3 REQUIRED)
+
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include_directories(${EIGEN3_INCLUDE_DIR})
+
+
 add_executable(track_odometry src/track_odometry.cpp)
-target_include_directories(track_odometry PRIVATE include)
-ament_target_dependencies(track_odometry ${AMENT_CMAKE_DEPENDS} Eigen3)
+target_include_directories(track_odometry PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(track_odometry)
+ament_target_dependencies(track_odometry ${COLCON_DEPENDS})
 
 add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
-target_include_directories(tf_projection PRIVATE include)
-ament_target_dependencies(tf_projection ${AMENT_CMAKE_DEPENDS})
+target_include_directories(tf_projection PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(tf_projection)
+ament_target_dependencies(tf_projection ${COLCON_DEPENDS})
+
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
@@ -50,3 +62,4 @@ install(TARGETS
 )
 
 ament_package()
+

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.14.4)
 project(costmap_cspace)
 
 set(COLCON_DEPENDS
+  rclcpp
+
   geometry_msgs
   laser_geometry
   nav_msgs
@@ -14,9 +16,8 @@ set(COLCON_DEPENDS
 )
 
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-foreach(PKG ${COLCON_DEPENDS})
-  find_package(${PKG} REQUIRED)
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
 
 
@@ -25,59 +26,35 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
-target_link_libraries(costmap_3d_layers rclcpp::rclcpp)
-foreach(PKG ${COLCON_DEPENDS})
-  target_link_libraries(costmap_3d_layers ${${PKG}_TARGETS})
-endforeach()
 target_include_directories(costmap_3d_layers PUBLIC
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
-ament_target_dependencies(costmap_3d_layers rclcpp ${COLCON_DEPENDS})
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(costmap_3d_layers ${COLCON_DEPENDS})
 
 add_executable(costmap_3d src/costmap_3d.cpp)
-target_link_libraries(costmap_3d costmap_3d_layers rclcpp::rclcpp)
-foreach(PKG ${COLCON_DEPENDS})
-  target_link_libraries(costmap_3d ${${PKG}_TARGETS})
-endforeach()
 target_include_directories(costmap_3d PUBLIC
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
-ament_target_dependencies(costmap_3d rclcpp ${COLCON_DEPENDS})
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(costmap_3d costmap_3d_layers)
+ament_target_dependencies(costmap_3d ${COLCON_DEPENDS})
 
 add_executable(laserscan_to_map src/laserscan_to_map.cpp)
-target_link_libraries(laserscan_to_map rclcpp::rclcpp)
-foreach(PKG ${COLCON_DEPENDS})
-  target_link_libraries(laserscan_to_map ${${PKG}_TARGETS})
-endforeach()
 target_include_directories(laserscan_to_map PUBLIC
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
-ament_target_dependencies(laserscan_to_map rclcpp ${COLCON_DEPENDS})
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(laserscan_to_map ${COLCON_DEPENDS})
 
 add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
-target_link_libraries(pointcloud2_to_map rclcpp::rclcpp)
-foreach(PKG ${COLCON_DEPENDS})
-  target_link_libraries(pointcloud2_to_map ${${PKG}_TARGETS})
-endforeach()
 target_include_directories(pointcloud2_to_map PUBLIC
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
-ament_target_dependencies(pointcloud2_to_map rclcpp ${COLCON_DEPENDS})
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(pointcloud2_to_map ${COLCON_DEPENDS})
 
 add_executable(largemap_to_map src/largemap_to_map.cpp)
-target_link_libraries(largemap_to_map rclcpp::rclcpp)
-foreach(PKG ${COLCON_DEPENDS})
-  target_link_libraries(largemap_to_map ${${PKG}_TARGETS})
-endforeach()
 target_include_directories(largemap_to_map PUBLIC
-$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-$<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
-ament_target_dependencies(largemap_to_map rclcpp ${COLCON_DEPENDS})
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(largemap_to_map ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -94,11 +71,18 @@ install(TARGETS
     largemap_to_map
     laserscan_to_map
     pointcloud2_to_map
-    costmap_3d_layers
-  DESTINATION lib/${PROJECT_NAME}
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY include/
+install(TARGETS costmap_3d_layers
+  ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib/${PROJECT_NAME}
+  RUNTIME DESTINATION bin/${PROJECT_NAME}
+)
+
+install(DIRECTORY include
   DESTINATION include
 )
 

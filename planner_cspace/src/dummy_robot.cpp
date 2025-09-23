@@ -33,14 +33,15 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 
 class DummyRobotNode : public rclcpp::Node
 {
 protected:
+
   double x_;
   double y_;
   double yaw_;
@@ -50,7 +51,7 @@ protected:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_init_;
-  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
@@ -67,7 +68,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_->lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration(1, 0));
+          tfbuf_->lookupTransform("odom", pose_in.header.frame_id, pose_in.header.stamp, rclcpp::Duration::from_seconds(1.0));
       tf2::doTransform(pose_in, pose_out, trans);
     }
     catch (tf2::TransformException& e)
@@ -84,8 +85,7 @@ protected:
   }
 
 public:
-  DummyRobotNode()
-    : rclcpp::Node("dummy_robot")
+  DummyRobotNode() : Node("dummy_robot")
   {
     x_ = this->declare_parameter("initial_x", 0.0);
     y_ = this->declare_parameter("initial_y", 0.0);
@@ -94,11 +94,10 @@ public:
     w_ = 0.0;
 
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", rclcpp::QoS(1).transient_local());
-    using std::placeholders::_1;
-    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&DummyRobotNode::cbTwist, this, _1));
-    sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", 1, std::bind(&DummyRobotNode::cbInit, this, _1));
+    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&DummyRobotNode::cbTwist, this, std::placeholders::_1));
+    sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local(), std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
 
-    tfbuf_ = std::make_unique<tf2_ros::Buffer>(get_clock());
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
@@ -111,7 +110,7 @@ public:
     {
       rclcpp::spin_some(shared_from_this());
       rate.sleep();
-      const rclcpp::Time current_time = now();
+      const rclcpp::Time current_time = this->now();
 
       yaw_ += w_ * dt;
       x_ += cosf(yaw_) * v_ * dt;

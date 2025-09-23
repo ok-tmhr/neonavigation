@@ -4,14 +4,16 @@
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
     <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.0"/>
-    <param name="static_layers" value="[unknown, overlay]" />
-    <param name="unknown">
+    <param name="static_layers" value="[unknown]" />
+    <param name="unknown" >
       <param name="type" value="Costmap3dLayerUnknownHandle" />
       <param name="unknown_cost" value="100" />
     </param>
+    <param name="layers" value="[overlay]" />
     <param name="overlay">
       <param name="type" value="Costmap3dLayerFootprint" />
       <param name="overlay_mode" value="max" />
@@ -28,7 +30,7 @@
     <param name="yaw_jump" value="100.0" />
   </node>
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" >
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
     <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
   </node>
   <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
@@ -38,18 +40,24 @@
   </node>
 
   <executable name="pub_goal"
-    cmd="ros2 topic pub --qos-depth 1 --qos-durability transient_local -1 /goal geometry_msgs/msg/PoseStamped '{header: {frame_id: map}, pose: {position: {x: 1.0, y: 0.525}, orientation: {z: 1.0, w: 0.0}}}'" />
+    cmd="ros2 topic pub -1 /goal geometry_msgs/PoseStamped
+      '{header: {frame_id: map}, pose: {position: {x: 1.0, y: 0.525}, orientation: {z: 1.0, w: 0.0}}}'
+      --qos-durability transient_local --keep-alive 3 -n pub_goal" />
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf2"
       args="2.5 0.5 0 3.14 0 0 odom base_link" />
 
-  <!-- TODO time-limit="15.0" -->
-  <executable name="test_debug_outputs" cmd="./build/planner_cspace/test/test_debug_outputs" output="screen" />
+  <node name="test_debug_outputs" pkg="planner_cspace" exec="test_debug_outputs" output="screen" />
 
-  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" >
-    <param name="autostart" value="true" />
+  <timer period="15.0">
+    <shutdown />
+  </timer>
+
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
     <param name="node_names" value="[map_server_global]" />
+    <param name="autostart" value="true" />
   </node>
+
 </launch>

@@ -32,10 +32,10 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 #include <limits>
 #include <string>
@@ -49,8 +49,8 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
   nav_msgs::msg::OccupancyGrid map;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   laser_geometry::LaserProjection projector_;
   rclcpp::Time published_;
   rclcpp::Duration publish_interval_;
@@ -67,24 +67,22 @@ private:
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
-  LaserscanToMapNode()
-    : Node("laserscan_to_map")
-    , tfbuf_(this->get_clock())
-    , tfl_(tfbuf_)
-    , publish_interval_(rclcpp::Duration::from_seconds(0.))
-    , published_(0LL, RCL_ROS_TIME)
+  LaserscanToMapNode() : Node("laserscan_to_map")
+  , published_(0, 0, RCL_ROS_TIME)
+  , publish_interval_(0, 0)
   {
-    z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
+      z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
     z_max_ = this->declare_parameter("z_max", std::numeric_limits<double>::max());
     global_frame_ = this->declare_parameter("global_frame", std::string("map"));
     robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     double accum_duration;
     accum_duration = this->declare_parameter("accum_duration", 1.0);
-    accum_.reset(std::chrono::duration<double>(accum_duration));
+    accum_.reset(rclcpp::Duration::from_seconds(accum_duration));
 
     pub_map_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-        "map_local", rclcpp::QoS(1).transient_local());
+        "map_local",
+        rclcpp::QoS(1).transient_local());
     sub_scan_ = this->create_subscription<sensor_msgs::msg::LaserScan>("scan", 2, std::bind(&LaserscanToMapNode::cbScan, this, std::placeholders::_1));
 
     int width_param;
@@ -101,7 +99,10 @@ public:
 
     double hz;
     hz = this->declare_parameter("hz", 1.0);
-    publish_interval_ = std::chrono::duration<double>(1.0 / hz);
+    publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
 private:
@@ -112,8 +113,8 @@ private:
     projector_.projectLaser(*scan, cloud);
     try
     {
-      geometry_msgs::msg::TransformStamped trans = tfbuf_.lookupTransform(
-          global_frame_, cloud.header.frame_id, cloud.header.stamp, std::chrono::duration<double>(0.5));
+      geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
+          global_frame_, cloud.header.frame_id, cloud.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(cloud, cloud_global, trans);
     }
     catch (tf2::TransformException& e)
@@ -132,7 +133,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_.lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;

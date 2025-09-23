@@ -86,12 +86,10 @@ std::vector<std::string> split(const std::string& input, char delimiter)
 class ObjToPointcloudNode : public rclcpp::Node
 {
 public:
-  ObjToPointcloudNode()
-    : Node("obj_to_pointcloud")
+  ObjToPointcloudNode() : Node("obj_to_pointcloud")
     , engine_(seed_gen_())
   {
-
-    pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+      pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
         rclcpp::QoS(1).transient_local());
 

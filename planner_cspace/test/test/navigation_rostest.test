@@ -6,20 +6,26 @@
   <arg name="enable_crowd_mode" default="false" />
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_navigation_$(var antialias_start)_$(var fast_map_update)_$(var with_tolerance)_$(var enable_crowd_mode)" />
 
-  <!-- TODO time-limit="260.0" -->
-  <executable name="test_navigate_$(var antialias_start)_$(var fast_map_update)_$(var with_tolerance)_$(var enable_crowd_mode)" cmd="./build/planner_cspace/test/test_navigate --ros-args -p enable_crowd_mode:=$(var enable_crowd_mode)" output="screen">
-  </executable>
+  <node name="test_navigate_$(var antialias_start)_$(var fast_map_update)_$(var with_tolerance)_$(var enable_crowd_mode)" pkg="planner_cspace" exec="test_navigate" output="screen">
+    <param name="enable_crowd_mode" value="$(var enable_crowd_mode)" />
+  </node>
+
+  <timer period="260.0">
+    <shutdown />
+  </timer>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
     <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.1"/>
-    <param name="static_layers" value="[unknown, overlay]" />
-    <param name="unknown">
+    <param name="static_layers" value="[unknown]" />
+    <param name="unknown" >
       <param name="type" value="Costmap3dLayerUnknownHandle" />
       <param name="unknown_cost" value="100" />
     </param>
+    <param name="layers" value="[overlay]" />
     <param name="overlay">
       <param name="type" value="Costmap3dLayerFootprint" />
       <param name="overlay_mode" value="max" />
@@ -64,11 +70,11 @@
     <param name="no_position_control_dist" value="0.01" />
   </node>
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" >
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
     <remap from="map" to="map_global" />
     <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
   </node>
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_local" >
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_local">
     <remap from="map" to="map_local" />
     <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/local_map.yaml" />
   </node>
@@ -87,8 +93,8 @@
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
 
-  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" >
-    <param name="autostart" value="true" />
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
     <param name="node_names" value="[map_server_global, map_server_local]" />
+    <param name="autostart" value="true" />
   </node>
 </launch>

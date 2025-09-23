@@ -1,5 +1,6 @@
 # safety_limiter package
 
+
 ## safety_limiter
 
 safety_limiter node limits vehicle velocity to avoid collisions based on the linear prediction of the motion.

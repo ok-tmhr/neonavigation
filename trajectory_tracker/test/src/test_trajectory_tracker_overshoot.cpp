@@ -31,12 +31,9 @@
 
 #include <trajectory_tracker_test.h>
 
+
 class TrajectoryTrackerOvershootTest : public TrajectoryTrackerTest
 {
-public:
-  TrajectoryTrackerOvershootTest() : TrajectoryTrackerTest("test_trajectory_tracker_overshoot")
-  {
-  }
 protected:
   void runTest(const double goal_tolerance_lin_vel, const double goal_tolerance_ang_vel,
                const double linear_vel, const double rotation_vel, const int32_t expected_status)
@@ -49,12 +46,16 @@ protected:
     poses.push_back(Eigen::Vector3d(0.5, 0.0, 0.0));
     waitUntilStart(std::bind(&TrajectoryTrackerTest::publishPath, this, poses));
 
-    auto client = std::make_shared<rclcpp::SyncParametersClient>(node_, "trajectory_tracker");
-    auto result = client->set_parameters_atomically({
+    auto param_client = std::make_shared<rclcpp::SyncParametersClient>(nh_, "trajectory_tracker");
+    param_client->wait_for_service();
+    auto result = param_client->set_parameters({
       rclcpp::Parameter("goal_tolerance_lin_vel", goal_tolerance_lin_vel),
-      rclcpp::Parameter("goal_tolerance_ang_vel", goal_tolerance_ang_vel)
+      rclcpp::Parameter("goal_tolerance_ang_vel", goal_tolerance_ang_vel),
     });
-    ASSERT_TRUE(result.successful);
+    for (const auto &res : result)
+    {
+      ASSERT_TRUE(res.successful);
+    }
 
     nav_msgs::msg::Odometry odom;
     odom.header.frame_id = "odom";
@@ -74,14 +75,14 @@ protected:
     odom.twist.twist.angular.z = rotation_vel;
 
     rclcpp::Rate rate(50);
-    const rclcpp::Time initial_time = node_->now();
-    const rclcpp::Time time_limit = initial_time + rclcpp::Duration(5, 0);
-    while (rclcpp::ok() && time_limit > node_->now())
+    const rclcpp::Time initial_time = nh_->now();
+    const rclcpp::Time time_limit = initial_time + rclcpp::Duration::from_seconds(5.0);
+    while (rclcpp::ok() && time_limit > nh_->now())
     {
-      odom.header.stamp = node_->now();
+      odom.header.stamp = nh_->now();
       publishTransform(odom);
       rate.sleep();
-      rclcpp::spin_some(node_);
+      rclcpp::spin_some(nh_);
       if ((rclcpp::Time(status_->header.stamp) > initial_time + rclcpp::Duration::from_seconds(0.5)) && (status_->status == expected_status))
       {
         return;

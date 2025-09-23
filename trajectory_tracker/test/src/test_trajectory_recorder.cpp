@@ -27,9 +27,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/msg/path.hpp>
 #include <std_srvs/srv/empty.hpp>
@@ -41,20 +41,18 @@
 
 TEST(TrajectoryRecorder, TfToPath)
 {
-  auto node = rclcpp::Node::make_shared("test_trajectory_recorder");
+  auto nh = rclcpp::Node::make_shared("test_trajectory_recorder");
 
   nav_msgs::msg::Path::ConstPtr path;
   int received_count = 0;
-  const std::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
+  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
       [&path, &received_count](const nav_msgs::msg::Path::ConstPtr& msg) -> void
   {
     ++received_count;
     path = msg;
   };
-  using std::placeholders::_1;
-  auto sub_path = node->create_subscription<nav_msgs::msg::Path>(
-    "path", rclcpp::QoS(1).transient_local(), cb_path);
-  auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(*node);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), cb_path);
+  auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(nh);
 
   const tf2::Transform points[] =
       {
@@ -72,13 +70,13 @@ TEST(TrajectoryRecorder, TfToPath)
     {
       geometry_msgs::msg::TransformStamped trans =
           tf2::toMsg(tf2::Stamped<tf2::Transform>(
-              p, tf2_ros::fromRclcpp(node->now() + rclcpp::Duration::from_seconds(0.1)), "map"));
+              p, tf2_ros::fromRclcpp(nh->now() + rclcpp::Duration::from_seconds(0.1)), "map"));
       trans.child_frame_id = "base_link";
       tfb->sendTransform(trans);
-      rclcpp::sleep_for(std::chrono::microseconds(100));
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
     }
   }
-  rclcpp::spin_some(node);
+  rclcpp::spin_some(nh);
   ASSERT_TRUE(static_cast<bool>(path));
   ASSERT_EQ(received_count, 1);
 
@@ -94,15 +92,16 @@ TEST(TrajectoryRecorder, TfToPath)
     ASSERT_EQ(path->poses[i].pose.orientation.w, points[i].getRotation().w());
   }
 
-  auto client = node->create_client<std_srvs::srv::Empty>("/trajectory_recorder/clear_path");
-  auto result = client->async_send_request(std::make_shared<std_srvs::srv::Empty::Request>());
-
-  ASSERT_TRUE(rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS);
+  auto client = nh->create_client<std_srvs::srv::Empty>("/trajectory_recorder/clear_path");
+  auto empty = std::make_shared<std_srvs::srv::Empty::Request>();
+  client->wait_for_service();
+  auto result = client->async_send_request(empty);
+  ASSERT_TRUE(rclcpp::spin_until_future_complete(nh, result) == rclcpp::FutureReturnCode::SUCCESS);
 
   while (received_count != 2)
   {
-    rclcpp::spin_some(node);
-    rclcpp::sleep_for(std::chrono::microseconds(100));
+    rclcpp::spin_some(nh);
+    rclcpp::sleep_for(std::chrono::milliseconds(100));
   }
   ASSERT_EQ(static_cast<int>(path->poses.size()), 1);
   ASSERT_EQ(path->poses.back().pose.position.x, points[len - 1].getOrigin().x());

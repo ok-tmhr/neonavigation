@@ -2,11 +2,15 @@
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
 
-  <!-- TODO time-limit="30.0" -->
-  <executable name="test_costmap_watchdog" cmd="./build/planner_cspace/test/test_costmap_watchdog" output="screen" />
+  <node name="test_costmap_watchdog" pkg="planner_cspace" exec="test_costmap_watchdog" output="screen" />
+
+  <timer period="30.0">
+    <shutdown />
+  </timer>
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
     <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.1"/>
@@ -20,7 +24,7 @@
     <param name="sw_wait" value="0.0" />
   </node>
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" >
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
     <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
   </node>
 
@@ -32,8 +36,8 @@
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
 
-  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" >
-    <param name="autostart" value="true" />
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
     <param name="node_names" value="[map_server_global]" />
+    <param name="autostart" value="true" />
   </node>
 </launch>

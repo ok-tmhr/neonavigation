@@ -29,6 +29,7 @@
 
 #include <string>
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
@@ -47,28 +48,28 @@ TEST(Planner3D, CostmapWatchdog)
   nav_msgs::msg::Path::ConstPtr path;
   diagnostic_msgs::msg::DiagnosticArray::ConstPtr diag;
 
-  const std::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
+  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
       [&status, &cnt](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg) -> void
   {
     status = msg;
     cnt++;
   };
-  const std::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
+  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
       [&path](const nav_msgs::msg::Path::ConstPtr& msg) -> void
   {
     path = msg;
   };
-  const std::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr&)> cb_diag =
+  const boost::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr&)> cb_diag =
       [&diag](const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg) -> void
   {
     diag = msg;
   };
 
-  auto nh = rclcpp::Node::make_shared("test_navigate");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_navigate");
   auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
-  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", rclcpp::QoS(1).transient_local());
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
-  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), cb_path);
   auto sub_diag = nh->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, cb_diag);
 
   geometry_msgs::msg::PoseStamped goal;
@@ -133,22 +134,22 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
   nav_msgs::msg::Path::ConstPtr path;
 
-  const std::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
+  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
       [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg) -> void
   {
     status = msg;
   };
-  const std::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
+  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
       [&path](const nav_msgs::msg::Path::ConstPtr& msg) -> void
   {
     path = msg;
   };
 
-  auto nh = rclcpp::Node::make_shared("test_navigate");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_navigate");
   auto pub_goal = nh->create_publisher<geometry_msgs::msg::PoseStamped>("goal", rclcpp::QoS(1).transient_local());
-  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", rclcpp::QoS(1).transient_local());
+  auto pub_cost_update = nh->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("planner_3d/status", 1, cb_status);
-  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", 1, cb_path);
+  auto sub_path = nh->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), cb_path);
 
   geometry_msgs::msg::PoseStamped goal;
   goal.header.frame_id = "map";

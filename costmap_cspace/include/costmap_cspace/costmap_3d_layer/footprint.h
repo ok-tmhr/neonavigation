@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -80,8 +80,10 @@ public:
     , range_max_(0)
   {
   }
-  void loadConfig(LayerConfig& config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
+    if (config.name.empty())
+    {
     const int linear_spread_min_cost =
         config.linear_spread_min_cost;
     setExpansion(
@@ -89,7 +91,19 @@ public:
         config.linear_spread,
         linear_spread_min_cost);
     setFootprint(costmap_cspace::Polygon(config.footprint));
-    setKeepUnknown(config.keep_unknown);
+    setKeepUnknown(node.declare_parameter("keep_unknown", false));
+    }
+    else
+    {
+    const int linear_spread_min_cost =
+        node.declare_parameter(config.name + ".linear_spread_min_cost", 0);
+    setExpansion(
+        node.declare_parameter<float>(config.name + ".linear_expand", 0.2f),
+        node.declare_parameter<float>(config.name + ".linear_spread", 0.5f),
+        linear_spread_min_cost);
+    setFootprint(costmap_cspace::Polygon(config.footprint));
+    setKeepUnknown(node.declare_parameter(config.name + ".keep_unknown", false));
+    }
   }
   void setKeepUnknown(const bool keep_unknown)
   {

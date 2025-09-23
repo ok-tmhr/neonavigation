@@ -48,7 +48,6 @@
 
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 namespace planner_cspace
@@ -67,7 +66,7 @@ private:
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr sub_trajectory_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_;
 
-  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   Astar as_;
@@ -179,9 +178,9 @@ private:
     links_[1].current_th_ = msg->position[id[1]];
     has_joint_states_ = true;
 
-    if ((replan_prev_ + replan_interval_ < now() ||
-         replan_prev_ == rclcpp::Time(0LL, RCL_ROS_TIME)) &&
-        replan_interval_ > rclcpp::Duration(0, 0))
+    if ((replan_prev_ + replan_interval_ < this->now() ||
+         replan_prev_ == rclcpp::Time(0, 0, RCL_ROS_TIME)) &&
+        replan_interval_ > rclcpp::Duration::from_seconds(0))
     {
       replan();
     }
@@ -209,7 +208,8 @@ private:
     {
       RCLCPP_ERROR(this->get_logger(), "single trajectory point required.");
     }
-    decltype(cmd_prev_) cmd{msg->points[0].time_from_start, {}};
+    decltype(cmd_prev_) cmd{rclcpp::Duration(0,0),{}};
+    cmd.first = msg->points[0].time_from_start;
     cmd.second.first = msg->points[0].positions[id_[0]];
     cmd.second.second = msg->points[0].positions[id_[1]];
     if (cmd_prev_ == cmd)
@@ -225,7 +225,7 @@ private:
     if (!has_joint_states_)
       return;
 
-    replan_prev_ = now();
+    replan_prev_ = this->now();
     if (id_[0] == -1 || id_[1] == -1)
       return;
 
@@ -265,7 +265,7 @@ private:
             pos_sum += diff_max;
           }
         }
-        if (rclcpp::Duration(traj_prev_.points[0].time_from_start) <= rclcpp::Duration(0, 0))
+        if (rclcpp::Duration(traj_prev_.points[0].time_from_start) <= rclcpp::Duration::from_seconds(0))
         {
           avg_vel_ = std::min(links_[0].vmax_, links_[1].vmax_);
         }
@@ -281,7 +281,7 @@ private:
 
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
+      out.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -347,7 +347,7 @@ private:
     {
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
+      out.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -362,24 +362,23 @@ private:
       RCLCPP_WARN(this->get_logger(), "Trajectory not found");
     }
 
-    status_.header.stamp = now();
+    status_.header.stamp = this->now();
     pub_status_->publish(status_);
   }
 
 public:
-  explicit Planner2dofSerialJointsNode(const std::string group_name)
-    : rclcpp::Node("planner_2dof_serial_joints")
+  explicit Planner2dofSerialJointsNode(const std::string group_name) : Node("planner_2dof_serial_joints")
+    , replan_prev_(0, 0, RCL_ROS_TIME)
+    , replan_interval_(0, 0)
     , has_joint_states_(false)
-    , replan_interval_(rclcpp::Duration(0, 0))
-    , cmd_prev_(rclcpp::Duration(0, 0), {})
+    , cmd_prev_(rclcpp::Duration(0,0),{})
   {
-
     group_ = group_name;
 
+    using std::placeholders::_1;
     pub_trajectory_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
         "joint_trajectory",
         rclcpp::QoS(1).transient_local());
-    using std::placeholders::_1;
     sub_trajectory_ = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
         "trajectory_in",
         1, std::bind(&Planner2dofSerialJointsNode::cbTrajectory, this, _1));
@@ -389,19 +388,16 @@ public:
 
     pub_status_ = this->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + group_ + "/status", rclcpp::QoS(1).transient_local());
 
-    tfbuf_ = std::make_unique<tf2_ros::Buffer>(get_clock());
-    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
-
-    resolution_ = this->declare_parameter("resolution", 128);
+    resolution_ = this->declare_parameter("~/" + group_ + "/resolution", 128);
     debug_aa_ = this->declare_parameter("debug_aa", false);
 
     double interval;
     interval = this->declare_parameter("replan_interval", 0.2);
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
-    replan_prev_ = rclcpp::Time(0LL, RCL_ROS_TIME);
+    replan_prev_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     int queue_size_limit;
-    queue_size_limit = this->declare_parameter("queue_size_limit", 0);
+    queue_size_limit = this->declare_parameter(group_ + ".queue_size_limit", 0);
     as_.setQueueSizeLimit(queue_size_limit);
 
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
@@ -514,6 +510,9 @@ public:
     int num_threads;
     num_threads = this->declare_parameter(group_ + ".num_threads", 1);
     omp_set_num_threads(num_threads);
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
 private:
@@ -575,14 +574,14 @@ private:
       path.push_back(eg);
       if (s == e)
       {
-        replan_prev_ = rclcpp::Time(0LL, RCL_ROS_TIME);
+        replan_prev_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
       }
       return true;
     }
     std::list<Astar::Vec> path_grid;
     // const auto ts = std::chrono::high_resolution_clock::now();
     float cancel = std::numeric_limits<float>::max();
-    if (replan_interval_ >= rclcpp::Duration(0, 0))
+    if (replan_interval_ >= rclcpp::Duration::from_seconds(0))
       cancel = replan_interval_.seconds();
     if (!as_.search(
             starts, e, path_grid, model_,
@@ -670,26 +669,24 @@ int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor executor;
-  auto node = rclcpp::Node::make_shared("planner_2dof_serial_joints", "core");
+  rclcpp::Node::SharedPtr pnh = rclcpp::Node::make_shared("planner_2dof_serial_joints");
 
   std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
   int n;
-  n = node->declare_parameter("num_groups", 1);
+  n = pnh->declare_parameter("num_groups", 1);
   for (int i = 0; i < n; i++)
   {
     std::string name;
-    name = node->declare_parameter("group" + std::to_string(i) + "_name",
+    name = pnh->declare_parameter("group" + std::to_string(i) + "_name",
               std::string("group") + std::to_string(i));
-    auto jy = std::make_shared<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode>(name);
-    jys.push_back(jy);
-  }
+    planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr jy;
 
-  executor.add_node(node);
-  for (auto &&jy : jys)
-  {
+    jy.reset(new planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode(name));
+    jys.push_back(jy);
     executor.add_node(jy);
   }
 
+  executor.add_node(pnh);
   executor.spin();
 
   return 0;

@@ -1,32 +1,34 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(joystick_interrupt)
 
-set(AMENT_CMAKE_DEPENDS
+set(COLCON_DEPENDS
   rclcpp
 
   geometry_msgs
   sensor_msgs
-  topic_tools
+
 )
 
 find_package(ament_cmake REQUIRED)
-foreach(AMENT_DEPEND ${AMENT_CMAKE_DEPENDS})
-  find_package(${AMENT_DEPEND} REQUIRED)
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
 
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${catkin_INCLUDE_DIRS})
-
-
 add_executable(joystick_interrupt src/joystick_interrupt.cpp)
-target_link_libraries(joystick_interrupt rclcpp::rclcpp ${sensor_msgs_TARGETS})
+target_include_directories(joystick_interrupt PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(joystick_interrupt ${COLCON_DEPENDS})
 
-# ! No migration found for topic_tools::ShapeFilter
-# add_executable(joystick_mux src/joystick_mux.cpp)
-# target_link_libraries(joystick_mux rclcpp::rclcpp ${sensor_msgs_TARGETS})
+add_executable(joystick_mux src/joystick_mux.cpp)
+target_include_directories(joystick_mux PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_target_dependencies(joystick_mux ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -40,7 +42,7 @@ endif()
 
 install(TARGETS
     joystick_interrupt
-    # joystick_mux
+    joystick_mux
   ARCHIVE DESTINATION lib/${PROJECT_NAME}
   LIBRARY DESTINATION lib/${PROJECT_NAME}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
@@ -48,4 +50,5 @@ install(TARGETS
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
+
 ament_package()

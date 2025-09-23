@@ -96,8 +96,7 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_reset_z_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
   nav_msgs::msg::Odometry odom_prev_;
@@ -135,8 +134,8 @@ private:
   {
     RCLCPP_DEBUG(this->get_logger(),
         "Synchronized timestamp: odom %0.3f, imu %0.3f",
-        rclcpp::Time(odom_msg->header.stamp).seconds(),
-        rclcpp::Time(imu_msg->header.stamp).seconds());
+        tf2_ros::timeToSec(odom_msg->header.stamp),
+        tf2_ros::timeToSec(imu_msg->header.stamp));
     cbImu(imu_msg);
     cbOdom(odom_msg);
   }
@@ -152,17 +151,17 @@ private:
     try
     {
       geometry_msgs::msg::TransformStamped trans = tf_buffer_->lookupTransform(
-          base_link_id_, msg->header.frame_id, rclcpp::Time(0), rclcpp::Duration::from_seconds(0.1));
+          base_link_id_, msg->header.frame_id, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
 
       geometry_msgs::msg::Vector3Stamped vin, vout;
       vin.header = imu_.header;
-      vin.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
+      vin.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       vin.vector = msg->linear_acceleration;
       tf2::doTransform(vin, vout, trans);
       imu_.linear_acceleration = vout.vector;
 
       vin.header = imu_.header;
-      vin.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
+      vin.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       vin.vector = msg->angular_velocity;
       tf2::doTransform(vin, vout, trans);
       imu_.angular_velocity = vout.vector;
@@ -178,7 +177,7 @@ private:
       geometry_msgs::msg::Vector3Stamped axis2;
       geometry_msgs::msg::Vector3Stamped axis1;
       axis1.vector = tf2::toMsg(axis);
-      axis1.header.stamp = rclcpp::Time(0LL, RCL_ROS_TIME);
+      axis1.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
       axis1.header.frame_id = qin.frame_id_;
       tf2::doTransform(axis1, axis2, trans);
 
@@ -207,7 +206,7 @@ private:
     nav_msgs::msg::Odometry odom = *msg;
     if (has_odom_)
     {
-      const double dt = (rclcpp::Time(odom.header.stamp) - odomraw_prev_.header.stamp).seconds();
+      const double dt = tf2_ros::timeToSec(odom.header.stamp) - tf2_ros::timeToSec(odomraw_prev_.header.stamp);
       if (base_link_id_overwrite_.size() == 0)
       {
         base_link_id_ = odom.child_frame_id;
@@ -290,15 +289,16 @@ private:
   }
 
 public:
-  TrackOdometryNode()
-    : rclcpp::Node("track_odometry")
+  TrackOdometryNode() : Node("track_odometry")
   {
+
+    bool enable_tcp_no_delay;
+    enable_tcp_no_delay = this->declare_parameter("enable_tcp_no_delay", true);
+    const rclcpp::QoS transport_hints =
+        enable_tcp_no_delay ? rclcpp::QoS(50) : rclcpp::QoS(50).best_effort();
 
     using std::placeholders::_1;
     using std::placeholders::_2;
-    bool enable_tcp_no_delay;
-    enable_tcp_no_delay = this->declare_parameter("enable_tcp_no_delay", true);
-
     without_odom_ = this->declare_parameter("without_odom", false);
     if (without_odom_)
     {
@@ -310,8 +310,8 @@ public:
     }
     else
     {
-      sub_odom_.subscribe(this, "odom_raw", rclcpp::QoS(50).get_rmw_qos_profile());
-      sub_imu_.subscribe(this, "imu/data", rclcpp::QoS(50).get_rmw_qos_profile());
+      sub_odom_.subscribe(this, "odom_raw", transport_hints.get_rmw_qos_profile());
+      sub_imu_.subscribe(this, "imu/data", transport_hints.get_rmw_qos_profile());
 
       int sync_window;
       sync_window = this->declare_parameter("sync_window", 50);
@@ -328,27 +328,6 @@ public:
         1, std::bind(&TrackOdometryNode::cbResetZ, this, _1));
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
-    tf_buffer_ = std::make_unique<tf2_ros::Buffer>(get_clock());
-    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
-
-    if (this->has_parameter("z_filter"))
-    {
-      z_filter_timeconst_ = -1.0;
-      double z_filter;
-      if (this->get_parameter("z_filter", z_filter))
-      {
-        const double odom_freq = 100.0;
-        if (0.0 < z_filter && z_filter < 1.0)
-          z_filter_timeconst_ = (1.0 / odom_freq) / (1.0 - z_filter);
-      }
-      RCLCPP_ERROR(this->get_logger(),
-          "track_odometry: ~z_filter parameter (exponential filter (1 - alpha) value) is deprecated. "
-          "Use ~z_filter_timeconst (in seconds) instead. "
-          "Treated as z_filter_timeconst=%0.6f. (negative value means disabled)",
-          z_filter_timeconst_);
-    }
-    else
     {
       z_filter_timeconst_ = this->declare_parameter("z_filter_timeconst", -1.0);
     }
@@ -364,22 +343,26 @@ public:
     }
 
     // sigma_odom_ [rad/s]: standard deviation of odometry angular vel on straight running
-    sigma_odom_ =this->declare_parameter("sigma_odom", 0.005);
+    sigma_odom_ = this->declare_parameter("sigma_odom", 0.005);
     // sigma_predict_ [sigma/second]: prediction sigma of kalman filter
-    sigma_predict_ =this->declare_parameter("sigma_predict", 0.5);
+    sigma_predict_ = this->declare_parameter("sigma_predict", 0.5);
     // predict_filter_tc_ [sec.]: LPF time-constant to forget estimated slip_ ratio
-    predict_filter_tc_ =this->declare_parameter("predict_filter_tc", 1.0);
+    predict_filter_tc_ = this->declare_parameter("predict_filter_tc", 1.0);
 
     has_imu_ = false;
     has_odom_ = false;
 
     dist_ = 0;
     slip_.set(0.0, 0.1);
+
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+    tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   }
   void cbTimer()
   {
     nav_msgs::msg::Odometry::Ptr odom(new nav_msgs::msg::Odometry);
-    odom->header.stamp = now();
+    odom->header.stamp = this->now();
     odom->header.frame_id = odom_id_;
     odom->child_frame_id = base_link_id_;
     odom->pose.pose.orientation.w = 1.0;

@@ -34,6 +34,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2/utils.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 #include <gtest/gtest.h>
@@ -41,38 +42,32 @@
 class TfProjectionTest : public ::testing::TestWithParam<const char*>
 {
 public:
-  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
-  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Node::SharedPtr node_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string projected_frame_;
 
   TfProjectionTest()
   {
     node_ = rclcpp::Node::make_shared("test_tf_projection_node");
-    tfbuf_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp() override
   {
-    std::thread th(
-      [this](){
-        rclcpp::spin(node_);
-      }
-    );
-    th.detach();
     projected_frame_ = std::string(GetParam());
   }
 };
 
 TEST_P(TfProjectionTest, ProjectionTransform)
 {
-  EXPECT_TRUE(tfbuf_->canTransform("map", projected_frame_, rclcpp::Time(0), rclcpp::Duration(10, 0)));
+  EXPECT_TRUE(tfbuf_->canTransform("map", projected_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(10.0)));
 
   geometry_msgs::msg::TransformStamped out;
   try
   {
-    out = tfbuf_->lookupTransform("map", projected_frame_, rclcpp::Time(0), rclcpp::Duration(1, 0));
+    out = tfbuf_->lookupTransform("map", projected_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(1.0));
   }
   catch (tf2::TransformException& e)
   {

@@ -71,7 +71,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   rclcpp::Duration accum_duration(1, 0);
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum(accum_duration);
 
-  rclcpp::Time stamp(0LL, RCL_ROS_TIME);
+  rclcpp::Time stamp(0, 0, RCL_ROS_TIME);
   rclcpp::Duration dt(0, 250000000);
   sensor_msgs::msg::PointCloud2 cloud;
   for (int i = 0; i < 10; i++)
@@ -87,7 +87,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   // check the timestamp difference between the oldest and latest clouds in the accumulator
   const auto& oldest = accum.begin();
   const auto& latest = std::prev(accum.end());
-  ASSERT_LE(rclcpp::Time(latest->header.stamp) - oldest->header.stamp, accum_duration);
+  ASSERT_LE(rclcpp::Time(latest->header.stamp) - rclcpp::Time(oldest->header.stamp), accum_duration);
 
   // check the content of the clouds
   float expected_xs[] = {5.0, 6.0, 7.0, 8.0, 9.0};
@@ -103,7 +103,7 @@ TEST(PointcloudAccumulator, PushPointCloud)
   ASSERT_EQ(0, std::distance(accum.begin(), accum.end()));
 
   // check the accumulation difference is properly updated after calling reset
-  accum.reset(rclcpp::Duration(2, 0));
+  accum.reset(rclcpp::Duration::from_seconds(2.0));
   for (int i = 0; i < 10; i++)
   {
     fillInPointcloudMsg(cloud, {static_cast<float>(i), 0, 0});  // NOLINT
@@ -120,7 +120,7 @@ TEST(PointcloudAccumulator, BackwardCompatibility)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   // check accumulator can be instantiated using the PointcloudAccumurator class
   costmap_cspace::PointcloudAccumurator<sensor_msgs::msg::PointCloud2> accum;
-  accum.reset(rclcpp::Duration(1, 0));
+  accum.reset(rclcpp::Duration::from_seconds(1.0));
 #pragma GCC diagnostic pop
 }
 

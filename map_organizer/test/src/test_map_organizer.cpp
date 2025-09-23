@@ -29,6 +29,8 @@
 
 #include <string>
 
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
@@ -75,11 +77,11 @@ void validateMap1(const nav_msgs::msg::OccupancyGrid& map, const double z)
 
 TEST(MapOrganizer, MapArray)
 {
-  auto nh = rclcpp::Node::make_shared("map_array");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
-  const std::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr msg) -> void
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
   {
     maps = msg;
   };
@@ -102,20 +104,19 @@ TEST(MapOrganizer, MapArray)
 
 TEST(MapOrganizer, Maps)
 {
-  auto nh = rclcpp::Node::make_shared("maps");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   nav_msgs::msg::OccupancyGrid::ConstPtr map[2];
-  const std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr, int)>
-      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstPtr msg,
+  const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&, int)>
+      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
                   const int id) -> void
   {
     map[id] = msg;
   };
-  using std::placeholders::_1;
   auto sub0 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", rclcpp::QoS(1).transient_local(), std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>(std::bind(cb, _1, 0)));
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 0); });
   auto sub1 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", rclcpp::QoS(1).transient_local(), std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>(std::bind(cb, _1, 1)));
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 1); });
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
@@ -135,11 +136,11 @@ TEST(MapOrganizer, Maps)
 
 TEST(MapOrganizer, SelectMap)
 {
-  auto nh = rclcpp::Node::make_shared("select_map");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   nav_msgs::msg::OccupancyGrid::ConstPtr map;
-  const std::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr)>
-      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstPtr msg) -> void
+  const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>
+      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg) -> void
   {
     map = msg;
   };
@@ -190,11 +191,11 @@ TEST(MapOrganizer, SelectMap)
 
 TEST(MapOrganizer, SavedMapArray)
 {
-  auto nh = rclcpp::Node::make_shared("saved_map_array");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
-  const std::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr msg) -> void
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
   {
     maps = msg;
   };
@@ -215,9 +216,8 @@ TEST(MapOrganizer, SavedMapArray)
   validateMap1(maps->maps[1], 10.0);
 
   // clean temporary files
-  auto pnh = rclcpp::Node::make_shared("test_map_organizer");
   std::string file_prefix;
-  if (pnh->get_parameter("file_prefix", file_prefix))
+  if (nh->get_parameter("file_prefix", file_prefix))
   {
     ASSERT_EQ(0, system(std::string("rm -f " + file_prefix + "*").c_str()));
   }

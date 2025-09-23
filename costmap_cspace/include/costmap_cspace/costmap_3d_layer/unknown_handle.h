@@ -10,8 +10,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -54,12 +54,9 @@ public:
     : unknown_cost_(-1)
   {
   }
-  void loadConfig(LayerConfig& config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    if (config.unknown_cost != -1)
-    {
-      unknown_cost_ = static_cast<int>(config.unknown_cost);
-    }
+    unknown_cost_ = node.declare_parameter(config.name + ".unknown_cost", unknown_cost_);
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
   {

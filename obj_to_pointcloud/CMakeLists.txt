@@ -1,26 +1,27 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(obj_to_pointcloud)
 
-set(AMENT_CMAKE_DEPENDS
+set(COLCON_DEPENDS
   rclcpp
 
   geometry_msgs
   pcl_conversions
   sensor_msgs
+
 )
 
 find_package(ament_cmake REQUIRED)
-foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
-  find_package(${DEPEND} REQUIRED)
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
+
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 
@@ -44,8 +45,11 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 
 add_executable(obj_to_pointcloud src/obj_to_pointcloud.cpp)
+target_include_directories(obj_to_pointcloud PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(obj_to_pointcloud ${PCL_LIBRARIES})
-ament_target_dependencies(obj_to_pointcloud ${AMENT_CMAKE_DEPENDS})
+ament_target_dependencies(obj_to_pointcloud ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -65,3 +69,4 @@ install(TARGETS
 )
 
 ament_package()
+

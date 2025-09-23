@@ -27,11 +27,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#define HAVE_NEW_YAMLCPP
+// #define HAVE_NEW_YAMLCPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <nav_msgs/srv/get_map.hpp>
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 #include <stdio.h>
@@ -62,8 +61,7 @@ private:
   std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
 
 public:
-  TieMapNode()
-    : Node("tie_maps")
+  TieMapNode() : Node("tie_maps")
   {
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 

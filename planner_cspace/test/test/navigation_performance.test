@@ -4,6 +4,7 @@
 
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
     <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
+
     <param name="ang_resolution" value="16"/>
     <param name="linear_expand" value="0.1"/>
     <param name="linear_spread" value="0.3"/>
@@ -13,19 +14,21 @@
     <param name="print_planning_duration" value="true" />
   </node>
 
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" >
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
     <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
   </node>
   <executable name="pub_goal"
-    cmd="ros2 topic pub --qos-depth 1 --qos-durability transient_local -1 /goal geometry_msgs/msg/PoseStamped '{header: {frame_id: map}, pose: {position: {x: 1.0, y: 0.6}, orientation: {z: 1.0, w: 0.0}}}'" />
+    cmd="ros2 topic pub -1 /goal geometry_msgs/PoseStamped
+      '{header: {frame_id: map}, pose: {position: {x: 1.0, y: 0.6}, orientation: {z: 1.0, w: 0.0}}}'
+      --qos-durability transient_local --keep-alive 3 -n pub_goal" />
 
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf2"
       args="2.5 0.45 0 3.14 0 0 odom base_link" />
 
-  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" >
-    <param name="autostart" value="true" />
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
     <param name="node_names" value="[map_server_global]" />
+    <param name="autostart" value="true" />
   </node>
 </launch>

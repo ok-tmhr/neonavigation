@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(safety_limiter)
 
-set(AMENT_CMAKE_DEPENDS
+set(COLCON_DEPENDS
     rclcpp
 
     diagnostic_updater
@@ -16,10 +16,9 @@ set(AMENT_CMAKE_DEPENDS
   )
 
 find_package(ament_cmake REQUIRED)
-foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
-  find_package(${DEPEND} REQUIRED)
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -27,7 +26,7 @@ find_package(Eigen3 REQUIRED)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(include ${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
+include_directories(${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 
@@ -51,8 +50,11 @@ add_definitions(-DPCL_NO_PRECOMPILE)
 
 
 add_executable(safety_limiter src/safety_limiter.cpp)
-target_link_libraries(safety_limiter rclcpp::rclcpp ${PCL_LIBRARIES})
-ament_target_dependencies(safety_limiter ${AMENT_CMAKE_DEPENDS})
+target_include_directories(safety_limiter PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(safety_limiter ${PCL_LIBRARIES})
+ament_target_dependencies(safety_limiter ${COLCON_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
@@ -71,4 +73,6 @@ install(TARGETS
   LIBRARY DESTINATION lib/${PROJECT_NAME}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
 ament_package()
+

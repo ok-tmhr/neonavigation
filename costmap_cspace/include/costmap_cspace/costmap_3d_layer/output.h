@@ -30,8 +30,11 @@
 #ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
 
-#include <assert.h>
+#include <cassert>
 #include <memory>
+
+#include <boost/function.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
@@ -53,7 +56,7 @@ protected:
   UpdatedRegion region_prev_;
 
 public:
-  void loadConfig(LayerConfig& config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
   }
   void setHandler(CALLBACK cb)

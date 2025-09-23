@@ -1,4 +1,5 @@
 header:
+  seq: 0
   stamp:
     sec: 0
     nanosec: 0

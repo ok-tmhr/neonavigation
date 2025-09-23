@@ -49,7 +49,7 @@ protected:
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
   rclcpp::Node::SharedPtr nh_;
-  tf2_ros::TransformBroadcaster tfb_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr status_;
@@ -57,15 +57,15 @@ protected:
   ActionClientPtr move_base_;
 
   NavigateBoundary()
-  : nh_(rclcpp::Node::make_shared("test_navigate_boundary"))
-  , tfb_(nh_)
   {
+    nh_ = rclcpp::Node::make_shared("test_navigate_boundary");
     move_base_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(nh_, "/move_base");
     if (!move_base_->wait_for_action_server(std::chrono::duration<double>(10.0)))
     {
       RCLCPP_ERROR(nh_->get_logger(), "Failed to connect move_base action");
       exit(EXIT_FAILURE);
     }
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
   }
 
   void publishTransform(const double x, const double y)
@@ -77,25 +77,25 @@ protected:
     trans.transform.translation.x = x;
     trans.transform.translation.y = y;
     trans.transform.rotation.w = 1.0;
-    tfb_.sendTransform(trans);
+    tfb_->sendTransform(trans);
   }
   virtual void SetUp()
   {
     using std::placeholders::_1;
     sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("/planner_3d/status", 100, std::bind(&NavigateBoundary::cbStatus, this, _1));
-    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&NavigateBoundary::cbPath, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&NavigateBoundary::cbPath, this, _1));
 
     publishTransform(1.0, 0.6);
     rclcpp::sleep_for(std::chrono::milliseconds(500));
 
-    nav2_msgs::action::NavigateToPose_Goal goal;
+    nav2_msgs::action::NavigateToPose::Goal goal;
     goal.pose.header.frame_id = "map";
     goal.pose.header.stamp = nh_->now();
     goal.pose.pose.orientation.w = 1;
     goal.pose.pose.position.x = 1.4;
     goal.pose.pose.position.y = 0.6;
-    move_base_->async_send_goal(goal);
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    auto future = move_base_->async_send_goal(goal);
+    rclcpp::spin_until_future_complete(nh_, future, std::chrono::milliseconds(500));
   }
   void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
   {

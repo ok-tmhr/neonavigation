@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(planner_cspace)
 
-set(AMENT_CMAKE_DEPENDS
+set(COLCON_DEPENDS
   rclcpp
 
   rclcpp_action
@@ -25,11 +25,12 @@ set(AMENT_CMAKE_DEPENDS
 )
 
 find_package(ament_cmake REQUIRED)
-foreach(DEPEND ${AMENT_CMAKE_DEPENDS})
-  find_package(${DEPEND} REQUIRED)
+foreach(COLCON_DEPEND ${COLCON_DEPENDS})
+  find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
+
+find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
-find_package(Boost REQUIRED COMPONENTS thread chrono system)
 
 
 set(CMAKE_CXX_STANDARD 17)
@@ -50,11 +51,10 @@ add_executable(planner_3d
   src/start_pose_predictor.cpp
 )
 target_include_directories(planner_3d PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
-target_link_libraries(planner_3d ${OpenMP_CXX_FLAGS})
-ament_target_dependencies(planner_3d ${AMENT_CMAKE_DEPENDS} OpenMP)
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(planner_3d ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+ament_target_dependencies(planner_3d ${COLCON_DEPENDS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
@@ -69,15 +69,25 @@ add_executable(planner_2dof_serial_joints
   src/planner_2dof_serial_joints.cpp
   src/grid_astar_model_2dof_joints.cpp
 )
-target_include_directories(planner_2dof_serial_joints PRIVATE include)
-target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS})
-ament_target_dependencies(planner_2dof_serial_joints ${AMENT_CMAKE_DEPENDS})
+target_include_directories(planner_2dof_serial_joints PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(planner_2dof_serial_joints ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+ament_target_dependencies(planner_2dof_serial_joints ${COLCON_DEPENDS})
 
 add_executable(dummy_robot src/dummy_robot.cpp)
-ament_target_dependencies(dummy_robot ${AMENT_CMAKE_DEPENDS})
+target_include_directories(dummy_robot PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(dummy_robot)
+ament_target_dependencies(dummy_robot ${COLCON_DEPENDS})
 
 add_executable(patrol src/patrol.cpp)
-ament_target_dependencies(patrol ${AMENT_CMAKE_DEPENDS})
+target_include_directories(patrol PUBLIC
+   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+target_link_libraries(patrol)
+ament_target_dependencies(patrol ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -98,6 +108,10 @@ install(TARGETS
   RUNTIME DESTINATION lib/${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include
 )
-ament_export_include_directories()
+
+install(DIRECTORY include/
+  DESTINATION include
+)
 
 ament_package()
+

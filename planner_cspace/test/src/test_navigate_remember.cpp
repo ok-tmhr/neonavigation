@@ -54,8 +54,8 @@ class NavigateWithRememberUpdates : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
   planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
   costmap_cspace_msgs::msg::CSpace3D::ConstPtr costmap_;
   nav_msgs::msg::Path::ConstPtr path_;
@@ -69,21 +69,22 @@ protected:
   std::string test_scope_;
 
   NavigateWithRememberUpdates()
-    : nh_(rclcpp::Node::make_shared("test_navigate_remember"))
-    , tfbuf_(nh_->get_clock())
-    , tfl_(tfbuf_)
   {
+    nh_ = rclcpp::Node::make_shared("test_navigate_remember");
     using std::placeholders::_1;
-    sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", 1, std::bind(&NavigateWithRememberUpdates::cbCostmap, this, _1));
+    sub_costmap_ = nh_->create_subscription<costmap_cspace_msgs::msg::CSpace3D>("costmap", rclcpp::QoS(1).transient_local(), std::bind(&NavigateWithRememberUpdates::cbCostmap, this, _1));
     sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
         "/planner_3d/status", 10, std::bind(&NavigateWithRememberUpdates::cbStatus, this, _1));
-    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&NavigateWithRememberUpdates::cbPath, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&NavigateWithRememberUpdates::cbPath, this, _1));
     srv_forget_ =
         nh_->create_client<std_srvs::srv::Empty>(
             "forget_planning_cost");
     pub_initial_pose_ =
         nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
     pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
+
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(nh_->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
   virtual void SetUp()
@@ -111,7 +112,7 @@ protected:
       {
         FAIL() << test_scope_ << now.seconds() << " SetUp: transform timeout" << std::endl;
       }
-      if (tfbuf_.canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
+      if (tfbuf_->canTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5)))
       {
         break;
       }
@@ -128,23 +129,22 @@ protected:
       }
     }
 
-    std_srvs::srv::Empty_Request::SharedPtr req;
-    std_srvs::srv::Empty_Response::SharedPtr res;
-    auto future = srv_forget_->async_send_request(req);
-    res = future.get();
+    auto req = std::make_shared<std_srvs::srv::Empty::Request>();
+    auto res = std::make_shared<std_srvs::srv::Empty::Response>();
+    srv_forget_->async_send_request(req);
 
     rclcpp::sleep_for(std::chrono::seconds(1));
   }
   void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
   {
     costmap_ = msg;
-    std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Costmap received." << std::endl;
+    std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Costmap received." << std::endl;
   }
   void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
-      std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Status updated." << msg << std::endl;
+      std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Status updated." << msg << std::endl;
     }
     planner_status_ = msg;
   }
@@ -154,12 +154,12 @@ protected:
     {
       if (msg->poses.size() == 0)
       {
-        std::cerr << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Path updated. (empty)" << std::endl;
+        std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Path updated. (empty)" << std::endl;
       }
       else
       {
         std::cerr
-            << test_scope_ << rclcpp::Time(msg->header.stamp).seconds() << " Path updated." << std::endl
+            << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Path updated." << std::endl
             << msg->poses.front().pose.position.x << ", " << msg->poses.front().pose.position.y << std::endl
             << msg->poses.back().pose.position.x << ", " << msg->poses.back().pose.position.y << std::endl;
       }
@@ -169,7 +169,7 @@ protected:
   tf2::Stamped<tf2::Transform> lookupRobotTrans(const rclcpp::Time& now)
   {
     geometry_msgs::msg::TransformStamped trans_tmp =
-        tfbuf_.lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
+        tfbuf_->lookupTransform("map", "base_link", now, rclcpp::Duration::from_seconds(0.5));
     tf2::Stamped<tf2::Transform> trans;
     tf2::fromMsg(trans_tmp, trans);
     traj_.push_back(trans);

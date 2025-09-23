@@ -50,8 +50,7 @@ protected:
   bool saved_map_;
 
 public:
-  explicit MapGeneratorNode(const std::string& mapname)
-    : Node("save_maps")
+  explicit MapGeneratorNode(const std::string& mapname) : Node("save_maps")
     , mapname_(mapname)
     , saved_map_(false)
   {
@@ -141,9 +140,10 @@ public:
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
+  auto args = rclcpp::remove_ros_arguments(argc, argv);
   std::string mapname = "map";
 
-  for (int i = 1; i < argc; i++)
+  for (int i = 1; i < args.size(); i++)
   {
     if (!strcmp(argv[i], "-h"))
     {
@@ -159,6 +159,11 @@ int main(int argc, char** argv)
         puts(USAGE);
         return 1;
       }
+    }
+    else
+    {
+      puts(USAGE);
+      return 1;
     }
   }
 

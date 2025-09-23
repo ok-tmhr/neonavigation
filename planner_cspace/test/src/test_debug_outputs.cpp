@@ -50,10 +50,10 @@ public:
     using std::placeholders::_1;
     sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("/planner_3d/status", 1, std::bind(&DebugOutputsTest::cbStatus, this, _1));
     sub_metrics_ = nh_->create_subscription<neonavigation_metrics_msgs::msg::Metrics>("/planner_3d/metrics", 1, std::bind(&DebugOutputsTest::cbMetrics, this, _1));
-    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", 1, std::bind(&DebugOutputsTest::cbPath, this, _1));
-    sub_hysteresis_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/hysteresis_map", 1, std::bind(&DebugOutputsTest::cbHysteresis, this, _1));
-    sub_remembered_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/remembered_map", 1, std::bind(&DebugOutputsTest::cbRemembered, this, _1));
-    sub_distance_ = nh_->create_subscription<sensor_msgs::msg::PointCloud>("/planner_3d/distance_map", 1, std::bind(&DebugOutputsTest::cbDistance, this, _1));
+    sub_path_ = nh_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbPath, this, _1));
+    sub_hysteresis_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/hysteresis_map", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbHysteresis, this, _1));
+    sub_remembered_ = nh_->create_subscription<nav_msgs::msg::OccupancyGrid>("/planner_3d/remembered_map", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbRemembered, this, _1));
+    sub_distance_ = nh_->create_subscription<sensor_msgs::msg::PointCloud>("/planner_3d/distance_map", rclcpp::QoS(1).transient_local(), std::bind(&DebugOutputsTest::cbDistance, this, _1));
 
     // Wait planner
     while (rclcpp::ok())

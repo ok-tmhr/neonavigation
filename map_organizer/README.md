@@ -1,5 +1,6 @@
 # map_organizer package
 
+
 ## pointcloud_to_maps
 
 pointcloud_to_maps node detects floors from given pointcloud and publishes layered OccupancyGrid.
@@ -91,7 +92,7 @@ select_map node publishes the desired layer from layered OccupancyGrid.
 ### Subscribed topics
 
 * maps [map_organizer_msgs::msg::OccupancyGridArray]
-* ~/floor (new: floor) [std_msgs::msg::Int32]
+* floor [std_msgs::msg::Int32]
 
 ### Published topics
 

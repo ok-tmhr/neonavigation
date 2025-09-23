@@ -47,7 +47,7 @@ public:
   using Ptr = std::shared_ptr<Costmap3dLayerStopPropagation>;
 
 public:
-  void loadConfig(LayerConfig& config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
@@ -62,7 +62,7 @@ protected:
   bool updateChain(const bool output)
   {
     region_ = UpdatedRegion(
-        0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, rclcpp::Time(0LL, RCL_ROS_TIME));
+        0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, rclcpp::Time(0, 0, RCL_ROS_TIME));
     for (auto& c : map_overlay_->data)
       c = -1;
     return false;

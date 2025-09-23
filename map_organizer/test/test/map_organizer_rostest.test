@@ -21,6 +21,7 @@
 
   <node pkg="map_organizer" exec="select_map" name="select_map" output="screen" />
 
-  <executable name="test_map_organizer" cmd="./build/map_organizer/test/test_map_organizer --ros-args -p file_prefix:=$(var tmpfile_prefix)" output="screen">
-  </executable>
+  <node name="test_map_organizer" pkg="map_organizer" exec="test_map_organizer" output="screen">
+    <param name="file_prefix" value="$(var tmpfile_prefix)" />
+  </node>
 </launch>

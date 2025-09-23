@@ -56,21 +56,12 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
 
 public:
-  PointcloudToMapsNode()
-    : Node("pointcloud_to_maps")
+  PointcloudToMapsNode() : Node("pointcloud_to_maps")
   {
-    using std::placeholders::_1;
-    sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
-        rclcpp::QoS(1).transient_local(), std::bind(&PointcloudToMapsNode::cbPoints, this, _1));
+        rclcpp::QoS(1).transient_local(), std::bind(&PointcloudToMapsNode::cbPoints, this, std::placeholders::_1));
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
-    this->declare_parameter("grid", 0.05);
-    this->declare_parameter("points_thresh_rate", 0.5);
-    this->declare_parameter("robot_height", 1.0);
-    this->declare_parameter("floor_height", 0.1);
-    this->declare_parameter("floor_tolerance", 0.2);
-    this->declare_parameter("min_floor_area", 100.0);
-    this->declare_parameter("floor_area_thresh_rate", 0.8);
   }
   void cbPoints(const sensor_msgs::msg::PointCloud2::Ptr msg)
   {
@@ -89,13 +80,13 @@ public:
     int floor_tolerance;
     double points_thresh_rate;
 
-    this->get_parameter("grid", grid);
-    this->get_parameter("points_thresh_rate", points_thresh_rate);
-    this->get_parameter("robot_height", robot_height_f);
-    this->get_parameter("floor_height", floor_height_f);
-    this->get_parameter("floor_tolerance", floor_tolerance_f);
-    this->get_parameter("min_floor_area", min_floor_area);
-    this->get_parameter("floor_area_thresh_rate", floor_area_thresh_rate);
+    grid = this->declare_parameter("grid", 0.05);
+    points_thresh_rate = this->declare_parameter("points_thresh_rate", 0.5);
+    robot_height_f = this->declare_parameter("robot_height", 1.0);
+    floor_height_f = this->declare_parameter("floor_height", 0.1);
+    floor_tolerance_f = this->declare_parameter("floor_tolerance", 0.2);
+    min_floor_area = this->declare_parameter("min_floor_area", 100.0);
+    floor_area_thresh_rate = this->declare_parameter("floor_area_thresh_rate", 0.8);
     robot_height = std::lround(robot_height_f / grid);
     floor_height = std::lround(floor_height_f / grid);
     floor_tolerance = std::lround(floor_tolerance_f / grid);
@@ -340,8 +331,8 @@ public:
         }
       }
 
-      std::string name = "~/map" + std::to_string(floor_num);
-      pub_maps_[name] = this->create_publisher<nav_msgs::msg::OccupancyGrid>(name, rclcpp::QoS(1).transient_local());
+      std::string name = "map" + std::to_string(floor_num);
+      pub_maps_[name] = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/" + name, rclcpp::QoS(1).transient_local());
       pub_maps_[name]->publish(map);
       map_array.maps.push_back(map);
       RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm",

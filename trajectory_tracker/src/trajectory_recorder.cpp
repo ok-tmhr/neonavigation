@@ -47,6 +47,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <std_srvs/srv/empty.hpp>
 
+
 class RecorderNode : public rclcpp::Node
 {
 public:
@@ -55,10 +56,9 @@ public:
   void spin();
 
 private:
-  void clearPath(std_srvs::srv::Empty::Request::SharedPtr req,
+  bool clearPath(std_srvs::srv::Empty::Request::SharedPtr req,
                  std_srvs::srv::Empty::Response::SharedPtr res);
 
-  std::string topic_path_;
   std::string frame_robot_;
   std::string frame_global_;
   double dist_interval_;
@@ -66,31 +66,27 @@ private:
   bool store_time_;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
-  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srs_clear_path_;
 
   nav_msgs::msg::Path path_;
 };
 
-RecorderNode::RecorderNode()
-  : rclcpp::Node("trajectory_recorder")
+RecorderNode::RecorderNode() : Node("trajectory_recorder")
 {
-  frame_robot_ = this->declare_parameter<std::string>("frame_robot", "base_link");
-  frame_global_ = this->declare_parameter<std::string>("frame_global", "map");
-  topic_path_ = this->declare_parameter<std::string>("path", "recpath");
+  frame_robot_ = this->declare_parameter("frame_robot", std::string("base_link"));
+  frame_global_ = this->declare_parameter("frame_global", std::string("map"));
+  dist_interval_ = this->declare_parameter("dist_interval", 0.3);
+  ang_interval_ = this->declare_parameter("ang_interval", 1.0);
+  store_time_ = this->declare_parameter("store_time", false);
 
-  dist_interval_ = this->declare_parameter<double>("dist_interval", 0.3);
-  ang_interval_ = this->declare_parameter<double>("ang_interval", 1.0);
-  store_time_ = this->declare_parameter<bool>("store_time", false);
+  pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
+      "path",
+      rclcpp::QoS(10).transient_local());
+  srs_clear_path_ = this->create_service<std_srvs::srv::Empty>("~/clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
 
-  pub_path_ = this->create_publisher<nav_msgs::msg::Path>("path", rclcpp::QoS(10).transient_local());
-  using std::placeholders::_1;
-  using std::placeholders::_2;
-  srs_clear_path_ = this->create_service<std_srvs::srv::Empty>(
-    "~/clear_path", std::bind(&RecorderNode::clearPath, this, _1, _2));
-
-  tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 }
 
@@ -103,10 +99,11 @@ float dist2d(geometry_msgs::msg::Point& a, geometry_msgs::msg::Point& b)
   return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
-void RecorderNode::clearPath(std_srvs::srv::Empty::Request::SharedPtr /* req */,
+bool RecorderNode::clearPath(std_srvs::srv::Empty::Request::SharedPtr /* req */,
                              std_srvs::srv::Empty::Response::SharedPtr /* res */)
 {
   path_.poses.clear();
+  return true;
 }
 
 void RecorderNode::spin()
@@ -116,7 +113,7 @@ void RecorderNode::spin()
 
   while (rclcpp::ok())
   {
-    rclcpp::Time now = rclcpp::Time(0);
+    rclcpp::Time now = rclcpp::Time(0, 0, RCL_ROS_TIME);
     if (store_time_)
       now = this->now();
     tf2::Stamped<tf2::Transform> transform;

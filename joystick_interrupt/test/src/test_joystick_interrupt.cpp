@@ -53,11 +53,12 @@ protected:
 
 public:
   explicit JoystickInterruptTest(const std::string& cmd_vel_topic = "cmd_vel")
-    : nh_(rclcpp::Node::make_shared("joystick_interrupt_test"))
+    : nh_(rclcpp::Node::make_shared("test_joystick_interrupt"))
   {
     pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_input", 1);
     pub_joy_ = nh_->create_publisher<sensor_msgs::msg::Joy>("joy", 1);
-    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_topic, 1, std::bind(&JoystickInterruptTest::cbCmdVel, this, std::placeholders::_1));
+    using std::placeholders::_1;
+    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_topic, 1, std::bind(&JoystickInterruptTest::cbCmdVel, this, _1));
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -376,11 +377,12 @@ protected:
 public:
   JoystickMuxTest()
   {
-    nh_ = rclcpp::Node::make_shared("joystick_mux_test");
+    nh_ = rclcpp::Node::make_shared("test_joystick_interrupt");
     pub1_ = nh_->create_publisher<std_msgs::msg::Int32>("mux_input0", 1);
     pub2_ = nh_->create_publisher<std_msgs::msg::Int32>("mux_input1", 1);
     pub_joy_ = nh_->create_publisher<sensor_msgs::msg::Joy>("joy", 1);
-    sub_ = nh_->create_subscription<std_msgs::msg::Int32>("mux_output", 1, std::bind(&JoystickMuxTest::cbMsg, this, std::placeholders::_1));
+    using std::placeholders::_1;
+    sub_ = nh_->create_subscription<std_msgs::msg::Int32>("mux_output", 1, std::bind(&JoystickMuxTest::cbMsg, this, _1));
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -430,6 +432,7 @@ public:
   }
 };
 
+// ! No support for topic_tools::ShapeShifter in ROS2
 // TEST_F(JoystickMuxTest, Interrupt)
 // {
 //   publish1(0);

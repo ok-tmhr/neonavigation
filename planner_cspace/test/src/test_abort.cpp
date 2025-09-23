@@ -43,9 +43,9 @@ class AbortTest
   : public ActionTestBase<nav2_msgs::action::NavigateToPose, ACTION_TOPIC_MOVE_BASE>
 {
 protected:
-  nav2_msgs::action::NavigateToPose_Goal createGoalInRock()
+  nav2_msgs::action::NavigateToPose::Goal createGoalInRock()
   {
-    nav2_msgs::action::NavigateToPose_Goal goal;
+    nav2_msgs::action::NavigateToPose::Goal goal;
     goal.pose.header.stamp = node_->now();
     goal.pose.header.frame_id = "map";
     goal.pose.pose.position.x = 1.19;
@@ -57,9 +57,9 @@ protected:
     goal.pose.pose.orientation.w = 1.0;
     return goal;
   }
-  nav2_msgs::action::NavigateToPose_Goal createGoalInFree()
+  nav2_msgs::action::NavigateToPose::Goal createGoalInFree()
   {
-    nav2_msgs::action::NavigateToPose_Goal goal;
+    nav2_msgs::action::NavigateToPose::Goal goal;
     goal.pose.header.stamp = node_->now();
     goal.pose.header.frame_id = "map";
     goal.pose.pose.position.x = 2.1;
@@ -82,26 +82,18 @@ TEST_F(AbortTest, AbortByGoalInRock)
   rclcpp::sleep_for(std::chrono::milliseconds(500));
   // Send a goal which is in Rock
   auto future = move_base_->async_send_goal(createGoalInRock());
-  rclcpp::spin_until_future_complete(node_, future);
-  while (future.get()->get_status() != rclcpp_action::GoalStatus::STATUS_ACCEPTED)
+  while (rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get active: " << future.get()->get_status()
-        << " " << statusString();
+        << "Action didn't get active: " << statusString();
   }
 
   auto result_future = move_base_->async_get_result(future.get());
-  rclcpp::spin_until_future_complete(node_, result_future);
-
   // Try to replan
-  while (result_future.get().code !=
-         rclcpp_action::ResultCode::ABORTED)
+  while (rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << static_cast<int8_t>(result_future.get().code)
-        << " " << statusString();
+        << "Action didn't get inactive: " << statusString();
   }
   wait.sleep();
 
@@ -115,27 +107,17 @@ TEST_F(AbortTest, AbortByGoalInRock)
 
   // Send another goal which is not in Rock
   future = move_base_->async_send_goal(createGoalInFree());
-  rclcpp::spin_until_future_complete(node_, future);
-
-  while (future.get()->get_status() !=
-         rclcpp_action::GoalStatus::STATUS_ACCEPTED)
+  while (rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get active: " << future.get()->get_status()
-        << " " << statusString();
+        << "Action didn't get active: " << statusString();
   }
 
   result_future = move_base_->async_get_result(future.get());
-  rclcpp::spin_until_future_complete(node_, result_future);
-
-  while (result_future.get().code !=
-         rclcpp_action::ResultCode::SUCCEEDED)
+  while (rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    wait.sleep();
     ASSERT_LT(node_->now(), deadline)
-        << "Action didn't get inactive: " << future.get()->get_status()
-        << " " << statusString();
+        << "Action didn't get inactive: " << statusString();
   }
   wait.sleep();
 
@@ -151,6 +133,5 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  int ret = RUN_ALL_TESTS();
-  return ret;
+  return RUN_ALL_TESTS();
 }

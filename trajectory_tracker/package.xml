@@ -7,6 +7,7 @@
   <maintainer email="tomohiro.oku2023@gmail.com">Tomohiro Oku</maintainer>
   <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+  <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
@@ -25,7 +26,7 @@
 
   <depend>eigen</depend>
 
-  <depend version_gte="0.1.0">trajectory_tracker_msgs</depend>
+  <depend>trajectory_tracker_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -39,8 +39,8 @@
 
 #include <geometry_msgs/msg/pose.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2/utils.h>
 #include <trajectory_tracker_msgs/msg/path_with_velocity.hpp>
 
 #include <trajectory_tracker/average.h>

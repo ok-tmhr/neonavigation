@@ -30,14 +30,15 @@
 #ifndef COSTMAP_CSPACE_POLYGON_H
 #define COSTMAP_CSPACE_POLYGON_H
 
+#include <cassert>
 #include <cmath>
 #include <limits>
 #include <regex>
 #include <utility>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace costmap_cspace
 {

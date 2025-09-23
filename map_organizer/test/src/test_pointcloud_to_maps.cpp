@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
@@ -117,11 +118,11 @@ sensor_msgs::msg::PointCloud2 generateMapCloud()
 
 TEST(PointcloudToMaps, Convert)
 {
-  auto nh = rclcpp::Node::make_shared("test_pointcloud_to_maps");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_pointcloud_to_maps");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
-  const std::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr msg) -> void
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
   {
     maps = msg;
   };

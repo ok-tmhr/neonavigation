@@ -28,6 +28,7 @@
  */
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -61,6 +62,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+
 
 namespace safety_limiter
 {
@@ -99,10 +101,10 @@ protected:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_disable_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr sub_watchdog_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
-  std::shared_ptr<rclcpp::ParameterEventHandler> event_handler_;
-  std::vector<std::shared_ptr<rclcpp::ParameterCallbackHandle>> callback_handles_;
+  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
+  std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
+  std::shared_ptr<rclcpp::ParameterEventCallbackHandle> event_callback_handle_;
 
   geometry_msgs::msg::Twist twist_;
   rclcpp::Time last_cloud_stamp_;
@@ -144,25 +146,22 @@ protected:
   diagnostic_updater::Updater diag_updater_;
 
 public:
-  SafetyLimiterNode()
-    : Node("safety_limiter")
-    , tfbuf_(this->get_clock())
-    , tfl_(tfbuf_)
+  SafetyLimiterNode() : Node("safety_limiter")
+    , last_cloud_stamp_(0, 0, RCL_ROS_TIME)
+    , hold_(0, 0)
+    , hold_off_(0, 0, RCL_ROS_TIME)
+    , watchdog_interval_(0, 0)
     , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)
     , cloud_clear_(false)
-    , last_disable_cmd_(0LL, RCL_ROS_TIME)
-    , hold_(0, 0)
-    , hold_off_(0LL, RCL_ROS_TIME)
-    , watchdog_interval_(0, 0)
+    , last_disable_cmd_(0, 0, RCL_ROS_TIME)
     , watchdog_stop_(false)
     , has_cloud_(false)
     , has_twist_(true)
     , has_collision_at_now_(false)
-    , stuck_started_since_(rclcpp::Time(0LL, RCL_ROS_TIME))
+    , stuck_started_since_(rclcpp::Time(0, 0, RCL_ROS_TIME))
     , diag_updater_(this)
   {
-
-    pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
+      pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
         rclcpp::QoS(1).transient_local());
     pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud>("collision", rclcpp::QoS(1).transient_local());
@@ -202,40 +201,10 @@ public:
     double watchdog_interval_d;
     watchdog_interval_d = this->declare_parameter("watchdog_interval", 0.0);
     watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
+    max_values_[0] = std::numeric_limits<double>::infinity();
+    max_values_[1] = std::numeric_limits<double>::infinity();
 
-    const auto desc = [](const double from, const double to)
-    {
-      rcl_interfaces::msg::ParameterDescriptor desc;
-      desc.floating_point_range.resize(1);
-      desc.floating_point_range[0].from_value = from;
-      desc.floating_point_range[0].to_value = to;
-      return desc;
-    };
-
-    hz_ = this->declare_parameter("freq", 6.0, desc(0.0, 100.0));
-    timeout_ = this->declare_parameter("cloud_timeout", 0.8, desc(0.0, 10.0));
-    disable_timeout_ = this->declare_parameter("disable_timeout", 0.1, desc(0.0, 10.0));
-    vel_[0] = this->declare_parameter("lin_vel", 0.5, desc(0.0, 10.0));
-    acc_[0] = this->declare_parameter("lin_acc", 1.0, desc(0.0, 10.0));
-    max_values_[0] = this->declare_parameter("max_linear_vel", 10.0, desc(0.0, 10.0));
-    vel_[1] = this->declare_parameter("ang_vel", 0.8, desc(0.0, 10.0));
-    acc_[1] = this->declare_parameter("ang_acc", 1.6, desc(0.0, 10.0));
-    max_values_[1] = this->declare_parameter("max_angular_vel", 10.0, desc(0.0, 10.0));
-    z_range_[0] = this->declare_parameter("z_range_min", 0.0, desc(-3.0, 3.0));
-    z_range_[1] = this->declare_parameter("z_range_max", 0.5, desc(-3.0, 3.0));
-    dt_ = this->declare_parameter("dt", 0.1, desc(0.0, 1.0));
-    d_margin_ = this->declare_parameter("d_margin", 0.2, desc(0.0, 1.0));
-    d_escape_ = this->declare_parameter("d_escape", 0.05, desc(0.0, 1.0));
-    yaw_margin_ = this->declare_parameter("yaw_margin", 0.2, desc(0.0, 1.57));
-    yaw_escape_ = this->declare_parameter("yaw_escape", 0.05, desc(0.0, 1.57));
-    downsample_grid_ = this->declare_parameter("downsample_grid", 0.05, desc(0.0, 1.0));
-    auto hold = this->declare_parameter("hold", 0.0, desc(0.0, 10.0));
-    hold_ = rclcpp::Duration::from_seconds(std::max(hold, 1.0 / hz_));
-    allow_empty_cloud_ = this->declare_parameter("allow_empty_cloud", false);
-
-    cbParameter();
-
-    std::string footprint = this->declare_parameter("footprint", "");
+    auto footprint = this->declare_parameter("footprint", "");
     if (!this->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
@@ -243,7 +212,6 @@ public:
     }
     this->get_parameter("footprint", footprint);
     std::regex pattern(R"(\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\])");
-
     auto begin = std::sregex_iterator(footprint.begin(), footprint.end(), pattern);
     auto end = std::sregex_iterator();
 
@@ -271,34 +239,49 @@ public:
     diag_updater_.setHardwareID("none");
     diag_updater_.add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
 
-    event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
-    std::map<std::string, std::function<void(const rclcpp::Parameter&)>> callback_map = {
-      {"freq", [this](const rclcpp::Parameter& p){ hz_ = p.as_double(); cbParameter(); }},
-      {"cloud_timeout", [this](const rclcpp::Parameter& p){ timeout_ = p.as_double(); cbParameter(); }},
-      {"disable_timeout", [this](const rclcpp::Parameter& p){ disable_timeout_ = p.as_double(); cbParameter(); }},
-      {"lin_vel", [this](const rclcpp::Parameter& p){ vel_[0] = p.as_double(); cbParameter(); }},
-      {"lin_acc", [this](const rclcpp::Parameter& p){ acc_[0] = p.as_double(); cbParameter(); }},
-      {"max_linear_vel", [this](const rclcpp::Parameter& p){ max_values_[0] = p.as_double(); cbParameter(); }},
-      {"ang_vel", [this](const rclcpp::Parameter& p){ vel_[1] = p.as_double(); cbParameter(); }},
-      {"ang_acc", [this](const rclcpp::Parameter& p){ acc_[1] = p.as_double(); cbParameter(); }},
-      {"max_angular_vel", [this](const rclcpp::Parameter& p){ max_values_[1] = p.as_double(); cbParameter(); }},
-      {"z_range_min", [this](const rclcpp::Parameter& p){ z_range_[0] = p.as_double(); cbParameter(); }},
-      {"z_range_max", [this](const rclcpp::Parameter& p){ z_range_[1] = p.as_double(); cbParameter(); }},
-      {"dt", [this](const rclcpp::Parameter& p){ dt_ = p.as_double(); cbParameter(); }},
-      {"d_margin", [this](const rclcpp::Parameter& p){ d_margin_ = p.as_double(); cbParameter(); }},
-      {"d_escape", [this](const rclcpp::Parameter& p){ d_escape_ = p.as_double(); cbParameter(); }},
-      {"yaw_margin", [this](const rclcpp::Parameter& p){ yaw_margin_ = p.as_double(); cbParameter(); }},
-      {"yaw_escape", [this](const rclcpp::Parameter& p){ yaw_escape_ = p.as_double(); cbParameter(); }},
-      {"downsample_grid", [this](const rclcpp::Parameter& p){ downsample_grid_ = p.as_double(); cbParameter(); }},
-      {"hold", [this](const rclcpp::Parameter& p){ hold_ = rclcpp::Duration::from_seconds(std::max(p.as_double(), 1.0 / hz_)); cbParameter(); }},
-      {"allow_empty_cloud", [this](const rclcpp::Parameter& p){ allow_empty_cloud_ = p.as_bool(); cbParameter(); }},
+    auto desc = [](const double from_, const double to_){
+      rcl_interfaces::msg::ParameterDescriptor d;
+      d.floating_point_range.resize(1);
+      d.floating_point_range[0].from_value = from_;
+      d.floating_point_range[0].to_value = to_;
+      return d;
     };
 
-    for (const auto& [name, cb] : callback_map)
-    {
-      callback_handles_.push_back(event_handler_->add_parameter_callback(name, cb));
-    }
+    this->declare_parameter("freq", 6.0, desc(0., 100.));
+    this->declare_parameter("cloud_timeout", 0.8, desc(0., 10.));
+    this->declare_parameter("disable_timeout", 0.1, desc(0., 10.));
+    this->declare_parameter("lin_vel", 0.5, desc(0., 10.));
+    this->declare_parameter("lin_acc", 1.0, desc(0., 10.));
+    this->declare_parameter("ang_vel", 0.8, desc(0., 10.));
+    this->declare_parameter("ang_acc", 1.6, desc(0., 10.));
+    this->declare_parameter("max_linear_vel", 10.0, desc(0., 10.));
+    this->declare_parameter("max_angular_vel", 10.0, desc(0., 10.));
+    this->declare_parameter("z_range_min", 0.0, desc(-3., 3.));
+    this->declare_parameter("z_range_max", 0.5, desc(-3., 3.));
+    this->declare_parameter("dt", 0.1, desc(0., 1.));
+    this->declare_parameter("d_margin", 0.2, desc(0., 1.));
+    this->declare_parameter("d_escape", 0.05, desc(0., 1.));
+    this->declare_parameter("yaw_margin", 0.2, desc(0., 1.57));
+    this->declare_parameter("yaw_escape", 0.05, desc(0., 1.57));
+    this->declare_parameter("downsample_grid", 0.05, desc(0., 1.));
+    this->declare_parameter("hold", 0.0, desc(0., 10.));
+    this->declare_parameter("allow_empty_cloud", false);
+
+    cbParameter();
+
+    param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+    event_callback_handle_ = param_event_handler_->add_parameter_event_callback(
+      [this](const rcl_interfaces::msg::ParameterEvent& event){
+        if (event.node == this->get_fully_qualified_name())
+        {
+          cbParameter();
+        }
+      }
+    );
+
   }
   void spin()
   {
@@ -366,6 +349,26 @@ protected:
   }
   void cbParameter()
   {
+    this->get_parameter("freq", hz_);
+    this->get_parameter("cloud_timeout", timeout_);
+    this->get_parameter("disable_timeout", disable_timeout_);
+    this->get_parameter("lin_vel", vel_[0]);
+    this->get_parameter("lin_acc", acc_[0]);
+    this->get_parameter("ang_vel", vel_[1]);
+    this->get_parameter("ang_acc", acc_[1]);
+    this->get_parameter("max_linear_vel", max_values_[0]);
+    this->get_parameter("max_angular_vel", max_values_[1]);
+    this->get_parameter("z_range_min", z_range_[0]);
+    this->get_parameter("z_range_max", z_range_[1]);
+    this->get_parameter("dt", dt_);
+    this->get_parameter("d_margin", d_margin_);
+    this->get_parameter("d_escape", d_escape_);
+    this->get_parameter("yaw_margin", yaw_margin_);
+    this->get_parameter("yaw_escape", yaw_escape_);
+    this->get_parameter("downsample_grid", downsample_grid_);
+    hold_ = rclcpp::Duration::from_seconds(std::max(this->get_parameter("hold").as_double(), 1.0 / hz_));
+    this->get_parameter("allow_empty_cloud", allow_empty_cloud_);
+
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
     {
@@ -389,16 +392,16 @@ protected:
       return 0.0;
     }
 
-    const bool can_transform = tfbuf_.canTransform(
+    const bool can_transform = tfbuf_->canTransform(
         base_frame_id_, cloud_accum_->header.frame_id,
         pcl_conversions::fromPCL(cloud_accum_->header.stamp));
     const rclcpp::Time stamp =
-        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0LL, RCL_ROS_TIME);
+        can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     geometry_msgs::msg::TransformStamped fixed_to_base;
     try
     {
-      fixed_to_base = tfbuf_.lookupTransform(
+      fixed_to_base = tfbuf_->lookupTransform(
           base_frame_id_, cloud_accum_->header.frame_id, stamp);
     }
     catch (tf2::TransformException& e)
@@ -536,13 +539,13 @@ protected:
 
     if (has_collision_at_now_)
     {
-      if (stuck_started_since_ == rclcpp::Time(0LL, RCL_ROS_TIME))
+      if (stuck_started_since_ == rclcpp::Time(0, 0, RCL_ROS_TIME))
         stuck_started_since_ = this->now();
     }
     else
     {
-      if (stuck_started_since_ != rclcpp::Time(0LL, RCL_ROS_TIME))
-        stuck_started_since_ = rclcpp::Time(0LL, RCL_ROS_TIME);
+      if (stuck_started_since_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
+        stuck_started_since_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
     }
 
     if (!has_collision)
@@ -761,16 +764,16 @@ protected:
 
   void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr& msg)
   {
-    const bool can_transform = tfbuf_.canTransform(
+    const bool can_transform = tfbuf_->canTransform(
         fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
     const rclcpp::Time stamp =
-        can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0LL, RCL_ROS_TIME);
+        can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     sensor_msgs::msg::PointCloud2 cloud_msg_fixed;
     try
     {
       const geometry_msgs::msg::TransformStamped cloud_to_fixed =
-          tfbuf_.lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
+          tfbuf_->lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
       tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)

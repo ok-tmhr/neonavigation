@@ -31,6 +31,7 @@
 #define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <map>
 #include <memory>
@@ -113,13 +114,13 @@ public:
     , width_(0)
     , height_(0)
     , angle_(0)
-    , stamp_(0LL, RCL_ROS_TIME)
+    , stamp_(0, 0, RCL_ROS_TIME)
   {
   }
   UpdatedRegion(
       const int& x, const int& y, const int& yaw,
       const int& width, const int& height, const int& angle,
-      const rclcpp::Time& stamp = rclcpp::Time(0LL, RCL_ROS_TIME))
+      const rclcpp::Time& stamp = rclcpp::Time(0, 0, RCL_ROS_TIME))
     : x_(x)
     , y_(y)
     , yaw_(yaw)
@@ -288,7 +289,7 @@ public:
   {
   }
 
-  virtual void loadConfig(LayerConfig& config) = 0;
+  virtual void loadConfig(LayerConfig& config, rclcpp::Node& node) = 0;
   virtual void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info) = 0;
 
   void setAngleResolution(

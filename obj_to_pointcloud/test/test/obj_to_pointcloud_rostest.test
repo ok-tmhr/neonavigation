@@ -6,5 +6,5 @@
     <param name="scale" value="0.001" />
   </node>
 
-  <executable name="test_obj_to_pointcloud" cmd="./build/obj_to_pointcloud/test/test_obj_to_pointcloud" output="screen" />
+  <node name="test_obj_to_pointcloud" pkg="obj_to_pointcloud" exec="test_obj_to_pointcloud" output="screen" />
 </launch>

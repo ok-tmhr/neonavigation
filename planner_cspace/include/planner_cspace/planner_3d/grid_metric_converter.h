@@ -30,6 +30,7 @@
 #ifndef PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 #define PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
 
+#include <cassert>
 #include <cmath>
 #include <list>
 #include <memory>

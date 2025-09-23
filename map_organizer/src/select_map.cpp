@@ -37,14 +37,13 @@
 #include <vector>
 
 
-rclcpp::Node::SharedPtr node;
 map_organizer_msgs::msg::OccupancyGridArray maps;
 std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
 
 void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr msg)
 {
-  RCLCPP_INFO(node->get_logger(), "Map array received");
+  RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
   maps = *msg;
   orig_mapinfos.clear();
   for (auto& map : maps.maps)
@@ -61,11 +60,11 @@ void cbFloor(const std_msgs::msg::Int32::Ptr msg)
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  node = rclcpp::Node::make_shared("select_map");
+  auto node = rclcpp::Node::make_shared("select_map");
 
   auto subMaps = node->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
       "maps",
-      rclcpp::QoS(1).transient_local(), cbMaps);
+      1, cbMaps);
   auto subFloor = node->create_subscription<std_msgs::msg::Int32>(
       "floor",
       1, cbFloor);
@@ -73,7 +72,7 @@ int main(int argc, char** argv)
       "map",
       rclcpp::QoS(1).transient_local());
 
-  auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(node);
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb = std::make_unique<tf2_ros::TransformBroadcaster>(node);
   geometry_msgs::msg::TransformStamped trans;
   trans.header.frame_id = "map_ground";
   trans.child_frame_id = "map";

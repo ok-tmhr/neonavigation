@@ -33,6 +33,7 @@
 #endif
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -47,7 +48,7 @@
 
 const std::string footprint_str(
     "[[1.5, 0.0], [-0.5, -0.5], [-0.5, 0.5]]"
-    );
+  );
 // This footprint with resolution of 0.1 means:
 //  0 0 0
 //  1 1 0  <--x
@@ -71,6 +72,7 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Set example footprint
+  int footprint_offset = 0;
   cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Check local footprint
@@ -184,6 +186,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
+  int footprint_offset = 0;
   cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Settings: 4 angular grids, no expand/spread
@@ -283,6 +286,7 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
   costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
+  int footprint_offset = 0;
   cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Settings: 4 angular grids, expand 1.0, spread 2.0
@@ -356,6 +360,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   costmap_cspace::Costmap3dLayerFootprint cm_base;
 
   // Set example footprint
+  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
   cm_ref.setFootprint(footprint);
   cm_base.setFootprint(footprint);
@@ -448,7 +453,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
       for (size_t i = cm_over->getRangeMax(); i < map->info.width - cm_over->getRangeMax(); ++i)
       {
         const size_t addr = ((k * map->info.height + j) * map->info.width) + i;
-        ASSERT_TRUE(addr < updated->data.size());
+        assert(addr < updated->data.size());
         const int cost = updated->data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
 
@@ -486,7 +491,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
       for (int i = cm_over->getRangeMax(); i < static_cast<int>(map->info.width) - cm_over->getRangeMax(); ++i)
       {
         const size_t addr = ((k * map->info.height + j) * map->info.width) + i;
-        ASSERT_TRUE(addr < updated_max->data.size());
+        assert(addr < updated_max->data.size());
         const int cost = updated_max->data[addr];
         const int cost_ref = cm_ref.getMapOverlay()->getCost(i, j, k);
         const int cost_base = cm_base.getMapOverlay()->getCost(i, j, k);
@@ -501,6 +506,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
 TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
 {
   // Set example footprint
+  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
 
   // Settings: 4 angular grids, no expand/spread
@@ -797,6 +803,7 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
 TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
 {
   // Set example footprint
+  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
 
   const size_t unknown_x = 3;
@@ -947,6 +954,7 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
 TEST(Costmap3dLayerFootprint, PlainOnFootprint)
 {
   // Set example footprint
+  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
 
   // Settings: 4 angular grids, no expand/spread

@@ -7,6 +7,7 @@
   <maintainer email="tomohiro.oku2023@gmail.com">Tomohiro Oku</maintainer>
   <license>BSD</license>
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
+  <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

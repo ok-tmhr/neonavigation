@@ -37,6 +37,7 @@
 
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 namespace planner_cspace
@@ -86,9 +87,9 @@ public:
     try
     {
       geometry_msgs::msg::TransformStamped base_trans_tmp =
-          tfbuf_.lookupTransform(jump_detect_frame_, "base_link", rclcpp::Time());
+          tfbuf_.lookupTransform(jump_detect_frame_, "base_link", rclcpp::Time(0, 0, RCL_ROS_TIME));
       geometry_msgs::msg::TransformStamped map_trans_tmp =
-          tfbuf_.lookupTransform(map_frame_, "base_link", rclcpp::Time());
+          tfbuf_.lookupTransform(map_frame_, "base_link", rclcpp::Time(0, 0, RCL_ROS_TIME));
       tf2::fromMsg(base_trans_tmp, base_trans);
       tf2::fromMsg(map_trans_tmp, map_trans);
     }
@@ -112,7 +113,7 @@ public:
 
     if (pos_diff > pos_jump_ || std::abs(yaw_diff) > yaw_jump_)
     {
-      RCLCPP_ERROR(rclcpp::get_logger("planner_cspace"), "Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
+      RCLCPP_ERROR(rclcpp::get_logger("jump_detector"), "Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
                 pos_diff, pos_jump_, yaw_diff, yaw_jump_);
       return true;
     }

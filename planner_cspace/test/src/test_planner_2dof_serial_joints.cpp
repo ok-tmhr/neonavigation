@@ -36,7 +36,7 @@
 
 TEST(Planner2DOFSerialJoints, Plan)
 {
-  auto nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
   auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
   auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
@@ -53,7 +53,7 @@ TEST(Planner2DOFSerialJoints, Plan)
     status = msg;
   };
   auto sub_status = nh->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
-      "/planner_2dof_serial_joints/group0/status", rclcpp::QoS(1).transient_local(), cb_status);
+      "/planner_2dof_serial_joints/group0/status", 1, cb_status);
 
   sensor_msgs::msg::JointState s;
   s.name.push_back("front");
@@ -146,7 +146,7 @@ TEST(Planner2DOFSerialJoints, Plan)
 
 TEST(Planner2DOFSerialJoints, NoPath)
 {
-  auto nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
+  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_planner_2dof_serial_joints");
   auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
   auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
