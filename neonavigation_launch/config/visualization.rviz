@@ -163,6 +163,7 @@ Visualization Manager:
       Enabled: true
       Name: Global Map
       Topic:
+        Durability Policy: Transient Local
         Value: /map
     - Alpha: 0.699999988079071
       Class: rviz_default_plugins/Map
@@ -237,9 +238,11 @@ Visualization Manager:
     - Class: rviz_default_plugins/Measure
     - Class: rviz_default_plugins/SetInitialPose
       Topic:
+        Durability Policy: Transient Local
         Value: /initialpose
     - Class: rviz_default_plugins/SetGoal
       Topic:
+        Durability Policy: Transient Local
         Value: /move_base_simple/goal
     - Class: rviz_default_plugins/PublishPoint
       Single click: true
