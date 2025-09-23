@@ -42,7 +42,6 @@
 #include <vector>
 
 #include <nav2_map_server/map_io.hpp>
-// #include <map_server/image_loader.h>
 #include <yaml-cpp/yaml.h>
 
 #ifdef HAVE_NEW_YAMLCPP

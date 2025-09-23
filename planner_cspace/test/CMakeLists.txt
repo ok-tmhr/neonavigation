@@ -236,7 +236,6 @@ install(TARGETS
     test_planner_3d_map_size
     test_tolerant_action
     test_dynamic_parameter_change
-    test_blockmem_gridmap_performance
   DESTINATION lib/${PROJECT_NAME}
 )
 
