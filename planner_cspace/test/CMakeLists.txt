@@ -111,25 +111,26 @@ ament_add_gtest(test_navigate
 target_link_libraries(test_navigate)
 ament_target_dependencies(test_navigate ${COLCON_DEPENDS})
 
-# # add_rostest(test/navigation_rostest.test
-# #   ARGS antialias_start:=true
-# #   DEPENDENCIES test_navigate
-# # )
+# TODO enable auto test
+# add_rostest(test/navigation_rostest.test
+#   ARGS antialias_start:=true
+#   DEPENDENCIES test_navigate
+# )
 
-# # add_rostest(test/navigation_rostest.test
-# #   ARGS antialias_start:=true fast_map_update:=true
-# #   DEPENDENCIES test_navigate
-# # )
+# add_rostest(test/navigation_rostest.test
+#   ARGS antialias_start:=true fast_map_update:=true
+#   DEPENDENCIES test_navigate
+# )
 
-# # add_rostest(test/navigation_rostest.test
-# #   ARGS with_tolerance:=true
-# #   DEPENDENCIES test_navigate
-# # )
+# add_rostest(test/navigation_rostest.test
+#   ARGS with_tolerance:=true
+#   DEPENDENCIES test_navigate
+# )
 
-# # add_rostest(test/navigation_rostest.test
-# #   ARGS enable_crowd_mode:=true
-# #   DEPENDENCIES test_navigate
-# # )
+# add_rostest(test/navigation_rostest.test
+#   ARGS enable_crowd_mode:=true
+#   DEPENDENCIES test_navigate
+# )
 
 ament_add_gtest(test_navigate_remember
   test/navigation_remember_rostest.test
@@ -137,10 +138,6 @@ ament_add_gtest(test_navigate_remember
 )
 target_link_libraries(test_navigate_remember)
 ament_target_dependencies(test_navigate_remember ${COLCON_DEPENDS})
-
-# # add_rostest(test/navigation_compat_rostest.test
-# #   DEPENDENCIES test_navigate
-# # )
 
 ament_add_gtest(test_navigate_boundary
   test/navigation_boundary_rostest.test

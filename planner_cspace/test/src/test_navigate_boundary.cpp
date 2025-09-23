@@ -65,6 +65,7 @@ protected:
       RCLCPP_ERROR(nh_->get_logger(), "Failed to connect move_base action");
       exit(EXIT_FAILURE);
     }
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
   }
 
   void publishTransform(const double x, const double y)
