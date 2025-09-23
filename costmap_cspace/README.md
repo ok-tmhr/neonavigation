@@ -57,6 +57,7 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 Each layer configuration contains:
 * "name" (string) layer name
 * "type" (string) layer type name
+* "keep_unknown" (bool)
 * "parameters" layer specific parameters
 
 Available layer types and parameters are:
