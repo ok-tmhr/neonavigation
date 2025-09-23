@@ -639,10 +639,7 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  auto time_thread = std::thread(timeSource);
+  boost::thread time_thread(timeSource);
 
-  auto result = RUN_ALL_TESTS();
-  rclcpp::shutdown();
-  time_thread.join();
-  return result;
+  return RUN_ALL_TESTS();
 }

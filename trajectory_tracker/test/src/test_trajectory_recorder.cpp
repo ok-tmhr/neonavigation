@@ -30,7 +30,6 @@
 #include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
-#include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/msg/path.hpp>
 #include <std_srvs/srv/empty.hpp>

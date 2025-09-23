@@ -49,8 +49,7 @@ protected:
   size_t cnt_status_;
 
   Planner3DMapSize()
-    : nh_(rclcpp::Node::make_shared("test_planner_cspace_map_size"))
-    , cnt_status_(0)
+    : cnt_status_(0)
   {
     nh_ = rclcpp::Node::make_shared("test_planner_cspace_map_size");
     sub_status_ = nh_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>("/planner_3d/status", 100, std::bind(&Planner3DMapSize::cbStatus, this, std::placeholders::_1));

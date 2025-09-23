@@ -1,4 +1,3 @@
-
 <?xml version="1.0"?>
 <launch>
   <set_env name="GCOV_PREFIX" value="/tmp/gcov/safety_limiter_safert_limiter" />

@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
  * All rights reserved.

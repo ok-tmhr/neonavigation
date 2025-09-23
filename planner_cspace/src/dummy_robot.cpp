@@ -1,4 +1,4 @@
-s/*
+/*
  * Copyright (c) 2014-2017, the neonavigation authors
  * All rights reserved.
  *
@@ -33,7 +33,6 @@ s/*
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -42,6 +41,7 @@ s/*
 class DummyRobotNode : public rclcpp::Node
 {
 protected:
+
   double x_;
   double y_;
   double yaw_;

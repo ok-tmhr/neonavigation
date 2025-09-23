@@ -1,12 +1,15 @@
 # map_organizer package
 
+The topic names will be migrated to ROS recommended namespace model.
+Set `/neonavigation_compatible` parameter to `1` to use new topic names.
+
 ## pointcloud_to_maps
 
 pointcloud_to_maps node detects floors from given pointcloud and publishes layered OccupancyGrid.
 
 ### Subscribed topics
 
-* mapcloud [sensor_msgs::msg::PointCloud2]
+* ~/map_cloud (new: mapcloud) [sensor_msgs::msg::PointCloud2]
 
 ### Published topics
 
@@ -68,7 +71,7 @@ save_maps saves layered OccupancyGrid to map files.
 
 ### Subscribed topics
 
-* maps [map_organizer_msgs::msg::OccupancyGridArray]
+* ~/maps (new: maps) [map_organizer_msgs::msg::OccupancyGridArray]
 
 ### Published topics
 
@@ -90,12 +93,12 @@ select_map node publishes the desired layer from layered OccupancyGrid.
 
 ### Subscribed topics
 
-* maps [map_organizer_msgs::msg::OccupancyGridArray]
+* /maps (new: maps) [map_organizer_msgs::msg::OccupancyGridArray]
 * ~/floor (new: floor) [std_msgs::msg::Int32]
 
 ### Published topics
 
-* map [nav_msgs::msg::OccupancyGrid]
+* /map (new: map) [nav_msgs::msg::OccupancyGrid]
 * /tf
 
 ### Services
@@ -116,12 +119,12 @@ This node is useful to convert rviz initialpose output to desired map frame.
 
 ### Subscribed topics
 
-* pose_in [geometry_msgs::msg::PoseWithCovarianceStamped]
+* ~/pose_in (new: pose_in) [geometry_msgs::msg::PoseWithCovarianceStamped]
 * /tf
 
 ### Published topics
 
-* pose_out [geometry_msgs::msg::PoseWithCovarianceStamped]
+* ~/pose_out (new: pose_out) [geometry_msgs::msg::PoseWithCovarianceStamped]
 
 ### Services
 

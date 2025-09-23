@@ -7,24 +7,18 @@
   <include file="$(find-pkg-share neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="false" />
     <arg name="map_file" value="$(find-pkg-share neonavigation_launch)/map/demo_map.yaml" />
-    <arg name="map_file" value="$(find-pkg-share neonavigation_launch)/map/demo_map.yaml" />
     <arg name="use_path_with_velocity" value="true" />
   </include>
-  <node pkg="planner_cspace" exec="dummy_robot" name="dummy_robot">
   <node pkg="planner_cspace" exec="dummy_robot" name="dummy_robot">
     <remap from="cmd_vel" to="cmd_vel_dummy" />
   </node>
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
-  <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
 
   <node pkg="nav2_map_server" exec="map_server" name="map_server_local">
-  <node pkg="nav2_map_server" exec="map_server" name="map_server_local">
     <remap from="map" to="map_with_local_objects" />
     <param name="yaml_filename" value="$(find-pkg-share neonavigation_launch)/map/demo_map_local.yaml" />
-    <param name="yaml_filename" value="$(find-pkg-share neonavigation_launch)/map/demo_map_local.yaml" />
   </node>
-  <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
   <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
     <remap from="map" to="map_with_local_objects" />
     <remap from="map_local" to="overlay1" />

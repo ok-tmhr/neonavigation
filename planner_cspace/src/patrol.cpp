@@ -108,8 +108,6 @@ public:
       return false;
     }
 
-    using std::placeholders::_1;
-    rclcpp_action::ResultCode state;
     if (with_tolerance_)
     {
       planner_cspace_msgs::action::MoveWithTolerance::Goal goal;
@@ -136,21 +134,6 @@ public:
       rclcpp::spin_until_future_complete(shared_from_this(), goal_handle_);
     }
     pos_++;
-
-    if (state == rclcpp_action::ResultCode::SUCCEEDED)
-    {
-      RCLCPP_INFO(this->get_logger(), "Action has been finished.");
-      sendNextGoal();
-    }
-    else if (state == rclcpp_action::ResultCode::ABORTED)
-    {
-      RCLCPP_ERROR(this->get_logger(), "Action has been aborted. Skipping.");
-      sendNextGoal();
-    }
-    else if (state == rclcpp_action::ResultCode::UNKNOWN)
-    {
-      RCLCPP_WARN_ONCE(this->get_logger(), "Action server is not ready.");
-    }
 
     return true;
   }

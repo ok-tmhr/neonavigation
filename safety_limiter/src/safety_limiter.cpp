@@ -63,6 +63,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+
 namespace safety_limiter
 {
 pcl::PointXYZ operator-(const pcl::PointXYZ& a, const pcl::PointXYZ& b)

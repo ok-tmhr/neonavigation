@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2014-2019, the neonavigation authors
  * All rights reserved.
@@ -293,8 +292,6 @@ public:
   TrackOdometryNode() : Node("track_odometry")
   {
 
-    using std::placeholders::_1;
-    using std::placeholders::_2;
     bool enable_tcp_no_delay;
     enable_tcp_no_delay = this->declare_parameter("enable_tcp_no_delay", true);
     const rclcpp::QoS transport_hints =

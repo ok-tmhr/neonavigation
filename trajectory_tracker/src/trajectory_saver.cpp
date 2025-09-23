@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
  * All rights reserved.
@@ -47,6 +46,7 @@
 
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/path.hpp>
+
 
 class SaverNode : public rclcpp::Node
 {

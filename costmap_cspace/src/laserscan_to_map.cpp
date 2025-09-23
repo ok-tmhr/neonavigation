@@ -12,8 +12,6 @@
  *       documentation and/or other materials provided with the distribution.
  *     * Neither the name of the copyright holder nor the names of its
  *       contributors may be used to endorse or promote products derived from
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -37,7 +35,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
 
 #include <limits>
 #include <string>
@@ -45,11 +43,8 @@
 #include <costmap_cspace/pointcloud_accumulator.h>
 
 class LaserscanToMapNode : public rclcpp::Node
-class LaserscanToMapNode : public rclcpp::Node
 {
 private:
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
-  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
@@ -57,8 +52,6 @@ private:
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   laser_geometry::LaserProjection projector_;
-  rclcpp::Time published_;
-  rclcpp::Duration publish_interval_;
   rclcpp::Time published_;
   rclcpp::Duration publish_interval_;
 
@@ -71,7 +64,6 @@ private:
   float origin_x_;
   float origin_y_;
 
-  costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
@@ -95,12 +87,10 @@ public:
 
     int width_param;
     width_param = this->declare_parameter("width", 30);
-    width_param = this->declare_parameter("width", 30);
     height_ = width_ = width_param;
     map.header.frame_id = global_frame_;
 
     double resolution;
-    resolution = this->declare_parameter("resolution", 0.1);
     resolution = this->declare_parameter("resolution", 0.1);
     map.info.resolution = resolution;
     map.info.width = width_;
@@ -117,10 +107,7 @@ public:
 
 private:
   void cbScan(const sensor_msgs::msg::LaserScan::ConstPtr& scan)
-  void cbScan(const sensor_msgs::msg::LaserScan::ConstPtr& scan)
   {
-    sensor_msgs::msg::PointCloud2 cloud;
-    sensor_msgs::msg::PointCloud2 cloud_global;
     sensor_msgs::msg::PointCloud2 cloud;
     sensor_msgs::msg::PointCloud2 cloud_global;
     projector_.projectLaser(*scan, cloud);
@@ -133,13 +120,10 @@ private:
     catch (tf2::TransformException& e)
     {
       RCLCPP_WARN(this->get_logger(), "%s", e.what());
-      RCLCPP_WARN(this->get_logger(), "%s", e.what());
     }
-    accum_.push(costmap_cspace::PointcloudAccumurator<sensor_msgs::msg::PointCloud2>::Points(
     accum_.push(costmap_cspace::PointcloudAccumurator<sensor_msgs::msg::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
-    rclcpp::Time now = scan->header.stamp;
     rclcpp::Time now = scan->header.stamp;
     if (published_ + publish_interval_ > now)
       return;
@@ -164,7 +148,6 @@ private:
     }
     catch (tf2::TransformException& e)
     {
-      RCLCPP_WARN(this->get_logger(), "%s", e.what());
       RCLCPP_WARN(this->get_logger(), "%s", e.what());
       return;
     }
@@ -191,17 +174,13 @@ private:
     }
 
     pub_map_->publish(map);
-    pub_map_->publish(map);
   }
 };
 
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::init(argc, argv);
 
-  auto conv = std::make_shared<LaserscanToMapNode>();
-  rclcpp::spin(conv);
   auto conv = std::make_shared<LaserscanToMapNode>();
   rclcpp::spin(conv);
 

@@ -40,7 +40,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
-s
+
 #include <nav2_map_server/map_io.hpp>
 #include <yaml-cpp/yaml.h>
 

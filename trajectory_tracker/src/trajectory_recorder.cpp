@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
  * All rights reserved.
@@ -48,6 +46,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <std_srvs/srv/empty.hpp>
+
 
 class RecorderNode : public rclcpp::Node
 {
@@ -104,6 +103,7 @@ bool RecorderNode::clearPath(std_srvs::srv::Empty::Request::SharedPtr /* req */,
                              std_srvs::srv::Empty::Response::SharedPtr /* res */)
 {
   path_.poses.clear();
+  return true;
 }
 
 void RecorderNode::spin()

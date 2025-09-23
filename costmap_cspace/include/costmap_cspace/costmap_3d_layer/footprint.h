@@ -32,18 +32,12 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cassert>
 #include <cmath>
 #include <memory>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
-#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
-#include <geometry_msgs/msg/polygon_stamped.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
 #include <costmap_cspace_msgs/msg/c_space3_d.hpp>
 #include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
@@ -62,7 +56,6 @@ public:
 
 protected:
   float footprint_radius_;
-  geometry_msgs::msg::PolygonStamped footprint_;
   geometry_msgs::msg::PolygonStamped footprint_;
   float linear_expand_;
   float linear_spread_;
@@ -131,12 +124,6 @@ public:
     assert(std::isfinite(linear_spread));
     assert(linear_spread_min_cost_ >= 0);
     assert(linear_spread_min_cost_ < 100);
-    assert(linear_expand >= 0.0);
-    assert(std::isfinite(linear_expand));
-    assert(linear_spread >= 0.0);
-    assert(std::isfinite(linear_spread));
-    assert(linear_spread_min_cost_ >= 0);
-    assert(linear_spread_min_cost_ < 100);
   }
   void setFootprint(const Polygon footprint)
   {
@@ -148,7 +135,6 @@ public:
   {
     return footprint_p_;
   }
-  const geometry_msgs::msg::PolygonStamped& getFootprintMsg() const
   const geometry_msgs::msg::PolygonStamped& getFootprintMsg() const
   {
     return footprint_;
@@ -166,9 +152,7 @@ public:
     return cs_template_;
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
-  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
   {
-    assert(footprint_p_.v.size() > 2);
     assert(footprint_p_.v.size() > 2);
 
     range_max_ =
@@ -228,7 +212,6 @@ protected:
   }
   void updateCSpace(
       const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
       const UpdatedRegion& region)
   {
     if (root_)
@@ -239,10 +222,8 @@ protected:
   virtual void generateCSpace(
       CSpace3DMsg::Ptr map,
       const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
       const UpdatedRegion& region)
   {
-    assert(ang_grid_ > 0);
     assert(ang_grid_ > 0);
     clearTravelableArea(map, msg);
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
@@ -254,7 +235,6 @@ protected:
   // Clear travelable area in OVERWRITE mode
   void clearTravelableArea(
       CSpace3DMsg::Ptr map,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
       const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
   {
     if (overlay_mode_ != OVERWRITE || root_)
@@ -305,7 +285,6 @@ protected:
 
   void generateSpecifiedCSpace(
       CSpace3DMsg::Ptr map,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
       const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
       const size_t yaw)
   {

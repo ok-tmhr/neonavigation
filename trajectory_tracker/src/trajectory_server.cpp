@@ -55,6 +55,7 @@
 
 #include <trajectory_tracker/filter.h>
 
+
 class ServerNode : public rclcpp::Node
 {
 public:
@@ -71,7 +72,7 @@ private:
   nav_msgs::msg::Path path_;
   trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
   double hz_;
-  std::vector<uint8_t> buffer_;
+  boost::shared_array<uint8_t> buffer_;
   int serial_size_;
   double filter_step_;
   trajectory_tracker::Filter* lpf_[2];
@@ -117,14 +118,14 @@ ServerNode::~ServerNode()
 
 bool ServerNode::loadFile()
 {
-  std::ifstream ifs(req_path_->filename.c_str());
+  std::ifstream ifs(req_path_.filename.c_str());
   if (ifs.good())
   {
     ifs.seekg(0, ifs.end);
     serial_size_ = ifs.tellg();
     ifs.seekg(0, ifs.beg);
-    buffer_.resize(serial_size_);
-    ifs.read(reinterpret_cast<char*>(buffer_.data()), serial_size_);
+    buffer_.reset(new uint8_t[serial_size_]);
+    ifs.read(reinterpret_cast<char*>(buffer_.get()), serial_size_);
 
     return true;
   }
@@ -266,10 +267,11 @@ bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::Share
   else
   {
     serial_size_ = 0;
-    req_path_->filename = "";
+    req_path_.filename = "";
     path_.poses.clear();
     path_.header.frame_id = "map";
   }
+  return true;
 }
 
 void ServerNode::spin()
