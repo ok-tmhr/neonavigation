@@ -48,6 +48,7 @@
 
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 namespace planner_cspace

@@ -57,6 +57,8 @@ protected:
   ActionClientPtr move_base_;
 
   NavigateBoundary()
+  : nh_(rclcpp::Node::make_shared("test_navigate_boundary"))
+  , tfb_(nh_)
   {
     nh_ = rclcpp::Node::make_shared("test_navigate_boundary");
     move_base_ = rclcpp_action::create_client<nav2_msgs::action::NavigateToPose>(nh_, "/move_base");

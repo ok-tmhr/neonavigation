@@ -37,6 +37,7 @@
 
 
 class JoystickMux : public rclcpp::Node
+class JoystickMux : public rclcpp::Node
 {
 private:
   // rclcpp::Subscription<>::SharedPtr sub_topics_[2];
@@ -46,19 +47,23 @@ private:
   double timeout_;
   int interrupt_button_;
   rclcpp::Time last_joy_msg_;
+  rclcpp::Time last_joy_msg_;
   bool advertised_;
   int selected_;
 
   void cbJoy(const sensor_msgs::msg::Joy::Ptr msg)
+  void cbJoy(const sensor_msgs::msg::Joy::Ptr msg)
   {
     if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
     {
+      RCLCPP_ERROR(this->get_logger(),
       RCLCPP_ERROR(this->get_logger(),
           "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
           msg->buttons.size(), interrupt_button_);
       return;
     }
 
+    last_joy_msg_ = this->now();
     last_joy_msg_ = this->now();
     if (msg->buttons[interrupt_button_])
     {
@@ -94,6 +99,7 @@ private:
   void cbTimer()
   {
     if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_))
+    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_))
     {
       selected_ = 0;
     }
@@ -115,7 +121,11 @@ public:
     interrupt_button_ = this->declare_parameter("interrupt_button", 5);
     timeout_ = this->declare_parameter("timeout", 0.5);
     last_joy_msg_ = this->now();
+    interrupt_button_ = this->declare_parameter("interrupt_button", 5);
+    timeout_ = this->declare_parameter("timeout", 0.5);
+    last_joy_msg_ = this->now();
 
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(0.1), std::bind(&JoystickMux::cbTimer, this));
     timer_ = this->create_wall_timer(std::chrono::duration<double>(0.1), std::bind(&JoystickMux::cbTimer, this));
 
     advertised_ = false;
@@ -126,7 +136,10 @@ public:
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
+  rclcpp::init(argc, argv);
 
+  auto jy = std::make_shared<JoystickMux>();
+  rclcpp::spin(jy);
   auto jy = std::make_shared<JoystickMux>();
   rclcpp::spin(jy);
 

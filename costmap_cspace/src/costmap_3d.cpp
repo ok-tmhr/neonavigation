@@ -198,7 +198,7 @@ public:
     costmap_cspace::Polygon footprint;
     try
     {
-      footprint = costmap_cspace::Polygon(footprint_xml);
+      footprint = costmap_cspace::Polygon(footprint_str);
     }
     catch (const std::exception& e)
     {
@@ -248,7 +248,7 @@ public:
           layer_xml.footprint = footprint_xml;
 
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
-            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+          costmap_cspace::Costmap3dLayerClassLoader::loadClass(layer_config.type);
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml, *this);
 
@@ -296,7 +296,7 @@ public:
           layer_xml.footprint = footprint_xml;
 
         costmap_cspace::Costmap3dLayerBase::Ptr layer =
-            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+            costmap_cspace::Costmap3dLayerClassLoader::loadClass(layer_config.type);
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml, *this);
 

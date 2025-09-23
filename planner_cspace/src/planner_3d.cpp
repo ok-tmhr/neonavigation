@@ -393,7 +393,7 @@ protected:
       return true;
     };
 
-    const auto ts = boost::chrono::high_resolution_clock::now();
+    const auto ts = std::chrono::high_resolution_clock::now();
 
     GridAstarModel2D::Ptr model_2d(new GridAstarModel2D(model_));
 
@@ -649,7 +649,7 @@ protected:
     }
 
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       cost_estim_cache_.create(s, e);
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const float dur = boost::chrono::duration<float>(tnow - ts).count();
@@ -913,7 +913,7 @@ protected:
 
     if (remember_updates_)
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       bbf_costmap_->remember(
           &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
@@ -942,7 +942,7 @@ protected:
     }
 
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       cost_estim_cache_.update(
           s, e,
           DistanceMap::Rect(
@@ -1154,6 +1154,8 @@ protected:
     }
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
+  void cbAccepted(const std::shared_ptr<GoalHandlePlanner3DAction> goal_handle){ goal_handle_act_ = goal_handle; }
+  void cbTolerantAccepted(const std::shared_ptr<GoalHandlePlanner3DTolerantAction> goal_handle){ goal_handle_act_tolerant_ = goal_handle; }
 
   void updateStart()
   {
@@ -2052,12 +2054,12 @@ protected:
     }
 
     const float range_limit = initial_2dof_cost - (local_range_ + range_) * ec_[0];
-    const auto ts = boost::chrono::high_resolution_clock::now();
+    const auto ts = std::chrono::high_resolution_clock::now();
     const auto cb_progress =
         [this, ts, start_grid, end_grid](const std::list<Astar::Vec>& path_grid, const SearchStats& stats) -> bool
     {
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const auto tdiff = boost::chrono::duration<float>(tnow - ts).count();
+      const auto tnow = std::chrono::high_resolution_clock::now();
+      const auto tdiff = std::chrono::duration<float>(tnow - ts).count();
       publishEmptyPath();
       if (tdiff > search_timeout_abort_)
       {
@@ -2127,7 +2129,7 @@ protected:
 
     if (hyst)
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -2238,7 +2240,7 @@ protected:
       const Astar::Vec g_orig = metric2Grid(goal_original_.pose);
 
       {
-        const auto ts = boost::chrono::high_resolution_clock::now();
+        const auto ts = std::chrono::high_resolution_clock::now();
         // Update without region.
         // Distance map will expand distance map using edges_buf if needed.
         cost_estim_cache_static_.update(
@@ -2371,7 +2373,7 @@ protected:
           }
         }
       }
-      if (cost_min == std::numeric_limits<float>::max())
+      if (cost_min == std::numeric_limits<float>::max())s
       {
         RCLCPP_WARN(this->get_logger(), "No valid temporary escape goal");
         return;

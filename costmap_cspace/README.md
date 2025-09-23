@@ -1,8 +1,5 @@
 # costmap_cspace package
 
-The topic names will be migrated to ROS recommended namespace model.
-Set `/neonavigation_compatible` parameter to `1` to use new topic names.
-
 ## costmap_3d
 
 costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) configuration space based on given footprint.
@@ -16,8 +13,8 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 
 #### Published topics
 
-* ~/costmap (new: costmap) [costmap_cspace_msgs::msg::CSpace3D]
-* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::msg::CSpace3DUpdate]
+* costmap [costmap_cspace_msgs::msg::CSpace3D]
+* costmap_update [costmap_cspace_msgs::msg::CSpace3DUpdate]
 * ~/footprint [geometry_msgs::msg::PolygonStamped]
 * ~/debug [sensor_msgs::msg::PointCloud]
 
@@ -29,7 +26,8 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "linear_spread_min_cost" (int, default: 0)
 * "unknown_cost" (int, default: 0)
 * "overlay_mode" (string, default: std::string(""))
-* "footprint" (?, default: footprint_xml)
+* "footprint" (string, default: "")
+* "keep_unknown" (bool, false)
 
 ### multiple layer mode
 
@@ -40,8 +38,8 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 
 #### Published topics
 
-* ~/costmap (new: costmap) [costmap_cspace_msgs::msg::CSpace3D]
-* ~/costmap_update (new: costmap_update) [costmap_cspace_msgs::msg::CSpace3DUpdate]
+* costmap [costmap_cspace_msgs::msg::CSpace3D]
+* costmap_update [costmap_cspace_msgs::msg::CSpace3DUpdate]
 * ~/footprint [geometry_msgs::msg::PolygonStamped]
 * ~/debug [sensor_msgs::msg::PointCloud]
 
@@ -51,13 +49,14 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "linear_expand" (double, default: 0.2f): for root layer
 * "linear_spread" (double, default: 0.5f): for root layer
 * "linear_spread_min_cost" (int, default: 0)
-* "footprint" (?, default: footprint_xml): for root layer
-* "static_layers": array of layer configurations
-* "layers": array of layer configurations
+* "footprint" (string, default: ""): for root layer
+* "static_layers" (string array, default: []): array of layer configurations
+* "layers" (string array, default: []): array of layer configurations
 
 Each layer configuration contains:
 * "name" (string) layer name
 * "type" (string) layer type name
+* "keep_unknown" (bool)
 * "parameters" layer specific parameters
 
 Available layer types and parameters are:
@@ -65,7 +64,7 @@ Available layer types and parameters are:
   - "linear_expand" (double)
   - "linear_spread" (double)
   - "linear_spread_min_cost" (int, default: 0)
-  - "footprint" (?, default: root layer's footprint)
+  - "footprint" (string, default: root layer's footprint)
 - **Costmap3dLayerPlain**: Costmap layer without considering footpring.
   - "linear_expand" (double)
   - "linear_spread" (double)

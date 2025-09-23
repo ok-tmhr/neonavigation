@@ -12,6 +12,8 @@
  *       documentation and/or other materials provided with the distribution.
  *     * Neither the name of the copyright holder nor the names of its
  *       contributors may be used to endorse or promote products derived from
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -28,11 +30,15 @@
  */
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
@@ -42,8 +48,12 @@
 #include <costmap_cspace/pointcloud_accumulator.h>
 
 class Pointcloud2ToMapNode : public rclcpp::Node
+class Pointcloud2ToMapNode : public rclcpp::Node
 {
 private:
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
@@ -64,6 +74,7 @@ private:
   float origin_y_;
 
   std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>> accums_;
+  std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>> accums_;
 
 public:
   Pointcloud2ToMapNode() : Node("pointcloud2_to_map")
@@ -77,6 +88,9 @@ public:
     robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
     double accum_duration;
+    accum_duration = this->declare_parameter("accum_duration", 1.0);
+    accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
+    accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
     accum_duration = this->declare_parameter("accum_duration", 1.0);
     accums_[0].reset(rclcpp::Duration::from_seconds(accum_duration));
     accums_[1].reset(rclcpp::Duration::from_seconds(0.0));
@@ -94,10 +108,12 @@ public:
 
     int width_param;
     width_param = this->declare_parameter("width", 30);
+    width_param = this->declare_parameter("width", 30);
     height_ = width_ = width_param;
     map_.header.frame_id = global_frame_;
 
     double resolution;
+    resolution = this->declare_parameter("resolution", 0.1);
     resolution = this->declare_parameter("resolution", 0.1);
     map_.info.resolution = resolution;
     map_.info.width = width_;
@@ -117,6 +133,8 @@ private:
   {
     sensor_msgs::msg::PointCloud2 cloud_global;
     geometry_msgs::msg::TransformStamped trans;
+    sensor_msgs::msg::PointCloud2 cloud_global;
+    geometry_msgs::msg::TransformStamped trans;
     try
     {
       trans = tfbuf_->lookupTransform(global_frame_, cloud->header.frame_id,
@@ -125,14 +143,17 @@ private:
     catch (tf2::TransformException& e)
     {
       RCLCPP_WARN(this->get_logger(), "%s", e.what());
+      RCLCPP_WARN(this->get_logger(), "%s", e.what());
       return;
     }
     tf2::doTransform(*cloud, cloud_global, trans);
 
     const int buffer = singleshot ? 1 : 0;
     accums_[buffer].push(costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>::Points(
+    accums_[buffer].push(costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>::Points(
         cloud_global, cloud_global.header.stamp));
 
+    rclcpp::Time now = cloud->header.stamp;
     rclcpp::Time now = cloud->header.stamp;
     if (published_ + publish_interval_ > now)
       return;
@@ -157,6 +178,7 @@ private:
     }
     catch (tf2::TransformException& e)
     {
+      RCLCPP_WARN(this->get_logger(), "%s", e.what());
       RCLCPP_WARN(this->get_logger(), "%s", e.what());
       return;
     }
@@ -186,13 +208,17 @@ private:
     }
 
     pub_map_->publish(map_);
+    pub_map_->publish(map_);
   }
 };
 
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
+  rclcpp::init(argc, argv);
 
+  auto conv = std::make_shared<Pointcloud2ToMapNode>();
+  rclcpp::spin(conv);
   auto conv = std::make_shared<Pointcloud2ToMapNode>();
   rclcpp::spin(conv);
 

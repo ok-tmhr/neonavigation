@@ -37,7 +37,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/thread.hpp>
+#include <thread>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -308,7 +308,6 @@ public:
   {
     return cmd_vel_count_ / (cmd_vel_time_ - initial_cmd_vel_time_).seconds();
   }
-
 };
 
 namespace trajectory_tracker_msgs::msg

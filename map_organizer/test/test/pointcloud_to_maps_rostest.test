@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-
   <node pkg="map_organizer" exec="pointcloud_to_maps" name="pointcloud_to_maps" output="screen">
     <param name="min_floor_area" value="0.2" />
     <param name="points_thresh_rate" value="0.0" />

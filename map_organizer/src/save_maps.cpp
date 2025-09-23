@@ -160,11 +160,6 @@ int main(int argc, char** argv)
         return 1;
       }
     }
-    else
-    {
-      puts(USAGE);
-      return 1;
-    }
   }
 
   auto mg = std::make_shared<MapGeneratorNode>(mapname);

@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2019, the neonavigation authors
  * All rights reserved.
@@ -56,6 +57,12 @@ public:
   }
   void SetUp() override
   {
+    std::thread th(
+      [this](){
+        rclcpp::spin(node_);
+      }
+    );
+    th.detach();
     projected_frame_ = std::string(GetParam());
   }
 };

@@ -49,6 +49,7 @@ class DynamicParameterChangeTest
 public:
   void SetUp() final
   {
+    // node_ = rclcpp::Node::make_shared("test_dynamic_parameter_change");
     path_ = nullptr;
     planner_3d_client_ = std::make_unique<rclcpp::AsyncParametersClient>(node_, "/planner_3d");
     sub_path_ = node_->create_subscription<nav_msgs::msg::Path>("path", rclcpp::QoS(1).transient_local(), std::bind(&DynamicParameterChangeTest::cbPath, this, std::placeholders::_1));

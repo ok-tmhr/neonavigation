@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
  * All rights reserved.
@@ -187,6 +188,7 @@ private:
 TrackerNode::TrackerNode() : Node("trajectory_tracker")
   , prev_odom_stamp_(0, 0, RCL_ROS_TIME)
   , is_path_updated_(false)
+  , prev_odom_stamp_(0LL, RCL_ROS_TIME)
 {
   frame_robot_ = this->declare_parameter("frame_robot", std::string("base_link"));
   frame_odom_ = this->declare_parameter("frame_odom", std::string("odom"));

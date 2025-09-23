@@ -31,9 +31,12 @@
 
 #include <trajectory_tracker_test.h>
 
-
 class TrajectoryTrackerOvershootTest : public TrajectoryTrackerTest
 {
+public:
+  TrajectoryTrackerOvershootTest() : TrajectoryTrackerTest("test_trajectory_tracker_overshoot")
+  {
+  }
 protected:
   void runTest(const double goal_tolerance_lin_vel, const double goal_tolerance_ang_vel,
                const double linear_vel, const double rotation_vel, const int32_t expected_status)
