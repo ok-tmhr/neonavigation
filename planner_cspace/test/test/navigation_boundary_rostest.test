@@ -1,43 +1,47 @@
 <?xml version="1.0"?>
 <launch>
-  <env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
-  <param name="neonavigation_compatible" value="1" />
+  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
 
-  <test test-name="test_navigate_boundary" pkg="planner_cspace" type="test_navigate_boundary" time-limit="45.0" />
+  <!-- TODO time-limit="45.0" -->
+  <executable name="test_navigate_boundary" cmd="./build/planner_cspace/test/test_navigate_boundary" output="screen" />
 
-  <node pkg="costmap_cspace" type="costmap_3d" name="costmap_3d">
-    <rosparam param="footprint">[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]</rosparam>
+  <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
+    <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
     <param name="ang_resolution" value="16"/>
-    <rosparam>
-    static_layers:
-    - name: unknown
-      type: Costmap3dLayerUnknownHandle
-      unknown_cost: 100
-    layers:
-    - name: overlay
-      type: Costmap3dLayerFootprint
-      overlay_mode: max
-    </rosparam>
+    <param name="static_layers" value="[unknown, overlay]" />
+    <param name="unknown">
+      <param name="type" value="Costmap3dLayerUnknownHandle" />
+      <param name="unknown_cost" value="100" />
+    </param>
+    <param name="overlay">
+      <param name="type" value="Costmap3dLayerFootprint" />
+      <param name="overlay_mode" value="max" />
+    </param>
   </node>
-  <node pkg="planner_cspace" type="planner_3d_debug" name="planner_3d">
-    <rosparam>
-      freq: 10.0
-      local_range: 0.2
-      antialias_start: true
-      enable_crowd_mode: true
-    </rosparam>
+  <node pkg="planner_cspace" exec="planner_3d_debug" name="planner_3d">
+    <param name="freq" value="10.0" />
+    <param name="local_range" value="0.2" />
+    <param name="antialias_start" value="true" />
+    <param name="enable_crowd_mode" value="true" />
   </node>
-  <node pkg="tf2_ros" type="static_transform_publisher" name="stf1"
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
       args="0 0 0 0 0 0 map odom" />
 
-  <node pkg="map_server" type="map_server" name="map_server_global" args="$(find planner_cspace)/test/data/global_map.yaml"/>
-  <node pkg="map_server" type="map_server" name="map_server_local" args="$(find planner_cspace)/test/data/local_map.yaml">
-    <remap from="map" to="map_with_local_objects" />
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_global" >
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
   </node>
-  <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_local" >
+    <remap from="map" to="map_with_local_objects" />
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/local_map.yaml" />
+  </node>
+  <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
     <remap from="map" to="map_with_local_objects" />
     <remap from="map_local" to="overlay" />
     <param name="width" value="6" />
     <param name="hz" value="5.0" />
+  </node>
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager" >
+    <param name="autostart" value="true" />
+    <param name="node_names" value="[map_server_global, map_server_local]" />
   </node>
 </launch>

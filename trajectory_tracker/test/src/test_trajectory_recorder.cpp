@@ -53,7 +53,7 @@ TEST(TrajectoryRecorder, TfToPath)
   };
   using std::placeholders::_1;
   auto sub_path = node->create_subscription<nav_msgs::msg::Path>(
-    "path", 1, cb_path);
+    "path", rclcpp::QoS(1).transient_local(), cb_path);
   auto tfb = std::make_unique<tf2_ros::TransformBroadcaster>(*node);
 
   const tf2::Transform points[] =

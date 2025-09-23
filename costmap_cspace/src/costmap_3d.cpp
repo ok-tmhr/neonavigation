@@ -249,7 +249,7 @@ public:
       layer->loadConfig(layer_config);
 
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-          layer_config.name, 1,
+          layer_config.name, rclcpp::QoS(1).transient_local(),
           [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMapOverlay(msg, layer);}));
     }
 
@@ -257,7 +257,7 @@ public:
     static_output_layer->setHandler([&](const costmap_cspace::CSpace3DMsg::Ptr &map){return Costmap3DOFNode::cbUpdateStatic(map);});
 
     sub_map_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-        "map", 1,
+        "map", rclcpp::QoS(1).transient_local(),
         [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMap(msg, root_layer);});
 
     auto layers = this->declare_parameter("layers", std::vector<std::string>{});
@@ -295,7 +295,7 @@ public:
         layer->loadConfig(layer_config);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-            layer_config.name, 1,
+            layer_config.name, rclcpp::QoS(1).transient_local(),
             [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMapOverlay(msg, layer);}));
       }
     }
@@ -326,7 +326,7 @@ public:
       layer_config.unknown_cost = this->declare_parameter("unknown_cost", 0);
       layer->loadConfig(layer_config);
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-          "map_overlay", 1,
+          "map_overlay", rclcpp::QoS(1).transient_local(),
           [=](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return Costmap3DOFNode::cbMapOverlay(msg, layer);}));
     }
 

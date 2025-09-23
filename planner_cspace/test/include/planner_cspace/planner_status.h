@@ -31,9 +31,10 @@
 #define PLANNER_CSPACE_PLANNER_STATUS_H
 
 #include <ostream>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <rclcpp/rclcpp.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
 
-namespace planner_cspace_msgs
+namespace planner_cspace_msgs::msg
 {
 std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
 {
@@ -44,7 +45,7 @@ std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
   else
   {
     os << std::endl
-       << "  header: " << msg->header.stamp << " " << msg->header.frame_id << std::endl
+       << "  header: " << rclcpp::Time(msg->header.stamp).seconds() << " " << msg->header.frame_id << std::endl
        << "  status: " << static_cast<int>(msg->status) << std::endl
        << "  error: " << static_cast<int>(msg->error);
   }

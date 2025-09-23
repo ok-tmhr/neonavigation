@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 
   auto subMaps = node->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
       "maps",
-      1, cbMaps);
+      rclcpp::QoS(1).transient_local(), cbMaps);
   auto subFloor = node->create_subscription<std_msgs::msg::Int32>(
       "floor",
       1, cbFloor);

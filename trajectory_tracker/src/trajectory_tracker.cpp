@@ -246,7 +246,7 @@ TrackerNode::TrackerNode()
 
   using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
-    "path", 2, std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
+    "path", rclcpp::QoS(2).transient_local(), std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
   sub_path_velocity_ = this->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
     "path_velocity", 2, std::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
   sub_vel_ = this->create_subscription<std_msgs::msg::Float32>(

@@ -31,7 +31,7 @@
 #include <cmath>
 #include <vector>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/planner_3d/grid_metric_converter.h>
 #include <tf2/utils.h>
 
@@ -43,7 +43,7 @@ namespace planner_3d
 {
 TEST(GridMetricConverter, SinglePose)
 {
-  costmap_cspace_msgs::MapMetaData3D map_info;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info;
   map_info.linear_resolution = 0.1;
   map_info.angular_resolution = M_PI / 8;
   map_info.origin.position.x = 100.0;
@@ -93,7 +93,7 @@ TEST(GridMetricConverter, SinglePose)
 
 TEST(GridMetricConverter, Path)
 {
-  costmap_cspace_msgs::MapMetaData3D map_info;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info;
   map_info.linear_resolution = 0.1;
   map_info.angle = 8;
   map_info.angular_resolution = M_PI / map_info.angle;
@@ -118,10 +118,10 @@ TEST(GridMetricConverter, Path)
   for (const auto& g : grid)
     path_grid.push_back(CyclicVecFloat<3, 2>(g[0], g[1], g[2]));
 
-  nav_msgs::Path path;
+  nav_msgs::msg::Path path;
   grid_metric_converter::appendGridPath2MetricPath(map_info, path_grid, path);
   size_t ref = 0;
-  for (const geometry_msgs::PoseStamped& p : path.poses)
+  for (const geometry_msgs::msg::PoseStamped& p : path.poses)
   {
     const double diff_dist = std::hypot(
         metric_expected[ref][0] - p.pose.position.x,
