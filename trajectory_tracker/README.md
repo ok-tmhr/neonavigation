@@ -1,7 +1,5 @@
 # trajectory_tracker package
 
-The topic names will be migrated to ROS recommended namespace model.
-Set `/neonavigation_compatible` parameter to `1` to use new topic names.
 
 ## trajectory_tracker
 
