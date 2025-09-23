@@ -50,9 +50,9 @@ costmap_3d node converts 2-D (x, y) OccupancyGrid to 2-D/3-DOF (x, y, yaw) confi
 * "linear_expand" (double, default: 0.2f): for root layer
 * "linear_spread" (double, default: 0.5f): for root layer
 * "linear_spread_min_cost" (int, default: 0)
-* "footprint" (?, default: footprint_xml): for root layer
-* "static_layers": array of layer configurations
-* "layers": array of layer configurations
+* "footprint" (string, default: ""): for root layer
+* "static_layers" (string array, default: []): array of layer configurations
+* "layers" (string array, default: []): array of layer configurations
 
 Each layer configuration contains:
 * "name" (string) layer name
