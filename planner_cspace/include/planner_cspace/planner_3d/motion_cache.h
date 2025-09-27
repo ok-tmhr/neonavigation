@@ -71,7 +71,7 @@ public:
   using Cache =
       std::unordered_map<CyclicVecInt<3, 2>, Page, CyclicVecInt<3, 2>>;
 
-  using Ptr = std::shared_ptr<MotionCache>;
+  using SharedPtr = std::shared_ptr<MotionCache>;
 
   inline const typename Cache::const_iterator find(
       const int start_yaw,

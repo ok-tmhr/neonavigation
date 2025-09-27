@@ -49,7 +49,6 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -60,7 +59,7 @@
 #include <std_msgs/msg/header.hpp>
 
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -173,9 +172,9 @@ private:
   };
 
   template <typename MSG_TYPE>
-  void cbPath(const typename MSG_TYPE::ConstPtr&);
-  void cbSpeed(const std_msgs::msg::Float32::ConstPtr&);
-  void cbOdometry(const nav_msgs::msg::Odometry::ConstPtr&);
+  void cbPath(const typename MSG_TYPE::ConstSharedPtr);
+  void cbSpeed(const std_msgs::msg::Float32::ConstSharedPtr);
+  void cbOdometry(const nav_msgs::msg::Odometry::ConstSharedPtr);
   void cbTimer();
   void cbOdomTimeout();
   void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
@@ -185,8 +184,8 @@ private:
 };
 
 TrackerNode::TrackerNode() : Node("trajectory_tracker")
-  , prev_odom_stamp_(0, 0, RCL_ROS_TIME)
-  , is_path_updated_(false)
+, is_path_updated_(false)
+, prev_odom_stamp_(0, 0, RCL_ROS_TIME)
 {
   frame_robot_ = this->declare_parameter("frame_robot", std::string("base_link"));
   frame_odom_ = this->declare_parameter("frame_odom", std::string("odom"));
@@ -324,13 +323,13 @@ TrackerNode::~TrackerNode()
   pub_vel_->publish(cmd_vel);
 }
 
-void TrackerNode::cbSpeed(const std_msgs::msg::Float32::ConstPtr& msg)
+void TrackerNode::cbSpeed(const std_msgs::msg::Float32::ConstSharedPtr msg)
 {
   vel_[0] = msg->data;
 }
 
 template <typename MSG_TYPE>
-void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
+void TrackerNode::cbPath(const typename MSG_TYPE::ConstSharedPtr msg)
 {
   path_header_ = msg->header;
   is_path_updated_ = true;
@@ -347,7 +346,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstPtr& msg)
   }
 }
 
-void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstPtr& odom)
+void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
 {
   if (odom->header.frame_id != frame_odom_)
   {

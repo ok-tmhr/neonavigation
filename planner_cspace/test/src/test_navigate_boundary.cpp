@@ -31,7 +31,7 @@
 #include <memory>
 
 #include <rclcpp/rclcpp.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <rclcpp_action/rclcpp_action.hpp>
 
@@ -52,8 +52,8 @@ protected:
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status_;
-  nav_msgs::msg::Path::ConstPtr path_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr status_;
+  nav_msgs::msg::Path::ConstSharedPtr path_;
   ActionClientPtr move_base_;
 
   NavigateBoundary()
@@ -97,11 +97,11 @@ protected:
     auto future = move_base_->async_send_goal(goal);
     rclcpp::spin_until_future_complete(nh_, future, std::chrono::milliseconds(500));
   }
-  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
   {
     path_ = msg;
   }
-  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
   {
     status_ = msg;
   }

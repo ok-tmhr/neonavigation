@@ -32,7 +32,7 @@
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -55,12 +55,12 @@ protected:
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
-  void cbTwist(const geometry_msgs::msg::Twist::ConstPtr& msg)
+  void cbTwist(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     v_ = msg->linear.x;
     w_ = msg->angular.z;
   }
-  void cbInit(const geometry_msgs::msg::PoseWithCovarianceStamped::ConstPtr& msg)
+  void cbInit(const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr msg)
   {
     geometry_msgs::msg::PoseStamped pose_in, pose_out;
     pose_in.header = msg->header;

@@ -62,7 +62,7 @@ public:
   {
     return saved_map_;
   }
-  void mapsCallback(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& maps)
+  void mapsCallback(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps)
   {
     int i = 0;
     for (auto& map : maps->maps)
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
   auto args = rclcpp::remove_ros_arguments(argc, argv);
   std::string mapname = "map";
 
-  for (int i = 1; i < args.size(); i++)
+  for (size_t i = 1; i < args.size(); i++)
   {
     if (!strcmp(argv[i], "-h"))
     {
@@ -152,7 +152,7 @@ int main(int argc, char** argv)
     }
     else if (!strcmp(argv[i], "-f"))
     {
-      if (++i < argc)
+      if (++i < static_cast<size_t>(argc))
         mapname = argv[i];
       else
       {

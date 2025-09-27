@@ -29,7 +29,6 @@
 
 #include <string>
 
-#include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/int32.hpp>
@@ -79,9 +78,9 @@ TEST(MapOrganizer, MapArray)
 {
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
-  map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
-  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
+  map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps;
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg) -> void
   {
     maps = msg;
   };
@@ -106,17 +105,17 @@ TEST(MapOrganizer, Maps)
 {
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
-  nav_msgs::msg::OccupancyGrid::ConstPtr map[2];
-  const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&, int)>
-      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map[2];
+  const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr, int)>
+      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
                   const int id) -> void
   {
     map[id] = msg;
   };
   auto sub0 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 0); });
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map0", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){ cb(msg, 0); });
   auto sub1 =
-      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstPtr msg){ cb(msg, 1); });
+      nh->create_subscription<nav_msgs::msg::OccupancyGrid>("map1", rclcpp::QoS(1).transient_local(), [cb](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){ cb(msg, 1); });
 
   rclcpp::Rate rate(10.0);
   for (int i = 0; i < 100 && rclcpp::ok(); ++i)
@@ -138,9 +137,9 @@ TEST(MapOrganizer, SelectMap)
 {
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
-  nav_msgs::msg::OccupancyGrid::ConstPtr map;
-  const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstPtr&)>
-      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg) -> void
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map;
+  const boost::function<void(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr)>
+      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg) -> void
   {
     map = msg;
   };
@@ -193,9 +192,9 @@ TEST(MapOrganizer, SavedMapArray)
 {
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
 
-  map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
-  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
+  map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps;
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg) -> void
   {
     maps = msg;
   };

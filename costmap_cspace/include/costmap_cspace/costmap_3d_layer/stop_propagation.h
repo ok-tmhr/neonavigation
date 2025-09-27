@@ -44,13 +44,13 @@ namespace costmap_cspace
 class Costmap3dLayerStopPropagation : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerStopPropagation>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerStopPropagation>;
 
 public:
-  void loadConfig(LayerConfig& config, rclcpp::Node& node)
+  void loadConfig(LayerConfig& /*config*/, rclcpp::Node& /*node*/)
   {
   }
-  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& /*info*/)
   {
   }
 
@@ -59,7 +59,7 @@ protected:
   {
     return 0;
   }
-  bool updateChain(const bool output)
+  bool updateChain(const bool /*output*/)
   {
     region_ = UpdatedRegion(
         0, 0, 0, map_->info.width, map_->info.height, map_->info.angle, rclcpp::Time(0, 0, RCL_ROS_TIME));
@@ -68,8 +68,8 @@ protected:
     return false;
   }
   void updateCSpace(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
-      const UpdatedRegion& region)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr /*map*/,
+      const UpdatedRegion& /*region*/)
   {
   }
 };

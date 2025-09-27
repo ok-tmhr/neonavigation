@@ -67,7 +67,7 @@
 #include <trajectory_tracker_msgs/converter.h>
 
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -123,7 +123,7 @@ protected:
 
   std::shared_ptr<Planner3DActionServer> act_;
   std::shared_ptr<Planner3DTolerantActionServer> act_tolerant_;
-  planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal_tolerant_;
+  planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstSharedPtr goal_tolerant_;
   std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle_;
   std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle_tolerant_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
@@ -139,15 +139,15 @@ protected:
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<char, 0x80> cm_updates_;
   Astar::Gridmap<char, 0x80> cm_local_esc_;
-  CostmapBBF::Ptr bbf_costmap_;
+  CostmapBBF::SharedPtr bbf_costmap_;
   DistanceMap cost_estim_cache_;
   DistanceMap cost_estim_cache_static_;
   DistanceMap arrivable_map_;
 
-  GridAstarModel3D::Ptr model_;
+  GridAstarModel3D::SharedPtr model_;
 
   costmap_cspace_msgs::msg::MapMetaData3D map_info_;
-  costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr map_update_retained_;
+  costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr map_update_retained_;
   std_msgs::msg::Header map_header_;
   float freq_;
   float freq_min_;
@@ -259,7 +259,7 @@ protected:
 
     return true;
   }
-  void cbTemporaryEscape(const std_msgs::msg::Empty::ConstPtr&)
+  void cbTemporaryEscape(const std_msgs::msg::Empty::ConstSharedPtr)
   {
     if (!has_map_)
     {
@@ -395,7 +395,7 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
 
-    GridAstarModel2D::Ptr model_2d(new GridAstarModel2D(model_));
+    GridAstarModel2D::SharedPtr model_2d(new GridAstarModel2D(model_));
 
     std::list<Astar::Vec> path_grid;
     std::vector<GridAstarModel3D::VecWithCost> starts;
@@ -429,7 +429,7 @@ protected:
     return true;
   }
 
-  void cbGoal(const geometry_msgs::msg::PoseStamped::ConstPtr& msg)
+  void cbGoal(const geometry_msgs::msg::PoseStamped::ConstSharedPtr msg)
   {
     if (goal_handle_ || goal_handle_tolerant_)
     {
@@ -790,7 +790,7 @@ protected:
     previous_path_ = path;
   }
 
-  void applyCostmapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
+  void applyCostmapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr msg)
   {
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const rclcpp::Time now = this->now();
@@ -974,7 +974,7 @@ protected:
     no_map_update_timer_ =
         this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this));
   }
-  void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
+  void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr msg)
   {
     if (!has_map_)
       return;
@@ -997,7 +997,7 @@ protected:
       applyCostmapUpdate(msg);
     }
   }
-  void cbMap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
+  void cbMap(const costmap_cspace_msgs::msg::CSpace3D::ConstSharedPtr msg)
   {
     RCLCPP_INFO(this->get_logger(), "Map received");
     RCLCPP_INFO(this->get_logger(), " linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
@@ -1122,7 +1122,7 @@ protected:
     goal_handle_tolerant_ = goal_handle;
   }
 
-  rclcpp_action::GoalResponse cbAction(const rclcpp_action::GoalUUID&, nav2_msgs::action::NavigateToPose::Goal::ConstPtr goal)
+  rclcpp_action::GoalResponse cbAction(const rclcpp_action::GoalUUID&, nav2_msgs::action::NavigateToPose::Goal::ConstSharedPtr goal)
   {
     if (goal_handle_tolerant_)
     {
@@ -1138,7 +1138,7 @@ protected:
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
 
-  rclcpp_action::GoalResponse cbTolerantAction(const rclcpp_action::GoalUUID&, planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal)
+  rclcpp_action::GoalResponse cbTolerantAction(const rclcpp_action::GoalUUID&, planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstSharedPtr goal)
   {
     if (goal_handle_)
     {
@@ -1186,8 +1186,8 @@ public:
   Planner3dNode() : Node("planner_3d")
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
-    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
-    , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::SharedPtr(new CostmapBBFNoOp()))
+    , arrivable_map_(cm_local_esc_, CostmapBBF::SharedPtr(new CostmapBBFNoOp()))
     , costmap_watchdog_(0, 0)
     , last_costmap_(0, 0, RCL_ROS_TIME)
   {

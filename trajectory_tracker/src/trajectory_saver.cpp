@@ -60,7 +60,7 @@ private:
 
   std::string filename_;
   bool saved_;
-  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg);
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg);
 };
 
 SaverNode::SaverNode() : Node("trajectory_saver")
@@ -76,7 +76,7 @@ SaverNode::~SaverNode()
 {
 }
 
-void SaverNode::cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
+void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
 {
   if (saved_)
     return;

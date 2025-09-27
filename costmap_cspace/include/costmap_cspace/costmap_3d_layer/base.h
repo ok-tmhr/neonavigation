@@ -50,8 +50,8 @@ namespace costmap_cspace
 class CSpace3DMsg : public costmap_cspace_msgs::msg::CSpace3D
 {
 public:
-  using Ptr = std::shared_ptr<CSpace3DMsg>;
-  using ConstPtr = std::shared_ptr<const CSpace3DMsg>;
+  using SharedPtr = std::shared_ptr<CSpace3DMsg>;
+  using ConstSharedPtr = std::shared_ptr<const CSpace3DMsg>;
   size_t address(const int& x, const int& y, const int& yaw) const
   {
     return (yaw * info.height + y) * info.width + x;
@@ -214,7 +214,7 @@ public:
     width_ = update_width;
     height_ = update_height;
   }
-  void bitblt(const CSpace3DMsg::Ptr& dest, const CSpace3DMsg::ConstPtr& src)
+  void bitblt(const CSpace3DMsg::SharedPtr& dest, const CSpace3DMsg::ConstSharedPtr src)
   {
     assert(dest->info.angle == src->info.angle);
     assert(dest->info.width == src->info.width);
@@ -253,7 +253,7 @@ public:
 class Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerBase>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerBase>;
   struct LayerConfig {
     std::string name;
     std::string type;
@@ -271,13 +271,13 @@ protected:
   MapOverlayMode overlay_mode_;
   bool root_;
 
-  CSpace3DMsg::Ptr map_;
-  CSpace3DMsg::Ptr map_overlay_;
+  CSpace3DMsg::SharedPtr map_;
+  CSpace3DMsg::SharedPtr map_overlay_;
 
-  Costmap3dLayerBase::Ptr child_;
+  std::shared_ptr<Costmap3dLayerBase> child_;
   UpdatedRegion region_;
   UpdatedRegion region_prev_;
-  nav_msgs::msg::OccupancyGrid::ConstPtr map_updated_;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_updated_;
 
 public:
   Costmap3dLayerBase()
@@ -302,13 +302,13 @@ public:
   {
     overlay_mode_ = overlay_mode;
   }
-  void setChild(Costmap3dLayerBase::Ptr child)
+  void setChild(std::shared_ptr<Costmap3dLayerBase> child)
   {
     child_ = child;
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  void setBaseMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& base_map)
+  void setBaseMap(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr base_map)
   {
     assert(root_);
     assert(ang_grid_ > 0);
@@ -358,7 +358,7 @@ public:
             0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
             base_map->header.stamp));
   }
-  void processMapOverlay(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg, const bool update_chain_entry)
+  void processMapOverlay(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg, const bool update_chain_entry)
   {
     assert(!root_);
     assert(ang_grid_ > 0);
@@ -387,15 +387,15 @@ public:
       RCLCPP_DEBUG(rclcpp::get_logger("costmap_3d_layer"), "update_chain_entry execution has been avoided.");
     }
   }
-  CSpace3DMsg::Ptr getMap()
+  CSpace3DMsg::SharedPtr getMap()
   {
     return map_;
   }
-  void setMap(CSpace3DMsg::Ptr map)
+  void setMap(CSpace3DMsg::SharedPtr map)
   {
     map_ = map;
   }
-  CSpace3DMsg::Ptr getMapOverlay()
+  CSpace3DMsg::SharedPtr getMapOverlay()
   {
     return map_overlay_;
   }
@@ -407,7 +407,7 @@ public:
 protected:
   virtual bool updateChain(const bool output) = 0;
   virtual void updateCSpace(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr map,
       const UpdatedRegion& region) = 0;
   virtual int getRangeMax() const = 0;
 

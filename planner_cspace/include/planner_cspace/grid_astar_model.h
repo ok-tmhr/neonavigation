@@ -41,7 +41,7 @@ template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstarModelBase
 {
 public:
-  using Ptr = typename std::shared_ptr<GridAstarModelBase<DIM, NONCYCLIC>>;
+  using SharedPtr = typename std::shared_ptr<GridAstarModelBase<DIM, NONCYCLIC>>;
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
 

@@ -27,7 +27,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/bind.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <geometry_msgs/msg/polygon_stamped.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
@@ -53,15 +52,15 @@ protected:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_debug_;
   rclcpp::TimerBase::SharedPtr timer_footprint_;
 
-  costmap_cspace::Costmap3d::Ptr costmap_;
+  costmap_cspace::Costmap3d::SharedPtr costmap_;
   std::vector<
-      std::pair<nav_msgs::msg::OccupancyGrid::ConstPtr,
-                costmap_cspace::Costmap3dLayerBase::Ptr>>
+      std::pair<nav_msgs::msg::OccupancyGrid::ConstSharedPtr,
+                costmap_cspace::Costmap3dLayerBase::SharedPtr>>
       map_buffer_;
 
   void cbMap(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
-      const costmap_cspace::Costmap3dLayerBase::Ptr map)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
+      const costmap_cspace::Costmap3dLayerBase::SharedPtr map)
   {
     if (map->getAngularGrid() <= 0)
     {
@@ -82,8 +81,8 @@ protected:
     }
   }
   void cbMapOverlay(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
-      const costmap_cspace::Costmap3dLayerBase::Ptr map)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
+      const costmap_cspace::Costmap3dLayerBase::SharedPtr map)
   {
     RCLCPP_DEBUG(this->get_logger(), "Overlay 2D costmap received");
 
@@ -92,8 +91,8 @@ protected:
         map_msg->info.height < 1)
     {
       map_buffer_.push_back(
-          std::pair<nav_msgs::msg::OccupancyGrid::ConstPtr,
-                    costmap_cspace::Costmap3dLayerBase::Ptr>(msg, map));
+          std::pair<nav_msgs::msg::OccupancyGrid::ConstSharedPtr,
+                    costmap_cspace::Costmap3dLayerBase::SharedPtr>(msg, map));
       return;
     }
 
@@ -101,15 +100,15 @@ protected:
     RCLCPP_DEBUG(this->get_logger(), "C-Space costmap updated");
   }
   bool cbUpdateStatic(
-      const costmap_cspace::CSpace3DMsg::Ptr& map)
+      const costmap_cspace::CSpace3DMsg::SharedPtr& map)
   {
     publishDebug(*map);
     pub_costmap_->publish<costmap_cspace_msgs::msg::CSpace3D>(*map);
     return true;
   }
   bool cbUpdate(
-      const costmap_cspace::CSpace3DMsg::Ptr& map,
-      const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update)
+      const costmap_cspace::CSpace3DMsg::SharedPtr& map,
+      const costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr& update)
   {
     if (update)
     {
@@ -221,9 +220,10 @@ public:
     std::vector<std::string> static_layers;
     static_layers = this->declare_parameter("static_layers", static_layers);
     {
-      for (int i = 0; i < static_layers.size(); ++i)
+      for (size_t i = 0; i < static_layers.size(); ++i)
       {
-        costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml{.name = static_layers[i]};
+        costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml;
+        layer_xml.name = static_layers[i];
         RCLCPP_INFO(this->get_logger(), "New static layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
@@ -247,31 +247,32 @@ public:
         if (layer_xml.footprint.empty())
           layer_xml.footprint = footprint_xml;
 
-        costmap_cspace::Costmap3dLayerBase::Ptr layer =
+        costmap_cspace::Costmap3dLayerBase::SharedPtr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml, *this);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             layer_xml.name, 1,
-            [this, layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return this->cbMapOverlay(msg, layer);}));
+            [this, layer](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){return this->cbMapOverlay(msg, layer);}));
       }
     }
 
     auto static_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dStaticLayerOutput>();
-    static_output_layer->setHandler([this](const costmap_cspace::CSpace3DMsg::Ptr& map){ return cbUpdateStatic(map);});
+    static_output_layer->setHandler([this](const costmap_cspace::CSpace3DMsg::SharedPtr& map){ return cbUpdateStatic(map);});
 
     sub_map_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "map", rclcpp::QoS(1).transient_local(),
-        [this, root_layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMap(msg, root_layer);});
+        [this, root_layer](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){return cbMap(msg, root_layer);});
 
     std::vector<std::string> layers;
     layers = this->declare_parameter("layers", layers);
     if (layers.size() > 0)
     {
-      for (int i = 0; i < layers.size(); ++i)
+      for (size_t i = 0; i < layers.size(); ++i)
       {
-        auto layer_xml = costmap_cspace::Costmap3dLayerBase::LayerConfig{ .name = layers[i] };
+        auto layer_xml = costmap_cspace::Costmap3dLayerBase::LayerConfig();
+        layer_xml.name = layers[i];
         RCLCPP_INFO(this->get_logger(), "New layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
@@ -295,14 +296,14 @@ public:
         if (layer_xml.footprint.empty())
           layer_xml.footprint = footprint_xml;
 
-        costmap_cspace::Costmap3dLayerBase::Ptr layer =
+        costmap_cspace::Costmap3dLayerBase::SharedPtr layer =
             costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml, *this);
 
         sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
             layer_xml.name, 1,
-            [this, layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMapOverlay(msg, layer);}));
+            [this, layer](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){return cbMapOverlay(msg, layer);}));
       }
     }
     else
@@ -331,11 +332,11 @@ public:
       layer->loadConfig(layer_xml, *this);
       sub_map_overlay_.push_back(this->create_subscription<nav_msgs::msg::OccupancyGrid>(
           "map_overlay", 1,
-          [this, layer](const nav_msgs::msg::OccupancyGrid::ConstPtr& msg){return cbMapOverlay(msg, layer);}));
+          [this, layer](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){return cbMapOverlay(msg, layer);}));
     }
 
     auto update_output_layer = costmap_->addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
-    update_output_layer->setHandler([this](const costmap_cspace::CSpace3DMsg::Ptr& map,const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update){ return cbUpdate(map,update); });
+    update_output_layer->setHandler([this](const costmap_cspace::CSpace3DMsg::SharedPtr& map,const costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr& update){ return cbUpdate(map,update); });
 
     const geometry_msgs::msg::PolygonStamped footprint_msg = footprint.toMsg();
     timer_footprint_ = this->create_wall_timer(

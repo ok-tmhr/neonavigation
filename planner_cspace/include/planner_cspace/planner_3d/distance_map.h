@@ -87,11 +87,11 @@ public:
 
   DistanceMap(
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
-      const CostmapBBF::ConstPtr bbf_costmap);
+      const CostmapBBF::ConstSharedPtr bbf_costmap);
 
   void setParams(const CostCoeff& cc, const int num_cost_estim_task);
 
-  void init(const GridAstarModel3D::Ptr model, const Params& p);
+  void init(const GridAstarModel3D::SharedPtr model, const Params& p);
 
   void update(
       const Astar::Vec& s, const Astar::Vec& e,
@@ -126,7 +126,7 @@ protected:
   CostCoeff cc_;
   int num_cost_estim_task_;
   const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
-  const CostmapBBF::ConstPtr bbf_costmap_;
+  const CostmapBBF::ConstSharedPtr bbf_costmap_;
 
   std::vector<SearchDiffs> search_diffs_;
   DebugData debug_data_;

@@ -40,15 +40,15 @@ TEST(Planner2DOFSerialJoints, Plan)
   auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
   auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
-  trajectory_msgs::msg::JointTrajectory::ConstPtr planned;
-  const auto cb_plan = [&planned](const trajectory_msgs::msg::JointTrajectory::ConstPtr& msg)
+  trajectory_msgs::msg::JointTrajectory::ConstSharedPtr planned;
+  const auto cb_plan = [&planned](const trajectory_msgs::msg::JointTrajectory::ConstSharedPtr msg)
   {
     planned = msg;
   };
   auto sub_plan = nh->create_subscription<trajectory_msgs::msg::JointTrajectory>("joint_trajectory", rclcpp::QoS(1).transient_local(), cb_plan);
 
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
-  const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr status;
+  const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
   {
     status = msg;
   };
@@ -150,8 +150,8 @@ TEST(Planner2DOFSerialJoints, NoPath)
   auto pub_state = nh->create_publisher<sensor_msgs::msg::JointState>("joint_states", rclcpp::QoS(1).transient_local());
   auto pub_cmd = nh->create_publisher<trajectory_msgs::msg::JointTrajectory>("trajectory_in", rclcpp::QoS(1).transient_local());
 
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
-  const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr status;
+  const auto cb_status = [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
   {
     status = msg;
   };

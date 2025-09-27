@@ -44,7 +44,7 @@ namespace costmap_cspace
 class Costmap3dLayerUnknownHandle : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerUnknownHandle>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerUnknownHandle>;
 
 protected:
   int8_t unknown_cost_;
@@ -58,7 +58,7 @@ public:
   {
     unknown_cost_ = node.declare_parameter(config.name + ".unknown_cost", unknown_cost_);
   }
-  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& /*info*/)
   {
   }
 
@@ -67,7 +67,7 @@ protected:
   {
     return 0;
   }
-  bool updateChain(const bool output)
+  bool updateChain(const bool /*output*/)
   {
     for (
         size_t a = region_.yaw_;
@@ -93,8 +93,8 @@ protected:
     return false;
   }
   void updateCSpace(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
-      const UpdatedRegion& region)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr /*map*/,
+      const UpdatedRegion& /*region*/)
   {
   }
 };

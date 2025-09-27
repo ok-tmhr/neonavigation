@@ -36,7 +36,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -48,7 +48,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_largemap_;
   rclcpp::TimerBase::SharedPtr timer_;
 
-  nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr large_map_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
@@ -114,7 +114,7 @@ private:
   {
     publishMap();
   }
-  void cbLargeMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
+  void cbLargeMap(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     large_map_ = msg;
   }

@@ -44,8 +44,8 @@ class CostmapBBF
 {
 public:
   using Vec = CyclicVecInt<3, 2>;
-  using Ptr = std::shared_ptr<CostmapBBF>;
-  using ConstPtr = std::shared_ptr<const CostmapBBF>;
+  using SharedPtr = std::shared_ptr<CostmapBBF>;
+  using ConstSharedPtr = std::shared_ptr<const CostmapBBF>;
 
   virtual void reset(const Vec& size) = 0;
   virtual void clear() = 0;

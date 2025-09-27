@@ -48,7 +48,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <rosgraph_msgs/msg/clock.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/utils.h>
 
@@ -90,11 +90,11 @@ protected:
   }
 
 private:
-  void cbStatus(const trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr& msg)
+  void cbStatus(const trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstSharedPtr msg)
   {
     status_ = msg;
   }
-  void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
+  void cbCmdVel(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     const rclcpp::Time now = nh_->now();
     if (cmd_vel_time_ == rclcpp::Time(0, 0, RCL_ROS_TIME))
@@ -111,17 +111,17 @@ private:
 public:
   rclcpp::Node::SharedPtr nh_;
   tf2::Transform pose_;
-  trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr status_;
-  geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
+  trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstSharedPtr status_;
+  geometry_msgs::msg::Twist::ConstSharedPtr cmd_vel_;
   rclcpp::Duration delay_;
 
   TrajectoryTrackerTest()
-    : nh_(rclcpp::Node::make_shared("trajectory_tracker_test"))
-    , delay_(0, 0)
-    , cmd_vel_time_(0, 0, RCL_ROS_TIME)
+    : cmd_vel_time_(0, 0, RCL_ROS_TIME)
     , trans_stamp_last_(0, 0, RCL_ROS_TIME)
     , initial_cmd_vel_time_(0, 0, RCL_ROS_TIME)
+    , delay_(0, 0)
   {
+    nh_ = rclcpp::Node::make_shared("trajectory_tracker_test");
     using std::placeholders::_1;
     sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel", 1, std::bind(&TrajectoryTrackerTest::cbCmdVel, this, _1));
@@ -313,7 +313,7 @@ public:
 
 namespace trajectory_tracker_msgs::msg
 {
-std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstPtr& msg)
+std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstSharedPtr msg)
 {
   if (!msg)
   {

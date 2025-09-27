@@ -130,9 +130,9 @@ private:
   sensor_msgs::msg::PointCloud2 convertObj(const std::vector<std::string>& files)
   {
     sensor_msgs::msg::PointCloud2 pc_msg;
-    pcl::PolygonMesh::Ptr mesh(new pcl::PolygonMesh());
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>());
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc_rs(new pcl::PointCloud<pcl::PointXYZ>());
+    std::shared_ptr<pcl::PolygonMesh> mesh(new pcl::PolygonMesh());
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc(new pcl::PointCloud<pcl::PointXYZ>());
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc_rs(new pcl::PointCloud<pcl::PointXYZ>());
 
     pcl::PointXYZ offset(static_cast<float>(offset_x_), static_cast<float>(offset_y_), static_cast<float>(offset_z_));
 
@@ -221,7 +221,7 @@ private:
     pc_rs->is_dense = true;
 
     // Down-sample
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
     ds.setInputCloud(pc_rs);
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);

@@ -105,7 +105,7 @@ public:
   }
 
 protected:
-  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
   {
     path_ = msg;
     ++path_received_count_;
@@ -258,7 +258,7 @@ protected:
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
-  nav_msgs::msg::Path::ConstPtr path_;
+  nav_msgs::msg::Path::ConstSharedPtr path_;
   std::unique_ptr<rclcpp::AsyncParametersClient> planner_3d_client_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_map_overlay_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;

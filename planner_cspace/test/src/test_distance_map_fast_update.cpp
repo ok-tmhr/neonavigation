@@ -61,7 +61,7 @@ protected:
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF::Ptr bbf_costmap_;
+  CostmapBBF::SharedPtr bbf_costmap_;
 
   DistanceMap dm_full_;
   DistanceMap dm_fast_;
@@ -94,7 +94,7 @@ protected:
     const Astar::Vec size2d(w_, h_, 1);
     Astar::Gridmap<char, 0x40> cm;
     Astar::Gridmap<char, 0x80> cm_hyst;
-    GridAstarModel3D::Ptr model(
+    GridAstarModel3D::SharedPtr model(
         new GridAstarModel3D(
             map_info,
             ec_,

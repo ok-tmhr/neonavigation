@@ -209,13 +209,13 @@ public:
 
       nav_msgs::msg::OccupancyGrid map_resp;
       nav2_map_server::LoadParameters load_parameters{
-        .image_file_name = mapfname,
-        .resolution = res,
-        .origin = std::vector<double>(origin, origin + 3),
-        .free_thresh = free_th,
-        .occupied_thresh = occ_th,
-        .mode = mode,
-        .negate = negate
+        mapfname,
+        res,
+        std::vector<double>(origin, origin + 3),
+        free_th,
+        occ_th,
+        mode,
+        static_cast<bool>(negate)
       };
       nav2_map_server::loadMapFromFile(load_parameters, map_resp);
       map_resp.info.origin.position.z = height;

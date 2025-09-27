@@ -29,10 +29,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
@@ -113,7 +113,7 @@ public:
   }
 
 private:
-  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr cloud, const bool singleshot)
+  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud, const bool singleshot)
   {
     sensor_msgs::msg::PointCloud2 cloud_global;
     geometry_msgs::msg::TransformStamped trans;

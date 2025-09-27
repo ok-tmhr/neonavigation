@@ -42,7 +42,7 @@
 #include <planner_cspace_msgs/msg/planner_status.hpp>
 #include <std_srvs/srv/empty.hpp>
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -56,9 +56,9 @@ protected:
   rclcpp::Node::SharedPtr nh_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
-  costmap_cspace_msgs::msg::CSpace3D::ConstPtr costmap_;
-  nav_msgs::msg::Path::ConstPtr path_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr planner_status_;
+  costmap_cspace_msgs::msg::CSpace3D::ConstSharedPtr costmap_;
+  nav_msgs::msg::Path::ConstSharedPtr path_;
   rclcpp::Subscription<costmap_cspace_msgs::msg::CSpace3D>::SharedPtr sub_costmap_;
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
@@ -135,12 +135,12 @@ protected:
 
     rclcpp::sleep_for(std::chrono::seconds(1));
   }
-  void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
+  void cbCostmap(const costmap_cspace_msgs::msg::CSpace3D::ConstSharedPtr msg)
   {
     costmap_ = msg;
     std::cerr << test_scope_ << tf2_ros::timeToSec(msg->header.stamp) << " Costmap received." << std::endl;
   }
-  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
   {
     if (!planner_status_ || planner_status_->status != msg->status || planner_status_->error != msg->error)
     {
@@ -148,7 +148,7 @@ protected:
     }
     planner_status_ = msg;
   }
-  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
   {
     if (!path_ || path_->poses.size() != msg->poses.size())
     {

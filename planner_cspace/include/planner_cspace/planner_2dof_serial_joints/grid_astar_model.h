@@ -52,8 +52,8 @@ public:
 class GridAstarModel2DoFSerialJoint : public GridAstarModelBase<2, 0>
 {
 public:
-  using Ptr = std::shared_ptr<GridAstarModel2DoFSerialJoint>;
-  using ConstPtr = std::shared_ptr<const GridAstarModel2DoFSerialJoint>;
+  using SharedPtr = std::shared_ptr<GridAstarModel2DoFSerialJoint>;
+  using ConstSharedPtr = std::shared_ptr<const GridAstarModel2DoFSerialJoint>;
   using Vec = CyclicVecInt<2, 0>;
   using Vecf = CyclicVecFloat<2, 0>;
 

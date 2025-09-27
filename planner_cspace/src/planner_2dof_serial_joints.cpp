@@ -58,7 +58,7 @@ class Planner2dofSerialJointsNode : public rclcpp::Node
 {
 public:
   using Astar = GridAstar<2, 0>;
-  using Ptr = std::shared_ptr<Planner2dofSerialJointsNode>;
+  using SharedPtr = std::shared_ptr<Planner2dofSerialJointsNode>;
 
 private:
   rclcpp::Publisher<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr pub_status_;
@@ -71,7 +71,7 @@ private:
 
   Astar as_;
   Astar::Gridmap<char, 0x40> cm_;
-  GridAstarModel2DoFSerialJoint::Ptr model_;
+  GridAstarModel2DoFSerialJoint::SharedPtr model_;
 
   float freq_;
   float freq_min_;
@@ -159,7 +159,7 @@ private:
   rclcpp::Duration replan_interval_;
   bool has_joint_states_;
 
-  void cbJoint(const sensor_msgs::msg::JointState::ConstPtr& msg)
+  void cbJoint(const sensor_msgs::msg::JointState::ConstSharedPtr msg)
   {
     int id[2] = {-1, -1};
     for (size_t i = 0; i < msg->name.size(); i++)
@@ -188,7 +188,7 @@ private:
   std::pair<rclcpp::Duration, std::pair<float, float>> cmd_prev_;
   trajectory_msgs::msg::JointTrajectory traj_prev_;
   int id_[2];
-  void cbTrajectory(const trajectory_msgs::msg::JointTrajectory::ConstPtr& msg)
+  void cbTrajectory(const trajectory_msgs::msg::JointTrajectory::ConstSharedPtr msg)
   {
     id_[0] = -1;
     id_[1] = -1;
@@ -671,7 +671,7 @@ int main(int argc, char* argv[])
   rclcpp::executors::SingleThreadedExecutor executor;
   rclcpp::Node::SharedPtr pnh = rclcpp::Node::make_shared("planner_2dof_serial_joints");
 
-  std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr> jys;
+  std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::SharedPtr> jys;
   int n;
   n = pnh->declare_parameter("num_groups", 1);
   for (int i = 0; i < n; i++)
@@ -679,7 +679,7 @@ int main(int argc, char* argv[])
     std::string name;
     name = pnh->declare_parameter("group" + std::to_string(i) + "_name",
               std::string("group") + std::to_string(i));
-    planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::Ptr jy;
+    planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::SharedPtr jy;
 
     jy.reset(new planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode(name));
     jys.push_back(jy);

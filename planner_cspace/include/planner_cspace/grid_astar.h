@@ -169,7 +169,7 @@ public:
   bool search(
       const std::vector<VecWithCost>& ss, const Vec& e,
       std::list<Vec>& path,
-      const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
+      const typename GridAstarModelBase<DIM, NONCYCLIC>::SharedPtr& model,
       ProgressCallback cb_progress,
       const float cost_leave,
       const float progress_interval,
@@ -186,7 +186,7 @@ protected:
       Gridmap<float>& g,
       const std::vector<VecWithCost>& sts, const Vec& en,
       std::list<Vec>& path,
-      const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
+      const typename GridAstarModelBase<DIM, NONCYCLIC>::SharedPtr& model,
       ProgressCallback cb_progress,
       const float cost_leave,
       const float progress_interval,

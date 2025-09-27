@@ -37,7 +37,7 @@
 
 #include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <planner_cspace/cyclic_vec.h>
 

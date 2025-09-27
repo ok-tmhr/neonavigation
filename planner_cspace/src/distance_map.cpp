@@ -182,7 +182,7 @@ void DistanceMap::fillCostmap(
 
 DistanceMap::DistanceMap(
     const BlockMemGridmapBase<char, 3, 2>& cm_rough,
-    const CostmapBBF::ConstPtr bbf_costmap)
+    const CostmapBBF::ConstSharedPtr bbf_costmap)
   : cm_rough_(cm_rough)
   , bbf_costmap_(bbf_costmap)
   , goal_(-1, -1, -1)
@@ -195,7 +195,7 @@ void DistanceMap::setParams(const CostCoeff& cc, const int num_cost_estim_task)
   num_cost_estim_task_ = num_cost_estim_task;
 }
 
-void DistanceMap::init(const GridAstarModel3D::Ptr model, const Params& p)
+void DistanceMap::init(const GridAstarModel3D::SharedPtr model, const Params& p)
 {
   if (p.size[0] != p_.size[0] || p.size[1] != p_.size[1])
   {

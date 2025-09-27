@@ -49,21 +49,21 @@ template <class CALLBACK>
 class Costmap3dLayerOutput : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerOutput>;
 
 protected:
   CALLBACK cb_;
   UpdatedRegion region_prev_;
 
 public:
-  void loadConfig(LayerConfig& config, rclcpp::Node& node)
+  void loadConfig(LayerConfig& /*config*/, rclcpp::Node& /*node*/)
   {
   }
   void setHandler(CALLBACK cb)
   {
     cb_ = cb;
   }
-  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& /*info*/)
   {
   }
 
@@ -73,17 +73,17 @@ protected:
     return 0;
   }
   void updateCSpace(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
-      const UpdatedRegion& region)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr /*map*/,
+      const UpdatedRegion& /*region*/)
   {
   }
 };
 
 class Costmap3dStaticLayerOutput
-  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::SharedPtr&)>>
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dStaticLayerOutput>;
+  using SharedPtr = std::shared_ptr<Costmap3dStaticLayerOutput>;
 
 protected:
   bool updateChain(const bool output)
@@ -95,11 +95,11 @@ protected:
 };
 
 class Costmap3dUpdateLayerOutput
-  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
-                                                     const typename costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::SharedPtr&,
+                                                     const typename costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr&)>>
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
+  using SharedPtr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
 
 protected:
   bool updateChain(const bool output)
@@ -110,9 +110,9 @@ protected:
     return true;
   }
 
-  costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr generateUpdateMsg()
+  costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr generateUpdateMsg()
   {
-    costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::msg::CSpace3DUpdate);
+    costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr update_msg(new costmap_cspace_msgs::msg::CSpace3DUpdate);
     update_msg->header = map_->header;
     map_->header.stamp = region_.stamp_;
 

@@ -84,7 +84,7 @@ TEST(GridAstar, ParallelSearch)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {
@@ -140,7 +140,7 @@ TEST(GridAstar, TimeoutAbort)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   int cnt(0);
   const auto cb_progress = [&cnt](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
@@ -214,7 +214,7 @@ TEST(GridAstar, SearchWithMultipleStarts)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {

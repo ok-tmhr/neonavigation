@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/bind.hpp>
+// #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
@@ -49,7 +49,7 @@ private:
   bool advertised_;
   int selected_;
 
-  void cbJoy(const sensor_msgs::msg::Joy::Ptr msg)
+  void cbJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
     if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
     {

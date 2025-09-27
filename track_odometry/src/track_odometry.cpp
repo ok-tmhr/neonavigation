@@ -46,7 +46,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/synchronizer.h>
 
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
@@ -126,11 +126,11 @@ private:
   bool has_odom_;
   bool publish_tf_;
 
-  void cbResetZ(const std_msgs::msg::Float32::Ptr msg)
+  void cbResetZ(const std_msgs::msg::Float32::SharedPtr msg)
   {
     odom_prev_.pose.pose.position.z = msg->data;
   }
-  void cbOdomImu(const nav_msgs::msg::Odometry::ConstPtr& odom_msg, const sensor_msgs::msg::Imu::ConstPtr& imu_msg)
+  void cbOdomImu(const nav_msgs::msg::Odometry::ConstSharedPtr odom_msg, const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg)
   {
     RCLCPP_DEBUG(this->get_logger(),
         "Synchronized timestamp: odom %0.3f, imu %0.3f",
@@ -139,7 +139,7 @@ private:
     cbImu(imu_msg);
     cbOdom(odom_msg);
   }
-  void cbImu(const sensor_msgs::msg::Imu::ConstPtr& msg)
+  void cbImu(const sensor_msgs::msg::Imu::ConstSharedPtr msg)
   {
     if (base_link_id_.size() == 0)
     {
@@ -201,7 +201,7 @@ private:
       return;
     }
   }
-  void cbOdom(const nav_msgs::msg::Odometry::ConstPtr& msg)
+  void cbOdom(const nav_msgs::msg::Odometry::ConstSharedPtr msg)
   {
     nav_msgs::msg::Odometry odom = *msg;
     if (has_odom_)
@@ -361,7 +361,7 @@ public:
   }
   void cbTimer()
   {
-    nav_msgs::msg::Odometry::Ptr odom(new nav_msgs::msg::Odometry);
+    nav_msgs::msg::Odometry::SharedPtr odom(new nav_msgs::msg::Odometry);
     odom->header.stamp = this->now();
     odom->header.frame_id = odom_id_;
     odom->child_frame_id = base_link_id_;

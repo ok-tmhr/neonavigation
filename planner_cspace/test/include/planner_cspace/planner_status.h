@@ -35,7 +35,7 @@
 
 namespace planner_cspace_msgs::msg
 {
-std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstPtr& msg)
+std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstSharedPtr msg)
 {
   if (!msg)
   {
