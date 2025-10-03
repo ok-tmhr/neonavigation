@@ -47,7 +47,7 @@
 
 #include <omp.h>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/chrono.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -250,14 +250,12 @@ protected:
   StartPosePredictor start_pose_predictor_;
   rclcpp::TimerBase::SharedPtr no_map_update_timer_;
 
-  bool cbForget(std_srvs::srv::Empty::Request::SharedPtr req,
-                std_srvs::srv::Empty::Response::SharedPtr res)
+  void cbForget(const std_srvs::srv::Empty::Request::SharedPtr /*req*/,
+                std_srvs::srv::Empty::Response::SharedPtr /*res*/)
   {
     RCLCPP_WARN(this->get_logger(), "Forgetting remembered costmap.");
     if (has_map_)
       bbf_costmap_->clear();
-
-    return true;
   }
   void cbTemporaryEscape(const std_msgs::msg::Empty::ConstSharedPtr)
   {
@@ -438,7 +436,7 @@ protected:
     }
     setGoal(*msg);
   }
-  rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
+  rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> /*goal_handle*/)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
 
@@ -448,7 +446,7 @@ protected:
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
-  rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle)
+  rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> /*goal_handle*/)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
 
@@ -1045,14 +1043,14 @@ protected:
     cm_.reset(size3d);
     cm_hyst_.reset(size3d);
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range_,
-            .local_range = local_range_,
-            .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
-            .size = size2d,
-            .resolution = map_info_.linear_resolution,
+            ec_,
+            range_,
+            local_range_,
+            static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+            size2d,
+            map_info_.linear_resolution,
         };
     cost_estim_cache_.init(model_, dmp);
     if (enable_crowd_mode_)
@@ -1527,14 +1525,14 @@ public:
     {
       resetGridAstarModel(false);
       const Astar::Vec size2d(static_cast<int>(map_info_.width), static_cast<int>(map_info_.height), 1);
-      const DistanceMap::Params dmp =
+      const DistanceMap::Params dmp
           {
-              .euclid_cost = ec_,
-              .range = range_,
-              .local_range = local_range_,
-              .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
-              .size = size2d,
-              .resolution = map_info_.linear_resolution,
+              ec_,
+              range_,
+              local_range_,
+              static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+              size2d,
+              map_info_.linear_resolution,
           };
       cost_estim_cache_.init(model_, dmp);
       if (enable_crowd_mode_)
@@ -2054,7 +2052,7 @@ protected:
     const float range_limit = initial_2dof_cost - (local_range_ + range_) * ec_[0];
     const auto ts = boost::chrono::high_resolution_clock::now();
     const auto cb_progress =
-        [this, ts, start_grid, end_grid](const std::list<Astar::Vec>& path_grid, const SearchStats& stats) -> bool
+        [this, ts, start_grid, end_grid](const std::list<Astar::Vec>& /*path_grid*/, const SearchStats& stats) -> bool
     {
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const auto tdiff = boost::chrono::duration<float>(tnow - ts).count();
@@ -2259,14 +2257,14 @@ protected:
       const Astar::Vec local_range(local_width, local_width, 0);
       const Astar::Vec local_size(local_width + 1, local_width + 1, 1);
       const Astar::Vec local_center(esc_range_, esc_range_, 0);
-      const DistanceMap::Params dmp =
+      const DistanceMap::Params dmp
           {
-              .euclid_cost = ec_,
-              .range = 0,
-              .local_range = 0,
-              .longcut_range = esc_range_,
-              .size = local_size,
-              .resolution = map_info_.linear_resolution,
+              ec_,
+              0,
+              0,
+              esc_range_,
+              local_size,
+              map_info_.linear_resolution,
           };
 
       cm_local_esc_.reset(local_size);

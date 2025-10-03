@@ -828,8 +828,7 @@ TEST_F(Navigate, CrowdEscapeOnPathNotFound)
   rclcpp::Time check_until = deadline;
   while (rclcpp::ok())
   {
-    const size_t data_size = map_local_->data.size();
-    for (int x = 0; x < map_local_->info.width; ++x)
+    for (size_t x = 0; x < map_local_->info.width; ++x)
     {
       const size_t y = 1.1 / map_->info.resolution;
       map_local_->data[x + y * map_local_->info.width] = 100;
@@ -896,12 +895,11 @@ TEST_F(Navigate, CrowdEscapeOnGoalIsInRock)
   rclcpp::Time check_until = deadline;
   while (rclcpp::ok())
   {
-    const size_t data_size = map_local_->data.size();
     const size_t gx = path.poses[0].pose.position.x / map_->info.resolution;
     const size_t gy = path.poses[0].pose.position.y / map_->info.resolution;
-    for (int x = gx - 2; x <= gx + 2; ++x)
+    for (size_t x = gx - 2; x <= gx + 2; ++x)
     {
-      for (int y = gy - 2; y <= gy + 2; ++y)
+      for (size_t y = gy - 2; y <= gy + 2; ++y)
       {
         map_local_->data[x + y * map_local_->info.width] = 100;
       }
@@ -963,7 +961,6 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
   tf2::fromMsg(path.poses.back().pose, goal);
 
   rclcpp::Rate wait(10);
-  bool unreachable = false;
   const rclcpp::Time check_until = nh_->now() + rclcpp::Duration::from_seconds(2);
   int cnt_planning = 0;
   while (rclcpp::ok())
@@ -972,9 +969,9 @@ TEST_F(Navigate, CrowdEscapeButNoValidTemporaryGoal)
     const size_t gy = path.poses[0].pose.position.y / map_->info.resolution;
     map_local_->data.clear();
     map_local_->data.resize(map_local_->info.width * map_local_->info.height, 60);
-    for (int x = gx - 2; x <= gx + 2; ++x)
+    for (size_t x = gx - 2UL; x <= gx + 2UL; ++x)
     {
-      for (int y = gy - 2; y <= gy + 2; ++y)
+      for (size_t y = gy - 2UL; y <= gy + 2UL; ++y)
       {
         map_local_->data[x + y * map_local_->info.width] = 100;
       }

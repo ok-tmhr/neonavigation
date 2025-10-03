@@ -57,7 +57,7 @@ protected:
     pub_map_update_ = nh_->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   }
 
-  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr /*msg*/)
   {
     ++cnt_status_;
   }

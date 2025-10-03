@@ -114,14 +114,14 @@ protected:
     cm_rough_.clear(0);
     bbf_costmap_->clear();
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range,
-            .local_range = local_range,
-            .longcut_range = 10,
-            .size = size2d,
-            .resolution = map_info.linear_resolution,
+            ec_,
+            range,
+            local_range,
+            10,
+            size2d,
+            map_info.linear_resolution,
         };
     dm_.init(model, dmp);
   }
@@ -364,14 +364,14 @@ protected:
     cm_rough_.clear(0);
     bbf_costmap_->clear();
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range_,
-            .local_range = local_range_,
-            .longcut_range = longcut_range_,
-            .size = size2d,
-            .resolution = map_info.linear_resolution,
+            ec_,
+            range_,
+            local_range_,
+            longcut_range_,
+            size2d,
+            map_info.linear_resolution,
         };
     dm_.init(model, dmp);
   }
