@@ -39,7 +39,6 @@
 #include <fstream>
 #include <string>
 
-#include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/serialized_message.hpp>
@@ -57,6 +56,7 @@ public:
 
 private:
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   std::string filename_;
   bool saved_;
@@ -71,6 +71,9 @@ SaverNode::SaverNode() : Node("trajectory_saver")
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(10).transient_local(), std::bind(&SaverNode::cbPath, this, std::placeholders::_1));
+  timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(1.0 / 5.0),
+    std::bind(&SaverNode::save, this));
 }
 SaverNode::~SaverNode()
 {
@@ -101,17 +104,14 @@ void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
 
 void SaverNode::save()
 {
-  rclcpp::Rate loop_rate(5);
   RCLCPP_INFO(this->get_logger(), "Waiting for the path");
 
-  while (rclcpp::ok())
+  if (saved_)
   {
-    rclcpp::spin_some(shared_from_this());
-    loop_rate.sleep();
-    if (saved_)
-      break;
+    RCLCPP_INFO(this->get_logger(), "Path saved");
+    rclcpp::shutdown();
   }
-  RCLCPP_INFO(this->get_logger(), "Path saved");
+
 }
 
 int main(int argc, char** argv)
@@ -119,7 +119,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
 
   auto rec = std::make_shared<SaverNode>();
-  rec->save();
+  rclcpp::spin(rec);
 
   return 0;
 }

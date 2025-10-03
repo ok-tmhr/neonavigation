@@ -96,6 +96,7 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_reset_z_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
+  rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -358,6 +359,12 @@ public:
     tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
+    if (without_odom_)
+    {
+      timer_ = this->create_wall_timer(
+          std::chrono::duration<double>(1.0 / 50.0), std::bind(&TrackOdometryNode::cbTimer, this));
+    }
   }
   void cbTimer()
   {
@@ -368,19 +375,6 @@ public:
     odom->pose.pose.orientation.w = 1.0;
     cbOdom(odom);
   }
-  void spin()
-  {
-    if (!without_odom_)
-    {
-      rclcpp::spin(shared_from_this());
-    }
-    else
-    {
-      rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
-          std::chrono::duration<double>(1.0 / 50.0), std::bind(&TrackOdometryNode::cbTimer, this));
-      rclcpp::spin(shared_from_this());
-    }
-  }
 };
 
 int main(int argc, char* argv[])
@@ -389,7 +383,7 @@ int main(int argc, char* argv[])
 
   auto odom = std::make_shared<TrackOdometryNode>();
 
-  odom->spin();
+  rclcpp::spin(odom);
 
   return 0;
 }

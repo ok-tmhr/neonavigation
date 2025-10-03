@@ -100,6 +100,7 @@ protected:
   std::vector<rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr> sub_clouds_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr sub_disable_;
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr sub_watchdog_;
+  rclcpp::TimerBase::SharedPtr predict_timer_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
@@ -282,10 +283,7 @@ public:
       }
     );
 
-  }
-  void spin()
-  {
-    rclcpp::TimerBase::SharedPtr predict_timer =
+    predict_timer_ =
         this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&SafetyLimiterNode::cbPredictTimer, this));
 
     if (watchdog_interval_ != rclcpp::Duration::from_seconds(0.0))
@@ -293,8 +291,6 @@ public:
       watchdog_timer_ =
           this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::duration<double>>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     }
-
-    rclcpp::spin(shared_from_this());
   }
 
 protected:
@@ -850,7 +846,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
 
   auto limiter = std::make_shared<safety_limiter::SafetyLimiterNode>();
-  limiter->spin();
+  rclcpp::spin(limiter);
 
   return 0;
 }

@@ -43,6 +43,7 @@
 class TfProjectionNode : public rclcpp::Node
 {
 private:
+  rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   std::unique_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
@@ -95,6 +96,9 @@ public:
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
     tf_static_broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
+    timer_ = this->create_wall_timer(
+        std::chrono::duration<double>(1.0 / rate_), std::bind(&TfProjectionNode::cbTimer, this));
   }
   void process()
   {
@@ -160,12 +164,6 @@ public:
   {
     process();
   }
-  void spin()
-  {
-    rclcpp::TimerBase::SharedPtr timer = this->create_wall_timer(
-        std::chrono::duration<double>(1.0 / rate_), std::bind(&TfProjectionNode::cbTimer, this));
-    rclcpp::spin(shared_from_this());
-  }
 };
 
 int main(int argc, char* argv[])
@@ -173,7 +171,7 @@ int main(int argc, char* argv[])
   rclcpp::init(argc, argv);
 
   auto proj = std::make_shared<TfProjectionNode>();
-  proj->spin();
+  rclcpp::spin(proj);
 
   return 0;
 }
