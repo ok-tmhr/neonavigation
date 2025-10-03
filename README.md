@@ -1,12 +1,12 @@
 # neonavigation meta-package
 
-[![Build Status](https://github.com/at-wat/neonavigation/actions/workflows/test.yaml/badge.svg)](https://github.com/at-wat/neonavigation/actions/workflows/test.yaml)
-[![Codecov](https://codecov.io/gh/at-wat/neonavigation/branch/master/graph/badge.svg)](https://codecov.io/gh/at-wat/neonavigation)
+[![Build Status](https://github.com/ok-tmhr/neonavigation/actions/workflows/test.yaml/badge.svg)](https://github.com/ok-tmhr/neonavigation/actions/workflows/test.yaml)
+[![Codecov](https://codecov.io/gh/ok-tmhr/neonavigation/branch/humble-dev/graph/badge.svg)](https://codecov.io/gh/ok-tmhr/neonavigation)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 ROS meta-package for autonomous vehicle navigation.
 
-> [!NOTE]  
+> [!NOTE]
 > After official ROS 1 EOL, this package is released to [Alpine ROS](https://www.seqsense.org/alpine-ros).
 
 ## Important notices
@@ -21,13 +21,13 @@ ROS meta-package for autonomous vehicle navigation.
 
 ```shell
 # clone
-cd /path/to/your/catkin_ws/src
-git clone https://github.com/at-wat/neonavigation.git
-git clone https://github.com/at-wat/neonavigation_msgs.git
-git clone https://github.com/at-wat/neonavigation_rviz_plugins.git
+cd /path/to/your/colcon_ws/src
+git clone https://github.com/ok-tmhr/neonavigation.git
+git clone https://github.com/ok-tmhr/neonavigation_msgs.git
+git clone https://github.com/ok-tmhr/neonavigation_rviz_plugins.git
 
 # build
-cd /path/to/your/catkin_ws
+cd /path/to/your/colcon_ws
 rosdep install --from-paths src --ignore-src -y  # Install dependencies
 catkin_make -DCMAKE_BUILD_TYPE=Release  # Release build is recommended
 ```
@@ -37,10 +37,10 @@ catkin_make -DCMAKE_BUILD_TYPE=Release  # Release build is recommended
 A quick demonstration with a simple simulated robot is available.
 
 ```
-roslaunch neonavigation_launch demo.launch
+ros2 launch neonavigation_launch demo.launch
 ```
 
-![Rviz image of the demo](https://github.com/at-wat/neonavigation/blob/master/neonavigation_launch/doc/images/demo.png?raw=true)
+![Rviz image of the demo](https://github.com/ok-tmhr/neonavigation/blob/humble-dev/neonavigation_launch/doc/images/demo.png?raw=true)
 
 ## Packages
 
@@ -58,7 +58,7 @@ Collision prevention control.
 
 ### [trajectory_tracker](trajectory_tracker/README.md)
 
-Path following control and path handling. 
+Path following control and path handling.
 
 ### [map_organizer](map_organizer/README.md)
 
@@ -86,8 +86,8 @@ A. Watanabe, D. Endo, G. Yamauchi and K. Nagatani, "*Neonavigation meta-package:
 *neonavigation meta-package* is developed under [GitHub flow](https://guides.github.com/introduction/flow/).
 Feel free to open new Issue and/or Pull Request.
 
-The code in this repository is following [ROS C++ Style Guide](https://wiki.ros.org/CppStyleGuide).
-A configuration file for clang-format is available at https://github.com/seqsense/ros_style/.
+<!-- The code in this repository is following [ROS C++ Style Guide](https://wiki.ros.org/CppStyleGuide).
+A configuration file for clang-format is available at https://github.com/seqsense/ros_style/. -->
 
 ## License
 
