@@ -332,13 +332,13 @@ protected:
     return point;
   }
 
-  bool cbMakePlan(nav_msgs::srv::GetPlan::Request::SharedPtr req,
+  void cbMakePlan(const nav_msgs::srv::GetPlan::Request::SharedPtr req,
                   nav_msgs::srv::GetPlan::Response::SharedPtr res)
   {
     if (!has_map_)
     {
       RCLCPP_ERROR(this->get_logger(), "make_plan service is called without map.");
-      return false;
+      return;
     }
 
     if (req->start.header.frame_id != map_header_.frame_id ||
@@ -348,7 +348,7 @@ protected:
                 req->start.header.frame_id.c_str(),
                 req->goal.header.frame_id.c_str(),
                 map_header_.frame_id.c_str());
-      return false;
+      return;
     }
 
     Astar::Vec s = metric2Grid(req->start.pose);
@@ -362,10 +362,10 @@ protected:
     {
       case DiscretePoseStatus::OUT_OF_MAP:
         RCLCPP_ERROR(this->get_logger(), "Given start is not on the map.");
-        return false;
+        return;
       case DiscretePoseStatus::IN_ROCK:
         RCLCPP_ERROR(this->get_logger(), "Given start is in Rock.");
-        return false;
+        return;
       case DiscretePoseStatus::RELOCATED:
         RCLCPP_INFO(this->get_logger(), "Given start is moved (%d, %d)", s[0], s[1]);
         break;
@@ -376,10 +376,10 @@ protected:
     {
       case DiscretePoseStatus::OUT_OF_MAP:
         RCLCPP_ERROR(this->get_logger(), "Given goal is not on the map.");
-        return false;
+        return;
       case DiscretePoseStatus::IN_ROCK:
         RCLCPP_ERROR(this->get_logger(), "Given goal is in Rock.");
-        return false;
+        return;
       case DiscretePoseStatus::RELOCATED:
         RCLCPP_INFO(this->get_logger(), "Given goal is moved (%d, %d)", e[0], e[1]);
         break;
@@ -406,7 +406,7 @@ protected:
             0, 1.0f / freq_min_, find_best_))
     {
       RCLCPP_WARN(this->get_logger(), "Path plan failed (goal unreachable)");
-      return false;
+      return;
     }
     const auto tnow = boost::chrono::high_resolution_clock::now();
     RCLCPP_INFO(this->get_logger(), "Path found (%0.4f sec.)",
@@ -425,7 +425,7 @@ protected:
     {
       res->plan.poses[i] = path.poses[i];
     }
-    return true;
+    return;
   }
 
   void cbGoal(const geometry_msgs::msg::PoseStamped::ConstSharedPtr msg)

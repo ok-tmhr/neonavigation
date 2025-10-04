@@ -78,8 +78,7 @@ private:
   trajectory_tracker::Filter* lpf_[2];
 
   bool loadFile();
-  void loadPath();
-  bool change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+  void change(const trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
               trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res);
   void processFeedback(
       const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback);
@@ -229,7 +228,7 @@ void ServerNode::updateIM()
   srv_im_fb_->applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
                         trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res)
 {
   req_path_ = *req;
@@ -271,7 +270,6 @@ bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::Share
     path_.poses.clear();
     path_.header.frame_id = "map";
   }
-  return true;
 }
 
 void ServerNode::spin()
