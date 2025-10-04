@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(planner_cspace)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
@@ -35,10 +40,6 @@ endforeach()
 
 find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
-
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
 
@@ -107,9 +108,7 @@ install(TARGETS
     patrol
     planner_2dof_serial_joints
     planner_3d
-  ARCHIVE DESTINATION lib/${PROJECT_NAME}
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include
 )
 

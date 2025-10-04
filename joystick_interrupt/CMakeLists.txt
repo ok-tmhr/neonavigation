@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(joystick_interrupt)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
@@ -17,10 +22,6 @@ find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-
-
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(joystick_interrupt src/joystick_interrupt.cpp)
 target_include_directories(joystick_interrupt PUBLIC
@@ -47,9 +48,7 @@ endif()
 install(TARGETS
     joystick_interrupt
     joystick_mux
-  ARCHIVE DESTINATION lib/${PROJECT_NAME}
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME}
 )
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
