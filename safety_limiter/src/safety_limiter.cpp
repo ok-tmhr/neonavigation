@@ -55,7 +55,7 @@
 #include <std_msgs/msg/empty.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
@@ -109,7 +109,7 @@ protected:
 
   geometry_msgs::msg::Twist twist_;
   rclcpp::Time last_cloud_stamp_;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_accum_;
+  std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_accum_;
   bool cloud_clear_;
   double hz_;
   double timeout_;
@@ -149,12 +149,12 @@ protected:
 public:
   SafetyLimiterNode() : Node("safety_limiter")
     , last_cloud_stamp_(0, 0, RCL_ROS_TIME)
-    , hold_(0, 0)
-    , hold_off_(0, 0, RCL_ROS_TIME)
-    , watchdog_interval_(0, 0)
     , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)
     , cloud_clear_(false)
     , last_disable_cmd_(0, 0, RCL_ROS_TIME)
+    , hold_(0, 0)
+    , hold_off_(0, 0, RCL_ROS_TIME)
+    , watchdog_interval_(0, 0)
     , watchdog_stop_(false)
     , has_cloud_(false)
     , has_twist_(true)
@@ -299,7 +299,7 @@ public:
   }
 
 protected:
-  void cbWatchdogReset(const std_msgs::msg::Empty::ConstPtr& msg)
+  void cbWatchdogReset(const std_msgs::msg::Empty::ConstSharedPtr /*msg*/)
   {
     watchdog_timer_ = this->create_wall_timer(watchdog_interval_.to_chrono<std::chrono::duration<double>>(), std::bind(&SafetyLimiterNode::cbWatchdogTimer, this));
     watchdog_stop_ = false;
@@ -381,7 +381,7 @@ protected:
     tmax_ += std::max(d_margin_ / vel_[0], yaw_margin_ / vel_[1]);
     r_lim_ = 1.0;
   }
-  double predict(const geometry_msgs::msg::Twist& in)
+  double predict(const geometry_msgs::msg::Twist& /*in*/)
   {
     if (cloud_accum_->size() == 0)
     {
@@ -423,7 +423,7 @@ protected:
             fixed_to_base.transform.rotation.z);
     pcl::transformPointCloud(*cloud_accum_, *cloud_accum_, fixed_to_base_eigen);
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pc(new pcl::PointCloud<pcl::PointXYZ>);
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
     ds.setInputCloud(cloud_accum_);
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
@@ -737,7 +737,7 @@ protected:
 
   polygon footprint_p;
 
-  void cbTwist(const geometry_msgs::msg::Twist::ConstPtr& msg)
+  void cbTwist(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     rclcpp::Time now = this->now();
 
@@ -763,7 +763,7 @@ protected:
     }
   }
 
-  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr& msg)
+  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
   {
     const bool can_transform = tfbuf_->canTransform(
         fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
@@ -783,7 +783,7 @@ protected:
       return;
     }
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_fixed(new pcl::PointCloud<pcl::PointXYZ>());
+    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_fixed(new pcl::PointCloud<pcl::PointXYZ>());
     cloud_fixed->header.frame_id = fixed_frame_id_;
     pcl::fromROSMsg(cloud_msg_fixed, *cloud_fixed);
 
@@ -797,7 +797,7 @@ protected:
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
   }
-  void cbDisable(const std_msgs::msg::Bool::ConstPtr& msg)
+  void cbDisable(const std_msgs::msg::Bool::ConstSharedPtr msg)
   {
     if (msg->data)
     {

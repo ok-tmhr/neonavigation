@@ -46,7 +46,7 @@ namespace costmap_cspace
 class Costmap3dLayerPlain : public Costmap3dLayerFootprint
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerPlain>;
 
   Costmap3dLayerPlain()
   {

@@ -63,10 +63,10 @@ bool isOnCorner(const float x, const float y, const float z)
 TEST(ObjToPointCloud, PointCloud)
 {
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_obj_to_pointcloud");
-  sensor_msgs::msg::PointCloud2::ConstPtr cloud;
+  sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud;
 
-  const boost::function<void(const sensor_msgs::msg::PointCloud2::ConstPtr&)> cb =
-      [&cloud](const sensor_msgs::msg::PointCloud2::ConstPtr& msg) -> void
+  const boost::function<void(const sensor_msgs::msg::PointCloud2::ConstSharedPtr)> cb =
+      [&cloud](const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg) -> void
   {
     cloud = msg;
   };

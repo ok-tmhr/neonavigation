@@ -48,7 +48,7 @@
 
 #include <omp.h>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/chrono.hpp>
 #include <rclcpp/rclcpp.hpp>
 
@@ -68,7 +68,7 @@
 #include <trajectory_tracker_msgs/converter.h>
 
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -124,7 +124,7 @@ protected:
 
   std::shared_ptr<Planner3DActionServer> act_;
   std::shared_ptr<Planner3DTolerantActionServer> act_tolerant_;
-  planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal_tolerant_;
+  planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstSharedPtr goal_tolerant_;
   std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle_;
   std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle_tolerant_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
@@ -140,15 +140,15 @@ protected:
   Astar::Gridmap<char, 0x80> cm_hyst_;
   Astar::Gridmap<char, 0x80> cm_updates_;
   Astar::Gridmap<char, 0x80> cm_local_esc_;
-  CostmapBBF::Ptr bbf_costmap_;
+  CostmapBBF::SharedPtr bbf_costmap_;
   DistanceMap cost_estim_cache_;
   DistanceMap cost_estim_cache_static_;
   DistanceMap arrivable_map_;
 
-  GridAstarModel3D::Ptr model_;
+  GridAstarModel3D::SharedPtr model_;
 
   costmap_cspace_msgs::msg::MapMetaData3D map_info_;
-  costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr map_update_retained_;
+  costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr map_update_retained_;
   std_msgs::msg::Header map_header_;
   float freq_;
   float freq_min_;
@@ -251,16 +251,14 @@ protected:
   StartPosePredictor start_pose_predictor_;
   rclcpp::TimerBase::SharedPtr no_map_update_timer_;
 
-  bool cbForget(std_srvs::srv::Empty::Request::SharedPtr req,
-                std_srvs::srv::Empty::Response::SharedPtr res)
+  void cbForget(const std_srvs::srv::Empty::Request::SharedPtr /*req*/,
+                std_srvs::srv::Empty::Response::SharedPtr /*res*/)
   {
     RCLCPP_WARN(this->get_logger(), "Forgetting remembered costmap.");
     if (has_map_)
       bbf_costmap_->clear();
-
-    return true;
   }
-  void cbTemporaryEscape(const std_msgs::msg::Empty::ConstPtr&)
+  void cbTemporaryEscape(const std_msgs::msg::Empty::ConstSharedPtr)
   {
     if (!has_map_)
     {
@@ -396,7 +394,7 @@ protected:
 
     const auto ts = boost::chrono::high_resolution_clock::now();
 
-    GridAstarModel2D::Ptr model_2d(new GridAstarModel2D(model_));
+    GridAstarModel2D::SharedPtr model_2d(new GridAstarModel2D(model_));
 
     std::list<Astar::Vec> path_grid;
     std::vector<GridAstarModel3D::VecWithCost> starts;
@@ -430,7 +428,7 @@ protected:
     return true;
   }
 
-  void cbGoal(const geometry_msgs::msg::PoseStamped::ConstPtr& msg)
+  void cbGoal(const geometry_msgs::msg::PoseStamped::ConstSharedPtr msg)
   {
     if (goal_handle_ || goal_handle_tolerant_)
     {
@@ -439,7 +437,7 @@ protected:
     }
     setGoal(*msg);
   }
-  rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle)
+  rclcpp_action::CancelResponse cbPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> /*goal_handle*/)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
 
@@ -449,7 +447,7 @@ protected:
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
-  rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle)
+  rclcpp_action::CancelResponse cbTolerantPreempt(const std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> /*goal_handle*/)
   {
     RCLCPP_WARN(this->get_logger(), "Preempting the current goal.");
 
@@ -791,7 +789,7 @@ protected:
     previous_path_ = path;
   }
 
-  void applyCostmapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
+  void applyCostmapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr msg)
   {
     const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
     const rclcpp::Time now = this->now();
@@ -975,7 +973,7 @@ protected:
     no_map_update_timer_ =
         this->create_wall_timer(costmap_watchdog_.to_chrono<std::chrono::seconds>(), std::bind(&Planner3dNode::cbNoMapUpdateTimer, this));
   }
-  void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstPtr& msg)
+  void cbMapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr msg)
   {
     if (!has_map_)
       return;
@@ -998,7 +996,7 @@ protected:
       applyCostmapUpdate(msg);
     }
   }
-  void cbMap(const costmap_cspace_msgs::msg::CSpace3D::ConstPtr& msg)
+  void cbMap(const costmap_cspace_msgs::msg::CSpace3D::ConstSharedPtr msg)
   {
     RCLCPP_INFO(this->get_logger(), "Map received");
     RCLCPP_INFO(this->get_logger(), " linear_resolution %0.2f x (%dx%d) px", msg->info.linear_resolution,
@@ -1046,14 +1044,14 @@ protected:
     cm_.reset(size3d);
     cm_hyst_.reset(size3d);
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range_,
-            .local_range = local_range_,
-            .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
-            .size = size2d,
-            .resolution = map_info_.linear_resolution,
+            ec_,
+            range_,
+            local_range_,
+            static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+            size2d,
+            map_info_.linear_resolution,
         };
     cost_estim_cache_.init(model_, dmp);
     if (enable_crowd_mode_)
@@ -1123,7 +1121,7 @@ protected:
     goal_handle_tolerant_ = goal_handle;
   }
 
-  rclcpp_action::GoalResponse cbAction(const rclcpp_action::GoalUUID&, nav2_msgs::action::NavigateToPose::Goal::ConstPtr goal)
+  rclcpp_action::GoalResponse cbAction(const rclcpp_action::GoalUUID&, nav2_msgs::action::NavigateToPose::Goal::ConstSharedPtr goal)
   {
     if (goal_handle_tolerant_)
     {
@@ -1139,7 +1137,7 @@ protected:
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }
 
-  rclcpp_action::GoalResponse cbTolerantAction(const rclcpp_action::GoalUUID&, planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstPtr goal)
+  rclcpp_action::GoalResponse cbTolerantAction(const rclcpp_action::GoalUUID&, planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstSharedPtr goal)
   {
     if (goal_handle_)
     {
@@ -1187,8 +1185,8 @@ public:
   Planner3dNode() : Node("planner_3d")
     , bbf_costmap_(new CostmapBBFImpl())
     , cost_estim_cache_(cm_rough_, bbf_costmap_)
-    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
-    , arrivable_map_(cm_local_esc_, CostmapBBF::Ptr(new CostmapBBFNoOp()))
+    , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::SharedPtr(new CostmapBBFNoOp()))
+    , arrivable_map_(cm_local_esc_, CostmapBBF::SharedPtr(new CostmapBBFNoOp()))
     , costmap_watchdog_(0, 0)
     , last_costmap_(0, 0, RCL_ROS_TIME)
   {
@@ -1528,14 +1526,14 @@ public:
     {
       resetGridAstarModel(false);
       const Astar::Vec size2d(static_cast<int>(map_info_.width), static_cast<int>(map_info_.height), 1);
-      const DistanceMap::Params dmp =
+      const DistanceMap::Params dmp
           {
-              .euclid_cost = ec_,
-              .range = range_,
-              .local_range = local_range_,
-              .longcut_range = static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
-              .size = size2d,
-              .resolution = map_info_.linear_resolution,
+              ec_,
+              range_,
+              local_range_,
+              static_cast<int>(std::lround(longcut_range_f_ / map_info_.linear_resolution)),
+              size2d,
+              map_info_.linear_resolution,
           };
       cost_estim_cache_.init(model_, dmp);
       if (enable_crowd_mode_)
@@ -2055,7 +2053,7 @@ protected:
     const float range_limit = initial_2dof_cost - (local_range_ + range_) * ec_[0];
     const auto ts = boost::chrono::high_resolution_clock::now();
     const auto cb_progress =
-        [this, ts, start_grid, end_grid](const std::list<Astar::Vec>& path_grid, const SearchStats& stats) -> bool
+        [this, ts, start_grid, end_grid](const std::list<Astar::Vec>& /*path_grid*/, const SearchStats& stats) -> bool
     {
       const auto tnow = boost::chrono::high_resolution_clock::now();
       const auto tdiff = boost::chrono::duration<float>(tnow - ts).count();
@@ -2128,7 +2126,7 @@ protected:
 
     if (hyst)
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts_hyst = boost::chrono::high_resolution_clock::now();
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -2181,12 +2179,12 @@ protected:
         hyst_updated_cells_.push_back(p);
       }
       has_hysteresis_map_ = true;
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const float dur = boost::chrono::duration<float>(tnow - ts).count();
-      RCLCPP_DEBUG(this->get_logger(), "Hysteresis map generated (%0.4f sec.)", dur);
+      const auto tnow2 = boost::chrono::high_resolution_clock::now();
+      const float dur2 = boost::chrono::duration<float>(tnow2 - ts_hyst).count();
+      RCLCPP_DEBUG(this->get_logger(), "Hysteresis map generated (%0.4f sec.)", dur2);
       metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "hyst_map_dur",
-          dur,
+          dur2,
           "second"));
       publishDebug();
     }
@@ -2260,14 +2258,14 @@ protected:
       const Astar::Vec local_range(local_width, local_width, 0);
       const Astar::Vec local_size(local_width + 1, local_width + 1, 1);
       const Astar::Vec local_center(esc_range_, esc_range_, 0);
-      const DistanceMap::Params dmp =
+      const DistanceMap::Params dmp
           {
-              .euclid_cost = ec_,
-              .range = 0,
-              .local_range = 0,
-              .longcut_range = esc_range_,
-              .size = local_size,
-              .resolution = map_info_.linear_resolution,
+              ec_,
+              0,
+              0,
+              esc_range_,
+              local_size,
+              map_info_.linear_resolution,
           };
 
       cm_local_esc_.reset(local_size);
@@ -2332,24 +2330,24 @@ protected:
 
           // Calculate distance map gradient
           float grad[2] = {0, 0};
-          for (Astar::Vec d(0, -1, 0); d[1] <= 1; d[1]++)
+          for (Astar::Vec d2(0, -1, 0); d2[1] <= 1; d2[1]++)
           {
-            for (d[0] = -1; d[0] <= 1; d[0]++)
+            for (d2[0] = -1; d2[0] <= 1; d2[0]++)
             {
-              if (d[0] == 0 && d[1] == 0)
+              if (d2[0] == 0 && d2[1] == 0)
               {
                 continue;
               }
 
-              const auto p = te + d;
+              const auto p = te + d2;
               const auto cost2 = cost_estim_cache_static_[p];
               if (cost2 == std::numeric_limits<float>::max())
               {
                 continue;
               }
               const float cost_diff = cost2 - cost;
-              grad[0] += -cost_diff * d[0];
-              grad[1] += -cost_diff * d[1];
+              grad[0] += -cost_diff * d2[0];
+              grad[1] += -cost_diff * d2[1];
             }
           }
           if (grad[0] == 0 && grad[1] == 0)

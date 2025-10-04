@@ -62,7 +62,7 @@ private:
   rclcpp::Time last_joy_msg_;
   geometry_msgs::msg::Twist last_input_twist_;
 
-  float getAxisValue(const sensor_msgs::msg::Joy::Ptr& msg, const int axis, const std::string& axis_name) const
+  float getAxisValue(const sensor_msgs::msg::Joy::SharedPtr& msg, const int axis, const std::string& axis_name) const
   {
     if (axis < 0)
     {
@@ -77,7 +77,7 @@ private:
     return msg->axes[axis];
   }
 
-  float getJoyValue(const sensor_msgs::msg::Joy::Ptr& msg, const int axis, const int axis2,
+  float getJoyValue(const sensor_msgs::msg::Joy::SharedPtr& msg, const int axis, const int axis2,
                     const std::string& axis_name) const
   {
     const float value = getAxisValue(msg, axis, axis_name);
@@ -85,7 +85,7 @@ private:
     return (std::abs(value2) > std::abs(value)) ? value2 : value;
   }
 
-  void cbJoy(const sensor_msgs::msg::Joy::Ptr msg)
+  void cbJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
     if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
     {
@@ -134,7 +134,7 @@ private:
     cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
     pub_twist_->publish(cmd_vel);
   };
-  void cbTwist(const geometry_msgs::msg::Twist::Ptr msg)
+  void cbTwist(const geometry_msgs::msg::Twist::SharedPtr msg)
   {
     last_input_twist_ = *msg;
     std_msgs::msg::Bool status;

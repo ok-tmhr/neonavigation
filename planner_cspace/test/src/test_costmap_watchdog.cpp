@@ -45,23 +45,23 @@
 TEST(Planner3D, CostmapWatchdog)
 {
   int cnt = 0;
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
-  nav_msgs::msg::Path::ConstPtr path;
-  diagnostic_msgs::msg::DiagnosticArray::ConstPtr diag;
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr status;
+  nav_msgs::msg::Path::ConstSharedPtr path;
+  diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr diag;
 
-  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
-      [&status, &cnt](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg) -> void
+  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr)> cb_status =
+      [&status, &cnt](const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg) -> void
   {
     status = msg;
     cnt++;
   };
-  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
-      [&path](const nav_msgs::msg::Path::ConstPtr& msg) -> void
+  const boost::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
+      [&path](const nav_msgs::msg::Path::ConstSharedPtr msg) -> void
   {
     path = msg;
   };
-  const boost::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr&)> cb_diag =
-      [&diag](const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg) -> void
+  const boost::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr)> cb_diag =
+      [&diag](const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr msg) -> void
   {
     diag = msg;
   };
@@ -132,16 +132,16 @@ TEST(Planner3D, CostmapWatchdog)
 
 TEST(Planner3D, CostmapTimeoutOnFinishing)
 {
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr status;
-  nav_msgs::msg::Path::ConstPtr path;
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr status;
+  nav_msgs::msg::Path::ConstSharedPtr path;
 
-  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr&)> cb_status =
-      [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg) -> void
+  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr)> cb_status =
+      [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg) -> void
   {
     status = msg;
   };
-  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
-      [&path](const nav_msgs::msg::Path::ConstPtr& msg) -> void
+  const boost::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
+      [&path](const nav_msgs::msg::Path::ConstSharedPtr msg) -> void
   {
     path = msg;
   };

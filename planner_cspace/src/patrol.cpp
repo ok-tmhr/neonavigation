@@ -58,7 +58,7 @@ protected:
   double tolerance_ang_;
   double tolerance_ang_finish_;
 
-  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
   {
     if (path_.poses.size() > 0)
     {

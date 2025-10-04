@@ -121,9 +121,9 @@ TEST(PointcloudToMaps, Convert)
 {
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_pointcloud_to_maps");
 
-  map_organizer_msgs::msg::OccupancyGridArray::ConstPtr maps;
-  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr&)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstPtr& msg) -> void
+  map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps;
+  const boost::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr)>
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg) -> void
   {
     maps = msg;
   };

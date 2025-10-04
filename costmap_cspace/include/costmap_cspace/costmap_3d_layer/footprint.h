@@ -53,7 +53,7 @@ namespace costmap_cspace
 class Costmap3dLayerFootprint : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerFootprint>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerFootprint>;
 
 protected:
   float footprint_radius_;
@@ -207,12 +207,12 @@ public:
   }
 
 protected:
-  bool updateChain(const bool output)
+  bool updateChain(const bool /*output*/)
   {
     return false;
   }
   void updateCSpace(
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr map,
       const UpdatedRegion& region)
   {
     if (root_)
@@ -221,9 +221,9 @@ protected:
       generateCSpace(map_overlay_, map, region);
   }
   virtual void generateCSpace(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
-      const UpdatedRegion& region)
+      CSpace3DMsg::SharedPtr map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
+      const UpdatedRegion& /*region*/)
   {
     assert(ang_grid_ > 0);
     clearTravelableArea(map, msg);
@@ -235,8 +235,8 @@ protected:
 
   // Clear travelable area in OVERWRITE mode
   void clearTravelableArea(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
+      CSpace3DMsg::SharedPtr map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     if (overlay_mode_ != OVERWRITE || root_)
     {
@@ -285,8 +285,8 @@ protected:
   }
 
   void generateSpecifiedCSpace(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::msg::OccupancyGrid::ConstPtr& msg,
+      CSpace3DMsg::SharedPtr map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
       const size_t yaw)
   {
     const auto getMaskedRange = [this, msg](const int pos, Rect& result)

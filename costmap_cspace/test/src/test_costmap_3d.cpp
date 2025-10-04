@@ -73,7 +73,6 @@ TEST(Costmap3dLayerFootprint, CSpaceTemplate)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Set example footprint
-  int footprint_offset = 0;
   cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Check local footprint
@@ -187,7 +186,6 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
-  int footprint_offset = 0;
   cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Settings: 4 angular grids, no expand/spread
@@ -196,7 +194,7 @@ TEST(Costmap3dLayerFootprint, CSpaceGenerate)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate sample map
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = 7;
   map->info.height = 7;
   map->info.resolution = 1.0;
@@ -287,7 +285,6 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
   costmap_cspace::Costmap3dLayerFootprint cm;
 
   // Set example footprint
-  int footprint_offset = 0;
   cm.setFootprint(costmap_cspace::Polygon(footprint_str));
 
   // Settings: 4 angular grids, expand 1.0, spread 2.0
@@ -298,7 +295,7 @@ TEST(Costmap3dLayerFootprint, CSpaceExpandSpread)
   cm.setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
 
   // Generate sample map
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = 9;
   map->info.height = 9;
   map->info.resolution = 1.0;
@@ -361,7 +358,6 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   costmap_cspace::Costmap3dLayerFootprint cm_base;
 
   // Set example footprint
-  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
   cm_ref.setFootprint(footprint);
   cm_base.setFootprint(footprint);
@@ -385,14 +381,14 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_base.setOverlayMode(costmap_cspace::MapOverlayMode::OVERWRITE);
 
   // Generate two sample maps
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = 9;
   map->info.height = 9;
   map->info.resolution = 1.0;
   map->info.origin.orientation.w = 1.0;
   map->data.resize(map->info.width * map->info.height);
 
-  nav_msgs::msg::OccupancyGrid::Ptr map2(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map2(new nav_msgs::msg::OccupancyGrid);
   *map2 = *map;
 
   const int num_points_base_map = 2;
@@ -422,10 +418,10 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm->setBaseMap(map);
 
   // Overlay local map
-  costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr updated(new costmap_cspace_msgs::msg::CSpace3DUpdate);
+  costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr updated(new costmap_cspace_msgs::msg::CSpace3DUpdate);
   auto cb = [&updated](
-                const costmap_cspace::CSpace3DMsg::Ptr& map,
-                const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update) -> bool
+                const costmap_cspace::CSpace3DMsg::SharedPtr& /*map*/,
+                const costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr& update) -> bool
   {
     updated = update;
     return true;
@@ -466,11 +462,11 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
   cm_over->setAngleResolution(4);
   cm_over->setExpansion(0.0, 0.0);
   cm_over->setOverlayMode(costmap_cspace::MapOverlayMode::MAX);
-  costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr updated_max(new costmap_cspace_msgs::msg::CSpace3DUpdate);
+  costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr updated_max(new costmap_cspace_msgs::msg::CSpace3DUpdate);
 
   auto cb_max = [&updated_max](
-                    const costmap_cspace::CSpace3DMsg::Ptr& map,
-                    const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update) -> bool
+                    const costmap_cspace::CSpace3DMsg::SharedPtr& /*map*/,
+                    const costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr& update) -> bool
   {
     updated_max = update;
     return true;
@@ -507,7 +503,6 @@ TEST(Costmap3dLayerFootprint, CSpaceOverwrite)
 TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
 {
   // Set example footprint
-  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
 
   // Settings: 4 angular grids, no expand/spread
@@ -521,7 +516,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
   cm_over->setFootprint(footprint);
 
   // Generate sample map
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = 5;
   map->info.height = 5;
   map->info.resolution = 1.0;
@@ -533,7 +528,7 @@ TEST(Costmap3dLayerFootprint, CSpaceOverlayMove)
   cm->setBaseMap(map);
 
   // Generate local sample map
-  nav_msgs::msg::OccupancyGrid::Ptr map2(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map2(new nav_msgs::msg::OccupancyGrid);
   *map2 = *map;
 
   for (int xp = -1; xp <= 1; ++xp)
@@ -609,22 +604,22 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
           {"half-outside xy1", {3.0, -1.0}, true, {3u, 0u, 0u, 1u, 1u, 4u}},
           {"half-outside xy2", {3.0, 3.0}, true, {3u, 3u, 0u, 1u, 1u, 4u}},
           {"half-outside xy3", {-1.0, 3.0}, true, {0u, 3u, 0u, 1u, 1u, 4u}},
-          {"boundary x0", {-2.0, 0.0}, false},
-          {"boundary x1", {4, 0.0}, false},
-          {"boundary y0", {0, -2.0}, false},
-          {"boundary y1", {0, 4.0}, false},
-          {"boundary xy0", {-2.0, -2.0}, false},
-          {"boundary xy1", {4.0, -2.0}, false},
-          {"boundary xy2", {4.0, 4.0}, false},
-          {"boundary xy3", {-2.0, 4.0}, false},
-          {"outside x0", {-3.0, 0.0}, false},
-          {"outside x1", {5, 0.0}, false},
-          {"outside y0", {0, -3.0}, false},
-          {"outside y1", {0, 5.0}, false},
-          {"outside xy0", {-3.0, -3.0}, false},
-          {"outside xy1", {5.0, -3.0}, false},
-          {"outside xy2", {5.0, 5.0}, false},
-          {"outside xy3", {-3.0, 5.0}, false},
+          {"boundary x0", {-2.0, 0.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary x1", {4, 0.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary y0", {0, -2.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary y1", {0, 4.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary xy0", {-2.0, -2.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary xy1", {4.0, -2.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary xy2", {4.0, 4.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"boundary xy3", {-2.0, 4.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside x0", {-3.0, 0.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside x1", {5, 0.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside y0", {0, -3.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside y1", {0, 5.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside xy0", {-3.0, -3.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside xy1", {5.0, -3.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside xy2", {5.0, 5.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
+          {"outside xy3", {-3.0, 5.0}, false, {0u, 0u, 0u, 0u, 0u, 0u}},
       };
 
   for (auto& d : dataset)
@@ -639,14 +634,14 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     auto cm_output = cms.addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
 
     // Generate two sample maps
-    nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+    nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
     map->info.width = 4;
     map->info.height = 4;
     map->info.resolution = 1.0;
     map->info.origin.orientation.w = 1.0;
     map->data.resize(map->info.width * map->info.height);
 
-    nav_msgs::msg::OccupancyGrid::Ptr map2(new nav_msgs::msg::OccupancyGrid);
+    nav_msgs::msg::OccupancyGrid::SharedPtr map2(new nav_msgs::msg::OccupancyGrid);
     map2->info.width = 2;
     map2->info.height = 2;
     map2->info.resolution = 1.0;
@@ -659,10 +654,10 @@ TEST(Costmap3dLayerOutput, CSpaceOutOfBoundary)
     cm->setBaseMap(map);
 
     // Overlay local map
-    costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr updated;
+    costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr updated;
     auto cb = [&updated](
-                  const costmap_cspace::CSpace3DMsg::Ptr& map,
-                  const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update) -> bool
+                  const costmap_cspace::CSpace3DMsg::SharedPtr& /*map*/,
+                  const costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr& update) -> bool
     {
       updated = update;
       return true;
@@ -722,14 +717,14 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   auto cm_output_update = cms.addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
 
   // Generate two sample maps
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = 4;
   map->info.height = 4;
   map->info.resolution = 1.0;
   map->info.origin.orientation.w = 1.0;
   map->data.resize(map->info.width * map->info.height);
 
-  nav_msgs::msg::OccupancyGrid::Ptr map2(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map2(new nav_msgs::msg::OccupancyGrid);
   map2->info.width = 5;
   map2->info.height = 3;
   map2->info.resolution = 1.0;
@@ -737,10 +732,10 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   map2->data.resize(map2->info.width * map2->info.height);
 
   // Overlay local map
-  costmap_cspace::CSpace3DMsg::Ptr static_updated;
+  costmap_cspace::CSpace3DMsg::SharedPtr static_updated;
   int static_received_num = 0;
   auto cb_static = [&static_updated, &static_received_num](
-                       const costmap_cspace::CSpace3DMsg::Ptr& update) -> bool
+                       const costmap_cspace::CSpace3DMsg::SharedPtr& update) -> bool
   {
     static_updated = update;
     ++static_received_num;
@@ -749,11 +744,11 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   cm_output_static->setHandler(cb_static);
 
   // Overlay local map
-  costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr overlay_updated;
+  costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr overlay_updated;
   int overlay_received_num = 0;
   auto cb_overlay = [&overlay_updated, &overlay_received_num](
-                        const costmap_cspace::CSpace3DMsg::Ptr& map,
-                        const costmap_cspace_msgs::msg::CSpace3DUpdate::Ptr& update) -> bool
+                        const costmap_cspace::CSpace3DMsg::SharedPtr& /*map*/,
+                        const costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr& update) -> bool
   {
     overlay_updated = update;
     ++overlay_received_num;
@@ -776,7 +771,7 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
   EXPECT_EQ(map2->info.width, static_updated->info.width);
   EXPECT_EQ(map2->info.height, static_updated->info.height);
 
-  nav_msgs::msg::OccupancyGrid::Ptr map3(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map3(new nav_msgs::msg::OccupancyGrid);
   map3->info.width = 2;
   map3->info.height = 2;
   map3->info.resolution = 1.0;
@@ -804,14 +799,13 @@ TEST(Costmap3dLayerOutput, UpdateStaticMap)
 TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
 {
   // Set example footprint
-  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
 
   const size_t unknown_x = 3;
   const size_t unknown_y = 4;
   const size_t width = 6;
   const size_t height = 5;
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = width;
   map->info.height = height;
   map->info.resolution = 1.0;
@@ -820,7 +814,7 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   map->data[2 + width * 3] = 100;
   map->data[3 + width * 3] = -1;
 
-  nav_msgs::msg::OccupancyGrid::Ptr map_overlay(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map_overlay(new nav_msgs::msg::OccupancyGrid);
   map_overlay->info.width = width;
   map_overlay->info.height = height;
   map_overlay->info.resolution = 1.0;
@@ -856,8 +850,8 @@ TEST(Costmap3dLayerFootprint, CSpaceKeepUnknown)
   cm_base2->setBaseMap(map);
   cm_keep_uknown->processMapOverlay(map_overlay, true);
 
-  const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
-  const costmap_cspace::CSpace3DMsg::Ptr keep_unknown_result = cm_keep_uknown->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::SharedPtr normal_result = cm_normal->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::SharedPtr keep_unknown_result = cm_keep_uknown->getMapOverlay();
   for (size_t yaw = 0; yaw < normal_result->info.angle; ++yaw)
   {
     for (size_t y = 0; y < normal_result->info.height; ++y)
@@ -892,7 +886,7 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
   const size_t unknown_y = 4;
   const size_t width = 6;
   const size_t height = 5;
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = width;
   map->info.height = height;
   map->info.resolution = 1.0;
@@ -901,7 +895,7 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
   map->data[2 + width * 3] = 100;
   map->data[3 + width * 3] = -1;
 
-  nav_msgs::msg::OccupancyGrid::Ptr map_overlay(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map_overlay(new nav_msgs::msg::OccupancyGrid);
   map_overlay->info.width = width;
   map_overlay->info.height = height;
   map_overlay->info.resolution = 1.0;
@@ -935,8 +929,8 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
   cm_base2->setBaseMap(map);
   cm_plain->processMapOverlay(map_overlay, true);
 
-  const costmap_cspace::CSpace3DMsg::Ptr normal_result = cm_normal->getMapOverlay();
-  const costmap_cspace::CSpace3DMsg::Ptr plain_result = cm_plain->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::SharedPtr normal_result = cm_normal->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::SharedPtr plain_result = cm_plain->getMapOverlay();
   for (size_t yaw = 0; yaw < normal_result->info.angle; ++yaw)
   {
     for (size_t y = 0; y < normal_result->info.height; ++y)
@@ -955,7 +949,6 @@ TEST(Costmap3dLayerFootprint, Costmap3dLayerPlain)
 TEST(Costmap3dLayerFootprint, PlainOnFootprint)
 {
   // Set example footprint
-  int footprint_offset = 0;
   costmap_cspace::Polygon footprint(footprint_str);
 
   // Settings: 4 angular grids, no expand/spread
@@ -968,14 +961,14 @@ TEST(Costmap3dLayerFootprint, PlainOnFootprint)
   cm_over->setExpansion(0.0, 0.0);
 
   // Generate sample map
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
   map->info.width = 5;
   map->info.height = 5;
   map->info.resolution = 1.0;
   map->info.origin.orientation.w = 1.0;
   map->data.resize(map->info.width * map->info.height, 0);
 
-  nav_msgs::msg::OccupancyGrid::Ptr map2(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map2(new nav_msgs::msg::OccupancyGrid);
   *map2 = *map;
 
   const int max_cost = 100;
@@ -985,8 +978,8 @@ TEST(Costmap3dLayerFootprint, PlainOnFootprint)
   map2->data[3 + 4 * map->info.width] = max_cost;
   cm_over->processMapOverlay(map2, true);
 
-  const costmap_cspace::CSpace3DMsg::Ptr static_map = cm->getMap();
-  const costmap_cspace::CSpace3DMsg::Ptr overlay_map = cm_over->getMapOverlay();
+  const costmap_cspace::CSpace3DMsg::SharedPtr static_map = cm->getMap();
+  const costmap_cspace::CSpace3DMsg::SharedPtr overlay_map = cm_over->getMapOverlay();
   for (int k = 0; k < cm_over->getAngularGrid(); ++k)
   {
     for (size_t j = 0; j < map->info.height; ++j)
@@ -1061,14 +1054,14 @@ TEST(Costmap3dLayerOutput, LinearSpreadMinCost)
       oss_test_name << "resolution: " << resolution << " cutoff: " << cutoffs[i];
       SCOPED_TRACE(oss_test_name.str());
 
-      nav_msgs::msg::OccupancyGrid::Ptr map_base(new nav_msgs::msg::OccupancyGrid);
+      nav_msgs::msg::OccupancyGrid::SharedPtr map_base(new nav_msgs::msg::OccupancyGrid);
       map_base->info.width = 7;
       map_base->info.height = 7;
       map_base->info.resolution = resolution;
       map_base->info.origin.orientation.w = 1.0;
       map_base->data = input_base;
 
-      nav_msgs::msg::OccupancyGrid::Ptr map_layer(new nav_msgs::msg::OccupancyGrid);
+      nav_msgs::msg::OccupancyGrid::SharedPtr map_layer(new nav_msgs::msg::OccupancyGrid);
       map_layer->info.width = 7;
       map_layer->info.height = 7;
       map_layer->info.resolution = resolution;
@@ -1082,14 +1075,14 @@ TEST(Costmap3dLayerOutput, LinearSpreadMinCost)
       cm_over->setExpansion(0.0, resolution * 3.0, cutoffs[i]);
       cm->setBaseMap(map_base);
       cm_over->processMapOverlay(map_layer, true);
-      const costmap_cspace::CSpace3DMsg::Ptr overlay_map = cm_over->getMapOverlay();
+      const costmap_cspace::CSpace3DMsg::SharedPtr overlay_map = cm_over->getMapOverlay();
 
       const auto& expected_result = expected_results_cutoffs[i];
       ASSERT_EQ(expected_result.size(), overlay_map->data.size());
-      for (size_t i = 0; i < expected_result.size(); ++i)
+      for (size_t j = 0; j < expected_result.size(); ++j)
       {
-        EXPECT_EQ(expected_result[i], overlay_map->data[i])
-            << " Different at: (" << i % map_layer->info.width << "," << i / 5 << ")";
+        EXPECT_EQ(expected_result[j], overlay_map->data[j])
+            << " Different at: (" << j % map_layer->info.width << "," << j / 5 << ")";
       }
     }
   }
@@ -1102,7 +1095,7 @@ TEST(Costmap3dLayerOutput, OutOfBoundUpdateOnBaseMapSizeChange)
   auto cm = cms.addLayer<costmap_cspace::Costmap3dUpdateLayerOutput>();
 
   // Generate sample map
-  nav_msgs::msg::OccupancyGrid::Ptr map(new nav_msgs::msg::OccupancyGrid);
+  nav_msgs::msg::OccupancyGrid::SharedPtr map(new nav_msgs::msg::OccupancyGrid);
 
   map->info.width = 50;
   map->info.height = 50;

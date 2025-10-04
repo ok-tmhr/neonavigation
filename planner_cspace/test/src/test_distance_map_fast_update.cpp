@@ -62,7 +62,7 @@ protected:
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF::Ptr bbf_costmap_;
+  CostmapBBF::SharedPtr bbf_costmap_;
 
   DistanceMap dm_full_;
   DistanceMap dm_fast_;
@@ -95,7 +95,7 @@ protected:
     const Astar::Vec size2d(w_, h_, 1);
     Astar::Gridmap<char, 0x40> cm;
     Astar::Gridmap<char, 0x80> cm_hyst;
-    GridAstarModel3D::Ptr model(
+    GridAstarModel3D::SharedPtr model(
         new GridAstarModel3D(
             map_info,
             ec_,
@@ -112,14 +112,14 @@ protected:
     cm_rough_.clear(0);
     bbf_costmap_->clear();
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range,
-            .local_range = local_range,
-            .longcut_range = 0,
-            .size = size2d,
-            .resolution = map_info.linear_resolution,
+            ec_,
+            range,
+            local_range,
+            0,
+            size2d,
+            map_info.linear_resolution,
         };
     dm_full_.init(model, dmp);
     dm_fast_.init(model, dmp);

@@ -35,7 +35,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <gtest/gtest.h>
 
@@ -140,7 +140,7 @@ public:
   }
   void waitAndSpinOnce()
   {
-    nav_msgs::msg::Odometry::ConstPtr odom_prev = odom_;
+    nav_msgs::msg::Odometry::ConstSharedPtr odom_prev = odom_;
     while (true)
     {
       rclcpp::sleep_for(std::chrono::milliseconds(100));
@@ -158,10 +158,10 @@ protected:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr pub_imu_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
-  nav_msgs::msg::Odometry::ConstPtr odom_;
+  nav_msgs::msg::Odometry::ConstSharedPtr odom_;
   size_t odom_cnt_;
 
-  void cbOdom(const nav_msgs::msg::Odometry::ConstPtr& msg)
+  void cbOdom(const nav_msgs::msg::Odometry::ConstSharedPtr msg)
   {
     odom_ = msg;
   };

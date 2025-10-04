@@ -32,7 +32,7 @@
 
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 #include <std_msgs/msg/int32.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <vector>
@@ -42,7 +42,7 @@ map_organizer_msgs::msg::OccupancyGridArray maps;
 std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos;
 int floor_cur = 0;
 
-void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr msg)
+void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg)
 {
   RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
   maps = *msg;
@@ -53,7 +53,7 @@ void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::Ptr msg)
     map.info.origin.position.z = 0.0;
   }
 }
-void cbFloor(const std_msgs::msg::Int32::Ptr msg)
+void cbFloor(const std_msgs::msg::Int32::SharedPtr msg)
 {
   floor_cur = msg->data;
 }

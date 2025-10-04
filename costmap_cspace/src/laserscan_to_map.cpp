@@ -33,10 +33,10 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
 #include <limits>
 #include <string>
@@ -107,7 +107,7 @@ public:
   }
 
 private:
-  void cbScan(const sensor_msgs::msg::LaserScan::ConstPtr& scan)
+  void cbScan(const sensor_msgs::msg::LaserScan::ConstSharedPtr scan)
   {
     sensor_msgs::msg::PointCloud2 cloud;
     sensor_msgs::msg::PointCloud2 cloud_global;

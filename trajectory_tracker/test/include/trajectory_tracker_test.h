@@ -49,7 +49,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <rosgraph_msgs/msg/clock.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/utils.h>
 
@@ -91,11 +91,11 @@ protected:
   }
 
 private:
-  void cbStatus(const trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr& msg)
+  void cbStatus(const trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstSharedPtr msg)
   {
     status_ = msg;
   }
-  void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
+  void cbCmdVel(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     const rclcpp::Time now = nh_->now();
     if (cmd_vel_time_ == rclcpp::Time(0, 0, RCL_ROS_TIME))
@@ -112,17 +112,17 @@ private:
 public:
   rclcpp::Node::SharedPtr nh_;
   tf2::Transform pose_;
-  trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstPtr status_;
-  geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
+  trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::ConstSharedPtr status_;
+  geometry_msgs::msg::Twist::ConstSharedPtr cmd_vel_;
   rclcpp::Duration delay_;
 
   TrajectoryTrackerTest()
-    : nh_(rclcpp::Node::make_shared("trajectory_tracker_test"))
-    , delay_(0, 0)
-    , cmd_vel_time_(0, 0, RCL_ROS_TIME)
+    : cmd_vel_time_(0, 0, RCL_ROS_TIME)
     , trans_stamp_last_(0, 0, RCL_ROS_TIME)
     , initial_cmd_vel_time_(0, 0, RCL_ROS_TIME)
+    , delay_(0, 0)
   {
+    nh_ = rclcpp::Node::make_shared("trajectory_tracker_test");
     using std::placeholders::_1;
     sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel", 1, std::bind(&TrajectoryTrackerTest::cbCmdVel, this, _1));
@@ -279,29 +279,29 @@ public:
 
     while (odom_buffer_.size() > 0)
     {
-      nav_msgs::msg::Odometry odom = odom_buffer_.front();
-      if (rclcpp::Time(odom.header.stamp) > pub_time)
+      nav_msgs::msg::Odometry odom_i = odom_buffer_.front();
+      if (rclcpp::Time(odom_i.header.stamp) > pub_time)
         break;
 
       odom_buffer_.pop_front();
 
-      if (odom.header.stamp != trans_stamp_last_)
+      if (odom_i.header.stamp != trans_stamp_last_)
       {
         geometry_msgs::msg::TransformStamped trans;
-        trans.header = odom.header;
+        trans.header = odom_i.header;
         trans.header.stamp = rclcpp::Time(trans.header.stamp) + rclcpp::Duration::from_seconds(0.1);
-        trans.child_frame_id = odom.child_frame_id;
-        trans.transform.translation.x = odom.pose.pose.position.x;
-        trans.transform.translation.y = odom.pose.pose.position.y;
-        trans.transform.rotation.x = odom.pose.pose.orientation.x;
-        trans.transform.rotation.y = odom.pose.pose.orientation.y;
-        trans.transform.rotation.z = odom.pose.pose.orientation.z;
-        trans.transform.rotation.w = odom.pose.pose.orientation.w;
+        trans.child_frame_id = odom_i.child_frame_id;
+        trans.transform.translation.x = odom_i.pose.pose.position.x;
+        trans.transform.translation.y = odom_i.pose.pose.position.y;
+        trans.transform.rotation.x = odom_i.pose.pose.orientation.x;
+        trans.transform.rotation.y = odom_i.pose.pose.orientation.y;
+        trans.transform.rotation.z = odom_i.pose.pose.orientation.z;
+        trans.transform.rotation.w = odom_i.pose.pose.orientation.w;
 
         tfb_->sendTransform(trans);
-        pub_odom_->publish(odom);
+        pub_odom_->publish(odom_i);
       }
-      trans_stamp_last_ = odom.header.stamp;
+      trans_stamp_last_ = odom_i.header.stamp;
     }
   }
 
@@ -314,7 +314,7 @@ public:
 
 namespace trajectory_tracker_msgs::msg
 {
-std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstPtr& msg)
+std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstSharedPtr msg)
 {
   if (!msg)
   {

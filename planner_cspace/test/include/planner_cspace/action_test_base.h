@@ -113,7 +113,7 @@ protected:
   using ActionClient = rclcpp_action::Client<ACTION>;
   using ActionClientPtr = std::shared_ptr<ActionClient>;
 
-  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
   {
     planner_status_ = msg;
   }
@@ -131,7 +131,7 @@ protected:
   rclcpp::Node::SharedPtr node_;
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
-  planner_cspace_msgs::msg::PlannerStatus::ConstPtr planner_status_;
+  planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr planner_status_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   bool map_ready_;

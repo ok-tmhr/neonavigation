@@ -30,10 +30,10 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
@@ -114,7 +114,7 @@ public:
   }
 
 private:
-  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstPtr cloud, const bool singleshot)
+  void cbCloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud, const bool singleshot)
   {
     sensor_msgs::msg::PointCloud2 cloud_global;
     geometry_msgs::msg::TransformStamped trans;
@@ -142,10 +142,10 @@ private:
     float robot_z;
     try
     {
-      tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::Stamped<tf2::Transform> trans_to_robot;
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans_to_robot);
 
-      auto pos = trans.getOrigin();
+      auto pos = trans_to_robot.getOrigin();
       float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;
       float y = static_cast<int>(pos.y() / map_.info.resolution) * map_.info.resolution;
       map_.info.origin.position.x = x - map_.info.width * map_.info.resolution * 0.5;

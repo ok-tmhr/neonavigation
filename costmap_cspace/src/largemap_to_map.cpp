@@ -37,7 +37,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -49,7 +49,7 @@ private:
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_largemap_;
   rclcpp::TimerBase::SharedPtr timer_;
 
-  nav_msgs::msg::OccupancyGrid::ConstPtr large_map_;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr large_map_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
@@ -115,7 +115,7 @@ private:
   {
     publishMap();
   }
-  void cbLargeMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
+  void cbLargeMap(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     large_map_ = msg;
   }
@@ -155,14 +155,14 @@ private:
         std::lround((map.info.origin.position.y - large_map_->info.origin.position.y) / map.info.resolution);
     const float half_width = width_ / 2.0;
 
-    for (int y = gy; y < gy + width_; ++y)
+    for (int y2 = gy; y2 < gy + width_; ++y2)
     {
-      for (int x = gx; x < gx + width_; ++x)
+      for (int x2 = gx; x2 < gx + width_; ++x2)
       {
-        const int lx = x - gx;
-        const int ly = y - gy;
+        const int lx = x2 - gx;
+        const int ly = y2 - gy;
         const size_t addr = ly * width_ + lx;
-        const size_t addr_large = y * large_map_->info.width + x;
+        const size_t addr_large = y2 * large_map_->info.width + x2;
         const float r_sq = std::pow(lx - half_width, 2) + std::pow(ly - half_width, 2);
         if (simulate_surrounded_ &&
             r_sq <= std::pow(half_width, 2) &&
@@ -174,9 +174,9 @@ private:
         {
           map.data[addr] = -1;
         }
-        else if (x < 0 || y < 0 ||
-                 x >= static_cast<int>(large_map_->info.width) ||
-                 y >= static_cast<int>(large_map_->info.height))
+        else if (x2 < 0 || y2 < 0 ||
+                 x2 >= static_cast<int>(large_map_->info.width) ||
+                 y2 >= static_cast<int>(large_map_->info.height))
         {
           map.data[addr] = -1;
         }

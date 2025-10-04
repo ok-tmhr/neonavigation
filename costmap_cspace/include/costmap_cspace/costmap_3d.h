@@ -50,11 +50,11 @@ namespace costmap_cspace
 class Costmap3d
 {
 protected:
-  std::vector<Costmap3dLayerBase::Ptr> costmaps_;
+  std::vector<std::shared_ptr<Costmap3dLayerBase>> costmaps_;
   int ang_resolution_;
 
 public:
-  using Ptr = std::shared_ptr<Costmap3d>;
+  using SharedPtr = std::shared_ptr<Costmap3d>;
 
   explicit Costmap3d(const int ang_resolution)
   {
@@ -63,9 +63,9 @@ public:
     assert(ang_resolution_ > 0);
   }
   template <typename T>
-  typename T::Ptr addRootLayer()
+  typename T::SharedPtr addRootLayer()
   {
-    typename T::Ptr
+    typename T::SharedPtr
         costmap_base(new T);
 
     costmap_base->setAngleResolution(ang_resolution_);
@@ -78,10 +78,10 @@ public:
     return costmap_base;
   }
   template <typename T>
-  typename T::Ptr addLayer(
+  typename T::SharedPtr addLayer(
       const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
   {
-    typename T::Ptr costmap_overlay(new T);
+    typename T::SharedPtr costmap_overlay(new T);
     costmap_overlay->setAngleResolution(ang_resolution_);
     costmap_overlay->setOverlayMode(overlay_mode);
 
@@ -90,8 +90,8 @@ public:
 
     return costmap_overlay;
   }
-  Costmap3dLayerBase::Ptr addLayer(
-      Costmap3dLayerBase::Ptr costmap_overlay,
+  std::shared_ptr<Costmap3dLayerBase> addLayer(
+      std::shared_ptr<Costmap3dLayerBase> costmap_overlay,
       const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
   {
     costmap_overlay->setAngleResolution(ang_resolution_);
@@ -102,7 +102,7 @@ public:
 
     return costmap_overlay;
   }
-  Costmap3dLayerBase::Ptr getRootLayer()
+  std::shared_ptr<Costmap3dLayerBase> getRootLayer()
   {
     return costmaps_.front();
   }

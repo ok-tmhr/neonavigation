@@ -41,7 +41,7 @@
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 #include <std_msgs/msg/empty.hpp>
 #include <safety_limiter_msgs/msg/safety_limiter_status.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <gtest/gtest.h>
@@ -92,25 +92,25 @@ protected:
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
 
-  inline void cbDiag(const diagnostic_msgs::msg::DiagnosticArray::ConstPtr& msg)
+  inline void cbDiag(const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr msg)
   {
     diag_ = msg;
   }
 
-  inline void cbStatus(const safety_limiter_msgs::msg::SafetyLimiterStatus::ConstPtr& msg)
+  inline void cbStatus(const safety_limiter_msgs::msg::SafetyLimiterStatus::ConstSharedPtr msg)
   {
     status_ = msg;
   }
 
-  inline void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
+  inline void cbCmdVel(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     cmd_vel_ = msg;
   }
 
 public:
-  diagnostic_msgs::msg::DiagnosticArray::ConstPtr diag_;
-  safety_limiter_msgs::msg::SafetyLimiterStatus::ConstPtr status_;
-  geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
+  diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr diag_;
+  safety_limiter_msgs::msg::SafetyLimiterStatus::ConstSharedPtr status_;
+  geometry_msgs::msg::Twist::ConstSharedPtr cmd_vel_;
 
   inline SafetyLimiterTest()
     : nh_(rclcpp::Node::make_shared("test_safety_limiter"))

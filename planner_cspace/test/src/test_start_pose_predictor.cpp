@@ -53,11 +53,11 @@ protected:
   {
     config_ =
         {
-            .prediction_sec_ = 0.5,
-            .switch_back_prediction_sec_ = 2.0,
-            .dist_stop_ = 0.2,
-            .lin_vel_ = 1.5,
-            .ang_vel_ = M_PI / 2,
+            0.5,
+            2.0,
+            0.2,
+            1.5,
+            M_PI / 2,
         };
     predictor_.setConfig(config_);
 

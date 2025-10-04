@@ -54,8 +54,8 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearSimpleSimulationWithMargin)
   {
     float x = 0;
     bool stopped = false;
-    const boost::function<void(const geometry_msgs::msg::Twist::ConstPtr&)> cb_cmd_vel =
-        [dt, ax, &x, &v, &stopped](const geometry_msgs::msg::Twist::ConstPtr& msg) -> void
+    const boost::function<void(const geometry_msgs::msg::Twist::ConstSharedPtr)> cb_cmd_vel =
+        [dt, ax, &x, &v, &stopped](const geometry_msgs::msg::Twist::ConstSharedPtr msg) -> void
     {
       if (msg->linear.x >= v)
       {

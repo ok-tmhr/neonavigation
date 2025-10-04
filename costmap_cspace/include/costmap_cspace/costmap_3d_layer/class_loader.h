@@ -51,26 +51,26 @@ namespace costmap_cspace
 class Costmap3dLayerSpawnerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerSpawnerBase>;
-  virtual Costmap3dLayerBase::Ptr spawn() const = 0;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerSpawnerBase>;
+  virtual std::shared_ptr<Costmap3dLayerBase> spawn() const = 0;
 };
 template <typename T>
 class Costmap3dLayerSpawner : public Costmap3dLayerSpawnerBase
 {
 public:
-  Costmap3dLayerBase::Ptr spawn() const
+  std::shared_ptr<Costmap3dLayerBase> spawn() const
   {
-    return Costmap3dLayerBase::Ptr(new T);
+    return Costmap3dLayerBase::SharedPtr(new T);
   }
 };
 class Costmap3dLayerClassLoader
 {
 protected:
-  using ClassList = std::map<std::string, Costmap3dLayerSpawnerBase::Ptr>;
+  using ClassList = std::map<std::string, Costmap3dLayerSpawnerBase::SharedPtr>;
   static ClassList classes_;
 
 public:
-  static Costmap3dLayerBase::Ptr loadClass(const std::string& name)
+  static std::shared_ptr<Costmap3dLayerBase> loadClass(const std::string& name)
   {
     if (classes_.find(name) == classes_.end())
     {
@@ -78,7 +78,7 @@ public:
     }
     return classes_[name]->spawn();
   };
-  static void registerClass(const std::string& name, Costmap3dLayerSpawnerBase::Ptr spawner)
+  static void registerClass(const std::string& name, Costmap3dLayerSpawnerBase::SharedPtr spawner)
   {
     classes_[name] = spawner;
   };
@@ -96,7 +96,7 @@ public:
     {                                                             \
       costmap_cspace::Costmap3dLayerClassLoader::registerClass(   \
           name,                                                   \
-          costmap_cspace::Costmap3dLayerSpawnerBase::Ptr(         \
+          costmap_cspace::Costmap3dLayerSpawnerBase::SharedPtr(         \
               new costmap_cspace::Costmap3dLayerSpawner<klass>)); \
     } /* NOLINT(whitespace/braces)*/                              \
   };  /* NOLINT(whitespace/braces)*/                              \

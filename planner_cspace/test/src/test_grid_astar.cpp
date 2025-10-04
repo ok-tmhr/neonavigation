@@ -76,7 +76,7 @@ TEST(GridAstar, ParallelSearch)
     {
       return 1.0;
     }
-    float costEstim(const Vec& s, const Vec& e) const final
+    float costEstim(const Vec& /*s*/, const Vec& /*e*/) const final
     {
       return 0.0;
     }
@@ -85,7 +85,7 @@ TEST(GridAstar, ParallelSearch)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {
@@ -132,7 +132,7 @@ TEST(GridAstar, TimeoutAbort)
     {
       return 1.0;
     }
-    float costEstim(const Vec& s, const Vec& e) const final
+    float costEstim(const Vec& /*s*/, const Vec& /*e*/) const final
     {
       return 0.0;
     }
@@ -141,7 +141,7 @@ TEST(GridAstar, TimeoutAbort)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   int cnt(0);
   const auto cb_progress = [&cnt](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
@@ -206,7 +206,7 @@ TEST(GridAstar, SearchWithMultipleStarts)
     {
       return 1.0;
     }
-    float costEstim(const Vec& s, const Vec& e) const final
+    float costEstim(const Vec& /*s*/, const Vec& /*e*/) const final
     {
       return 0.0;
     }
@@ -215,7 +215,7 @@ TEST(GridAstar, SearchWithMultipleStarts)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {

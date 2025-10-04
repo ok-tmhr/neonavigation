@@ -81,7 +81,7 @@ public:
         break;
     }
   }
-  void showMap(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
+  void showMap(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     std::cerr << std::hex;
     for (size_t y = 0; y < msg->info.height; ++y)
@@ -104,32 +104,32 @@ public:
   }
 
 protected:
-  void cbHysteresis(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
+  void cbHysteresis(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     cnt_hysteresis_++;
     map_hysteresis_ = msg;
   }
-  void cbRemembered(const nav_msgs::msg::OccupancyGrid::ConstPtr& msg)
+  void cbRemembered(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     cnt_remembered_++;
     map_remembered_ = msg;
   }
-  void cbDistance(const sensor_msgs::msg::PointCloud::ConstPtr& msg)
+  void cbDistance(const sensor_msgs::msg::PointCloud::ConstSharedPtr msg)
   {
     cnt_distance_++;
     map_distance_ = msg;
   }
-  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstPtr& msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
   {
     if (msg->error == planner_cspace_msgs::msg::PlannerStatus::GOING_WELL &&
         msg->status == planner_cspace_msgs::msg::PlannerStatus::DOING)
       ++cnt_planner_ready_;
   }
-  void cbMetrics(const neonavigation_metrics_msgs::msg::Metrics::ConstPtr& msg)
+  void cbMetrics(const neonavigation_metrics_msgs::msg::Metrics::ConstSharedPtr msg)
   {
     metrics_ = msg;
   }
-  void cbPath(const nav_msgs::msg::Path::ConstPtr& msg)
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
   {
     if (msg->poses.size() > 0)
     {
@@ -139,11 +139,11 @@ protected:
   }
 
   rclcpp::Node::SharedPtr nh_;
-  nav_msgs::msg::OccupancyGrid::ConstPtr map_hysteresis_;
-  nav_msgs::msg::OccupancyGrid::ConstPtr map_remembered_;
-  sensor_msgs::msg::PointCloud::ConstPtr map_distance_;
-  nav_msgs::msg::Path::ConstPtr path_;
-  neonavigation_metrics_msgs::msg::Metrics::ConstPtr metrics_;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_hysteresis_;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_remembered_;
+  sensor_msgs::msg::PointCloud::ConstSharedPtr map_distance_;
+  nav_msgs::msg::Path::ConstSharedPtr path_;
+  neonavigation_metrics_msgs::msg::Metrics::ConstSharedPtr metrics_;
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_hysteresis_;

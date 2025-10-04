@@ -40,7 +40,6 @@
 #include <fstream>
 #include <string>
 
-#include <boost/bind.hpp>
 #include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
@@ -49,7 +48,7 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <interactive_markers/interactive_marker_server.hpp>
 #include <nav_msgs/msg/path.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <trajectory_tracker_msgs/srv/change_path.hpp>
 #include <trajectory_tracker_msgs/msg/trajectory_server_status.hpp>
 #include <visualization_msgs/msg/interactive_marker_update.hpp>
@@ -83,7 +82,7 @@ private:
   bool change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
               trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res);
   void processFeedback(
-      const visualization_msgs::msg::InteractiveMarkerFeedback::ConstPtr& feedback);
+      const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback);
   void updateIM();
   enum
   {
@@ -134,7 +133,7 @@ bool ServerNode::loadFile()
 }
 
 void ServerNode::processFeedback(
-    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstPtr& feedback)
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback)
 {
   int id = std::atoi(feedback->marker_name.c_str());
   switch (feedback->event_type)

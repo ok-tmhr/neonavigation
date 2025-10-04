@@ -31,7 +31,7 @@
 #include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <std_srvs/srv/empty.hpp>
 
@@ -44,10 +44,10 @@ TEST(TrajectoryRecorder, TfToPath)
 {
   auto nh = rclcpp::Node::make_shared("test_trajectory_recorder");
 
-  nav_msgs::msg::Path::ConstPtr path;
+  nav_msgs::msg::Path::ConstSharedPtr path;
   int received_count = 0;
-  const boost::function<void(const nav_msgs::msg::Path::ConstPtr&)> cb_path =
-      [&path, &received_count](const nav_msgs::msg::Path::ConstPtr& msg) -> void
+  const boost::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
+      [&path, &received_count](const nav_msgs::msg::Path::ConstSharedPtr msg) -> void
   {
     ++received_count;
     path = msg;

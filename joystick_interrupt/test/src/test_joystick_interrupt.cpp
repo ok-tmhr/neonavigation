@@ -45,9 +45,9 @@ protected:
   rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_joy_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_cmd_vel_;
 
-  geometry_msgs::msg::Twist::ConstPtr cmd_vel_;
+  geometry_msgs::msg::Twist::ConstSharedPtr cmd_vel_;
 
-  void cbCmdVel(const geometry_msgs::msg::Twist::ConstPtr& msg)
+  void cbCmdVel(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     cmd_vel_ = msg;
   }
@@ -368,9 +368,9 @@ protected:
   rclcpp::Publisher<sensor_msgs::msg::Joy>::SharedPtr pub_joy_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr sub_;
 
-  std_msgs::msg::Int32::ConstPtr msg_;
+  std_msgs::msg::Int32::ConstSharedPtr msg_;
 
-  void cbMsg(const std_msgs::msg::Int32::ConstPtr& msg)
+  void cbMsg(const std_msgs::msg::Int32::ConstSharedPtr msg)
   {
     msg_ = msg;
   }
