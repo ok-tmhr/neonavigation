@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -111,14 +112,14 @@ protected:
     cm_rough_.clear(0);
     bbf_costmap_->clear();
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range,
-            .local_range = local_range,
-            .longcut_range = 0,
-            .size = size2d,
-            .resolution = map_info.linear_resolution,
+            ec_,
+            range,
+            local_range,
+            0,
+            size2d,
+            map_info.linear_resolution,
         };
     dm_full_.init(model, dmp);
     dm_fast_.init(model, dmp);

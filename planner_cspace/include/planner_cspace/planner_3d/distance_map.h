@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2021, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,9 +54,9 @@ public:
   {
     Astar::Vec min;
     Astar::Vec max;
-    Rect(const Astar::Vec& min, const Astar::Vec& max)
-      : min(min)
-      , max(max)  // NOLINT(build/include_what_you_use)
+    Rect(const Astar::Vec& v_min, const Astar::Vec& v_max)
+      : min(v_min)
+      , max(v_max)  // NOLINT(build/include_what_you_use)
     {
     }
   };
@@ -107,7 +108,7 @@ public:
   {
     return g_.operator[](pos);
   }
-  inline const float operator[](const Astar::Vec& pos) const
+  inline float operator[](const Astar::Vec& pos) const
   {
     return g_.operator[](pos);
   }

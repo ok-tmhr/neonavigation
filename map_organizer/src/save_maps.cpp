@@ -2,6 +2,7 @@
  * map_saver
  * Copyright (c) 2008, Willow Garage, Inc.
  * Copyright (c) 2016, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

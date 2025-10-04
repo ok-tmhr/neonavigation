@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -74,8 +75,8 @@ protected:
 
     if (map_buffer_.size() > 0)
     {
-      for (auto& map : map_buffer_)
-        cbMapOverlay(map.first, map.second);
+      for (auto& buf : map_buffer_)
+        cbMapOverlay(buf.first, buf.second);
       RCLCPP_INFO(this->get_logger(), "%ld buffered costmaps processed", map_buffer_.size());
       map_buffer_.clear();
     }

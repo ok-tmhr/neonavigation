@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -120,7 +121,7 @@ public:
     {
       return p1_;
     }
-    const float getCost() const
+    float getCost() const
     {
       return cost_;
     }
@@ -276,12 +277,12 @@ protected:
             std::list<Vec> path_tmp;
             ts = tnow;
             findPath(ss_normalized, better, path_tmp);
-            const SearchStats stats =
+            const SearchStats stats
                 {
-                    .num_loop = num_loop,
-                    .num_search_queue = num_search_queue,
-                    .num_prev_updates = num_updates,
-                    .num_total_updates = num_total_updates,
+                    num_loop,
+                    num_search_queue,
+                    num_updates,
+                    num_total_updates,
                 };
             if (!cb_progress(path_tmp, stats))
             {
@@ -315,9 +316,9 @@ protected:
           const std::vector<Vec> search_list = model->searchGrids(p, ss_normalized, e);
 
           bool updated(false);
-          for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
+          for (auto it2 = search_list.cbegin(); it2 < search_list.cend(); ++it2)
           {
-            Vec next = p + *it;
+            Vec next = p + *it2;
             next.cycleUnsigned(g.size());
             if (next.isExceeded(g.size()))
               continue;

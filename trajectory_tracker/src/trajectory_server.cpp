@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,6 +40,7 @@
 #include <fstream>
 #include <string>
 
+#include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/serialized_message.hpp>
@@ -65,19 +67,19 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>::SharedPtr pub_status_;
   rclcpp::Service<trajectory_tracker_msgs::srv::ChangePath>::SharedPtr srv_change_path_;
-  rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<interactive_markers::InteractiveMarkerServer> srv_im_fb_;
 
   nav_msgs::msg::Path path_;
   trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
   double hz_;
-  std::vector<uint8_t> buffer_;
+  boost::shared_array<uint8_t> buffer_;
   int serial_size_;
   double filter_step_;
   trajectory_tracker::Filter* lpf_[2];
 
   bool loadFile();
-  void change(const trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+  void loadPath();
+  bool change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
               trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res);
   void processFeedback(
       const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback);
@@ -92,7 +94,7 @@ private:
 };
 
 ServerNode::ServerNode() : Node("trajectory_server")
-  , buffer_(1024)
+  , buffer_(new uint8_t[1024])
 {
   req_path_.filename = this->declare_parameter("file", std::string("a.path"));
   hz_ = this->declare_parameter("hz", 5.0);
@@ -109,9 +111,6 @@ ServerNode::ServerNode() : Node("trajectory_server")
   max_markers_ = 0;
 
   srv_im_fb_ = std::make_shared<interactive_markers::InteractiveMarkerServer>(this->get_namespace(), this);
-  timer_ = this->create_wall_timer(
-    std::chrono::duration<double>(1.0 / hz_),
-    std::bind(&ServerNode::spin, this));
 }
 ServerNode::~ServerNode()
 {
@@ -125,8 +124,8 @@ bool ServerNode::loadFile()
     ifs.seekg(0, ifs.end);
     serial_size_ = ifs.tellg();
     ifs.seekg(0, ifs.beg);
-    buffer_.resize(serial_size_);
-    ifs.read(reinterpret_cast<char*>(buffer_.data()), serial_size_);
+    buffer_.reset(new uint8_t[serial_size_]);
+    ifs.read(reinterpret_cast<char*>(buffer_.get()), serial_size_);
 
     return true;
   }
@@ -230,7 +229,7 @@ void ServerNode::updateIM()
   srv_im_fb_->applyChanges();
 }
 
-void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+bool ServerNode::change(trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
                         trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res)
 {
   req_path_ = *req;
@@ -240,7 +239,7 @@ void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request:
   {
     res->success = true;
     rclcpp::SerializedMessage serialized_msg(serial_size_);
-    std::memcpy(serialized_msg.get_rcl_serialized_message().buffer, buffer_.data(), serial_size_);
+    std::memcpy(serialized_msg.get_rcl_serialized_message().buffer, buffer_.get(), serial_size_);
     rclcpp::Serialization<nav_msgs::msg::Path> serializer;
     serializer.deserialize_message(&serialized_msg, &path_);
     path_.header.stamp = this->now();
@@ -272,17 +271,22 @@ void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request:
     path_.poses.clear();
     path_.header.frame_id = "map";
   }
+  return true;
 }
 
 void ServerNode::spin()
 {
+  rclcpp::Rate loop_rate(hz_);
   trajectory_tracker_msgs::msg::TrajectoryServerStatus status;
 
+  while (rclcpp::ok())
   {
     status.header = path_.header;
     status.filename = req_path_.filename;
     status.id = req_path_.id;
     pub_status_->publish(status);
+    rclcpp::spin_some(shared_from_this());
+    loop_rate.sleep();
   }
 }
 
@@ -291,7 +295,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
 
   auto serv = std::make_shared<ServerNode>();
-  rclcpp::spin(serv);
+  serv->spin();
 
   return 0;
 }

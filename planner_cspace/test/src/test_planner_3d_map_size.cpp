@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2022, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +58,7 @@ protected:
     pub_map_update_ = nh_->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>("costmap_update", 1);
   }
 
-  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg)
+  void cbStatus(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr /*msg*/)
   {
     ++cnt_status_;
   }

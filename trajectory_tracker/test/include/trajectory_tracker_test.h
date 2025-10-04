@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -278,29 +279,29 @@ public:
 
     while (odom_buffer_.size() > 0)
     {
-      nav_msgs::msg::Odometry odom = odom_buffer_.front();
-      if (rclcpp::Time(odom.header.stamp) > pub_time)
+      nav_msgs::msg::Odometry odom_i = odom_buffer_.front();
+      if (rclcpp::Time(odom_i.header.stamp) > pub_time)
         break;
 
       odom_buffer_.pop_front();
 
-      if (odom.header.stamp != trans_stamp_last_)
+      if (odom_i.header.stamp != trans_stamp_last_)
       {
         geometry_msgs::msg::TransformStamped trans;
-        trans.header = odom.header;
+        trans.header = odom_i.header;
         trans.header.stamp = rclcpp::Time(trans.header.stamp) + rclcpp::Duration::from_seconds(0.1);
-        trans.child_frame_id = odom.child_frame_id;
-        trans.transform.translation.x = odom.pose.pose.position.x;
-        trans.transform.translation.y = odom.pose.pose.position.y;
-        trans.transform.rotation.x = odom.pose.pose.orientation.x;
-        trans.transform.rotation.y = odom.pose.pose.orientation.y;
-        trans.transform.rotation.z = odom.pose.pose.orientation.z;
-        trans.transform.rotation.w = odom.pose.pose.orientation.w;
+        trans.child_frame_id = odom_i.child_frame_id;
+        trans.transform.translation.x = odom_i.pose.pose.position.x;
+        trans.transform.translation.y = odom_i.pose.pose.position.y;
+        trans.transform.rotation.x = odom_i.pose.pose.orientation.x;
+        trans.transform.rotation.y = odom_i.pose.pose.orientation.y;
+        trans.transform.rotation.z = odom_i.pose.pose.orientation.z;
+        trans.transform.rotation.w = odom_i.pose.pose.orientation.w;
 
         tfb_->sendTransform(trans);
-        pub_odom_->publish(odom);
+        pub_odom_->publish(odom_i);
       }
-      trans_stamp_last_ = odom.header.stamp;
+      trans_stamp_last_ = odom_i.header.stamp;
     }
   }
 

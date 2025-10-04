@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2021, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -125,9 +126,9 @@ void DistanceMap::fillCostmap(
           {
             float sum = 0, sum_hist = 0;
             bool collision = false;
-            for (const auto& d : ds.pos)
+            for (const auto& cyclic_d : ds.pos)
             {
-              const Astar::Vec pos = p + d;
+              const Astar::Vec pos = p + cyclic_d;
               const char c = cm_rough_[pos];
               if (c > 99)
               {

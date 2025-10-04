@@ -1,4 +1,4 @@
 - git:
     local-name: neonavigation_msgs
-    uri: https://github.com/at-wat/neonavigation_msgs.git
-    version: master
+    uri: https://github.com/ok-tmhr/neonavigation_msgs.git
+    version: humble-dev

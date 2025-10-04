@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +73,7 @@ public:
   {
     return preserved_path_;
   }
-  const double getPreservedPathLength() const
+  double getPreservedPathLength() const
   {
     return preserved_path_length_;
   }
