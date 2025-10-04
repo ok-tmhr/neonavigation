@@ -1,7 +1,5 @@
 include_directories(include)
 
-find_package(Boost REQUIRED COMPONENTS thread chrono)
-
 # planner_3d node with assertion
 add_executable(planner_3d_debug
   ../src/costmap_bbf.cpp
@@ -14,20 +12,20 @@ add_executable(planner_3d_debug
   ../src/start_pose_predictor.cpp
 )
 target_compile_definitions(planner_3d_debug PUBLIC DEBUG)
-target_link_libraries(planner_3d_debug ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(planner_3d_debug ${OpenMP_CXX_FLAGS})
 target_include_directories(planner_3d_debug PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 ament_target_dependencies(planner_3d_debug ${COLCON_DEPENDS})
 
 ament_add_gtest(test_blockmem_gridmap src/test_blockmem_gridmap.cpp)
-target_link_libraries(test_blockmem_gridmap ${Boost_LIBRARIES})
+target_link_libraries(test_blockmem_gridmap)
 
 ament_add_gtest(test_grid_astar src/test_grid_astar.cpp)
-target_link_libraries(test_grid_astar ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(test_grid_astar ${OpenMP_CXX_FLAGS})
 
 ament_add_gtest(test_cyclic_vec src/test_cyclic_vec.cpp)
-target_link_libraries(test_cyclic_vec ${Boost_LIBRARIES})
+target_link_libraries(test_cyclic_vec)
 
 ament_add_gtest(test_distance_map
   src/test_distance_map.cpp
@@ -38,7 +36,7 @@ ament_add_gtest(test_distance_map
   ../src/motion_primitive_builder.cpp
   ../src/rotation_cache.cpp
 )
-target_link_libraries(test_distance_map ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(test_distance_map ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(test_distance_map ${COLCON_DEPENDS})
 
 ament_add_gtest(test_distance_map_fast_update
@@ -50,11 +48,11 @@ ament_add_gtest(test_distance_map_fast_update
   ../src/motion_primitive_builder.cpp
   ../src/rotation_cache.cpp
 )
-target_link_libraries(test_distance_map_fast_update ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(test_distance_map_fast_update ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(test_distance_map_fast_update ${COLCON_DEPENDS})
 
 ament_add_gtest(test_grid_metric_converter src/test_grid_metric_converter.cpp)
-target_link_libraries(test_grid_metric_converter ${Boost_LIBRARIES})
+target_link_libraries(test_grid_metric_converter)
 ament_target_dependencies(test_grid_metric_converter ${COLCON_DEPENDS})
 
 ament_add_gtest(test_planner_3d_cost
@@ -64,20 +62,20 @@ ament_add_gtest(test_planner_3d_cost
   ../src/motion_primitive_builder.cpp
   ../src/rotation_cache.cpp
 )
-target_link_libraries(test_planner_3d_cost ${Boost_LIBRARIES})
+target_link_libraries(test_planner_3d_cost)
 ament_target_dependencies(test_planner_3d_cost ${COLCON_DEPENDS})
 
 ament_add_gtest(test_costmap_bbf
   src/test_costmap_bbf.cpp
   ../src/costmap_bbf.cpp
 )
-target_link_libraries(test_costmap_bbf ${Boost_LIBRARIES})
+target_link_libraries(test_costmap_bbf)
 
 ament_add_gtest(test_motion_cache
   src/test_motion_cache.cpp
   ../src/motion_cache.cpp
 )
-target_link_libraries(test_motion_cache ${Boost_LIBRARIES})
+target_link_libraries(test_motion_cache)
 ament_target_dependencies(test_motion_cache ${COLCON_DEPENDS})
 
 ament_add_gtest(test_motion_primitive_builder
@@ -85,7 +83,7 @@ ament_add_gtest(test_motion_primitive_builder
   ../src/motion_primitive_builder.cpp
   ../src/rotation_cache.cpp
 )
-target_link_libraries(test_motion_primitive_builder ${Boost_LIBRARIES})
+target_link_libraries(test_motion_primitive_builder)
 ament_target_dependencies(test_motion_primitive_builder ${COLCON_DEPENDS})
 
 ament_add_gtest(test_start_pose_predictor
@@ -94,7 +92,7 @@ ament_add_gtest(test_start_pose_predictor
   ../src/rotation_cache.cpp
   ../src/start_pose_predictor.cpp
 )
-target_link_libraries(test_start_pose_predictor ${Boost_LIBRARIES})
+target_link_libraries(test_start_pose_predictor)
 ament_target_dependencies(test_start_pose_predictor ${COLCON_DEPENDS})
 
 ament_add_gtest(test_debug_outputs
@@ -200,7 +198,7 @@ if(NEONAVIGATION_EXTRA_TESTS)
   ament_add_gtest(test_blockmem_gridmap_performance
     src/test_blockmem_gridmap_performance.cpp
   )
-  target_link_libraries(test_blockmem_gridmap_performance ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+  target_link_libraries(test_blockmem_gridmap_performance ${OpenMP_CXX_FLAGS})
   # Force release build for performance test.
   set_target_properties(test_blockmem_gridmap_performance PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
 

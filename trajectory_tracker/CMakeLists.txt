@@ -28,11 +28,10 @@ find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-find_package(Boost REQUIRED COMPONENTS thread)
 find_package(Eigen3 REQUIRED)
 
 
-include_directories(include ${Boost_INCLUDE_DIRS})
+include_directories(include)
 
 
 add_executable(trajectory_tracker src/trajectory_tracker.cpp)

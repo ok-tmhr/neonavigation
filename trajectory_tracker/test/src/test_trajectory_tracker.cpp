@@ -640,7 +640,7 @@ int main(int argc, char** argv)
   testing::InitGoogleTest(&argc, argv);
   rclcpp::init(argc, argv);
 
-  boost::thread time_thread(timeSource);
+  std::thread time_thread(timeSource);
 
   return RUN_ALL_TESTS();
 }

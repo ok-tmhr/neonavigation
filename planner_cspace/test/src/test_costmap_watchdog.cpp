@@ -30,7 +30,6 @@
 
 #include <string>
 
-#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
@@ -49,18 +48,18 @@ TEST(Planner3D, CostmapWatchdog)
   nav_msgs::msg::Path::ConstSharedPtr path;
   diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr diag;
 
-  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr)> cb_status =
+  const std::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr)> cb_status =
       [&status, &cnt](const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg) -> void
   {
     status = msg;
     cnt++;
   };
-  const boost::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
+  const std::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
       [&path](const nav_msgs::msg::Path::ConstSharedPtr msg) -> void
   {
     path = msg;
   };
-  const boost::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr)> cb_diag =
+  const std::function<void(const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr)> cb_diag =
       [&diag](const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr msg) -> void
   {
     diag = msg;
@@ -135,12 +134,12 @@ TEST(Planner3D, CostmapTimeoutOnFinishing)
   planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr status;
   nav_msgs::msg::Path::ConstSharedPtr path;
 
-  const boost::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr)> cb_status =
+  const std::function<void(const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr)> cb_status =
       [&status](const planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr msg) -> void
   {
     status = msg;
   };
-  const boost::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
+  const std::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
       [&path](const nav_msgs::msg::Path::ConstSharedPtr msg) -> void
   {
     path = msg;

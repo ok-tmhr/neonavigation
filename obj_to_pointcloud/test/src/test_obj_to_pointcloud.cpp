@@ -31,7 +31,6 @@
 #include <cmath>
 #include <string>
 
-#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -65,7 +64,7 @@ TEST(ObjToPointCloud, PointCloud)
   rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_obj_to_pointcloud");
   sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud;
 
-  const boost::function<void(const sensor_msgs::msg::PointCloud2::ConstSharedPtr)> cb =
+  const std::function<void(const sensor_msgs::msg::PointCloud2::ConstSharedPtr)> cb =
       [&cloud](const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg) -> void
   {
     cloud = msg;

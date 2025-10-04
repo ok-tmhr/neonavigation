@@ -28,21 +28,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// #include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 
+#ifdef SHAPE_SHIFTER_AVAILABLE
 // ! No migration for topic_tools::ShapeShifter
-// #include <topic_tools/shape_shifter.h>
-
+#include <topic_tools/shape_shifter.h>
+#endif
 
 class JoystickMux : public rclcpp::Node
 {
 private:
-  // rclcpp::Subscription<>::SharedPtr sub_topics_[2];
+
+#ifdef SHAPE_SHIFTER_AVAILABLE
+  rclcpp::Subscription<topic_tools::ShapeShifter>::SharedPtr sub_topics_[2];
+#endif
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
-  // rclcpp::Publisher<>::SharedPtr pub_topic_;
+#ifdef SHAPE_SHIFTER_AVAILABLE
+  rclcpp::Publisher<topic_tools::ShapeShifter>::SharedPtr pub_topic_;
+#endif
   rclcpp::TimerBase::SharedPtr timer_;
   double timeout_;
   int interrupt_button_;
@@ -70,28 +74,32 @@ private:
       selected_ = 0;
     }
   };
-  // void cbTopic(const boost::shared_ptr<topic_tools::ShapeShifter const>& msg, int id)
-  // {
-  //   if (selected_ == id)
-  //   {
-  //     if (!advertised_)
-  //     {
-  //       advertised_ = true;
-  //       {
-  //         RCLCPP_ERROR(this->get_logger(),
-  //             "Use %s (%s%s) topic instead of %s (%s%s)",
-  //             nh_.resolveName("mux_output", false).c_str(),
-  //             neonavigation_common::compat::getSimplifiedNamespace(nh_).c_str(),
-  //             "mux_output",
-  //             pnh_.resolveName("output", false).c_str(),
-  //             neonavigation_common::compat::getSimplifiedNamespace(pnh_).c_str(),
-  //             "output");
-  //         pub_topic_ = msg->advertise(pnh_, "output", 1, false);
-  //       }
-  //     }
-  //     pub_topic_->publish(*msg);
-  //   }
-  // };
+
+#ifdef SHAPE_SHIFTER_AVAILABLE
+  void cbTopic(const std::shared_ptr<topic_tools::ShapeShifter const>& msg, int id)
+  {
+    if (selected_ == id)
+    {
+      if (!advertised_)
+      {
+        advertised_ = true;
+        {
+          RCLCPP_ERROR(this->get_logger(),
+              "Use %s (%s%s) topic instead of %s (%s%s)",
+              nh_.resolveName("mux_output", false).c_str(),
+              neonavigation_common::compat::getSimplifiedNamespace(nh_).c_str(),
+              "mux_output",
+              pnh_.resolveName("output", false).c_str(),
+              neonavigation_common::compat::getSimplifiedNamespace(pnh_).c_str(),
+              "output");
+          pub_topic_ = msg->advertise(pnh_, "output", 1, false);
+        }
+      }
+      pub_topic_->publish(*msg);
+    }
+  };
+#endif
+
   void cbTimer()
   {
     if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_))
@@ -106,12 +114,15 @@ public:
   {
     using std::placeholders::_1;
       sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickMux::cbJoy, this, _1));
-    // sub_topics_[0] = this->create_subscription<topic_tools::ShapeShifter>(
-    //     "mux_input0",
-    //     1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
-    // sub_topics_[1] = this->create_subscription<topic_tools::ShapeShifter>(
-    //     "mux_input1",
-    //     1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
+
+#ifdef SHAPE_SHIFTER_AVAILABLE
+    sub_topics_[0] = this->create_subscription<topic_tools::ShapeShifter>(
+        "mux_input0",
+        1, [](const topic_tools::ShapeShifter::ConstSharedPtr msg){cbTopic(msg, 0)};
+    sub_topics_[1] = this->create_subscription<topic_tools::ShapeShifter>(
+        "mux_input1",
+        1, [](const topic_tools::ShapeShifter::ConstSharedPtr msg){cbTopic(msg, 1)};
+#endif
 
     interrupt_button_ = this->declare_parameter("interrupt_button", 5);
     timeout_ = this->declare_parameter("timeout", 0.5);

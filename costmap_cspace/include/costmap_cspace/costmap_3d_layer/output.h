@@ -34,7 +34,6 @@
 #include <cassert>
 #include <memory>
 
-#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <costmap_cspace_msgs/msg/c_space3_d.hpp>

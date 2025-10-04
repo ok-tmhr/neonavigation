@@ -40,7 +40,6 @@
 #include <fstream>
 #include <string>
 
-#include <boost/shared_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/serialization.hpp>
 #include <rclcpp/serialized_message.hpp>
@@ -72,7 +71,7 @@ private:
   nav_msgs::msg::Path path_;
   trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
   double hz_;
-  boost::shared_array<uint8_t> buffer_;
+  std::unique_ptr<uint8_t[]> buffer_;
   int serial_size_;
   double filter_step_;
   trajectory_tracker::Filter* lpf_[2];
@@ -93,8 +92,8 @@ private:
 };
 
 ServerNode::ServerNode() : Node("trajectory_server")
-  , buffer_(new uint8_t[1024])
 {
+  buffer_ = std::make_unique<uint8_t[]>(1024);
   req_path_.filename = this->declare_parameter("file", std::string("a.path"));
   hz_ = this->declare_parameter("hz", 5.0);
   filter_step_ = this->declare_parameter("filter_step", 0.0);
@@ -123,7 +122,7 @@ bool ServerNode::loadFile()
     ifs.seekg(0, ifs.end);
     serial_size_ = ifs.tellg();
     ifs.seekg(0, ifs.beg);
-    buffer_.reset(new uint8_t[serial_size_]);
+    buffer_ = std::make_unique<uint8_t[]>(serial_size_);
     ifs.read(reinterpret_cast<char*>(buffer_.get()), serial_size_);
 
     return true;

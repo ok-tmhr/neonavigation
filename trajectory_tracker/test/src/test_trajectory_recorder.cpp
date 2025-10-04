@@ -28,7 +28,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <boost/function.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -46,7 +45,7 @@ TEST(TrajectoryRecorder, TfToPath)
 
   nav_msgs::msg::Path::ConstSharedPtr path;
   int received_count = 0;
-  const boost::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
+  const std::function<void(const nav_msgs::msg::Path::ConstSharedPtr)> cb_path =
       [&path, &received_count](const nav_msgs::msg::Path::ConstSharedPtr msg) -> void
   {
     ++received_count;

@@ -38,7 +38,6 @@ foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
 
-find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
@@ -58,7 +57,7 @@ add_executable(planner_3d
 target_include_directories(planner_3d PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(planner_3d ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(planner_3d ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(planner_3d ${COLCON_DEPENDS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
@@ -77,7 +76,7 @@ add_executable(planner_2dof_serial_joints
 target_include_directories(planner_2dof_serial_joints PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(planner_2dof_serial_joints ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(planner_2dof_serial_joints ${COLCON_DEPENDS})
 
 add_executable(dummy_robot src/dummy_robot.cpp)
