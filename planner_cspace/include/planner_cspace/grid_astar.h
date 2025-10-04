@@ -315,9 +315,9 @@ protected:
           const std::vector<Vec> search_list = model->searchGrids(p, ss_normalized, e);
 
           bool updated(false);
-          for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
+          for (auto it2 = search_list.cbegin(); it2 < search_list.cend(); ++it2)
           {
-            Vec next = p + *it;
+            Vec next = p + *it2;
             next.cycleUnsigned(g.size());
             if (next.isExceeded(g.size()))
               continue;

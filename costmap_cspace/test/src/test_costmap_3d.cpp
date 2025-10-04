@@ -1078,10 +1078,10 @@ TEST(Costmap3dLayerOutput, LinearSpreadMinCost)
 
       const auto& expected_result = expected_results_cutoffs[i];
       ASSERT_EQ(expected_result.size(), overlay_map->data.size());
-      for (size_t i = 0; i < expected_result.size(); ++i)
+      for (size_t j = 0; j < expected_result.size(); ++j)
       {
-        EXPECT_EQ(expected_result[i], overlay_map->data[i])
-            << " Different at: (" << i % map_layer->info.width << "," << i / 5 << ")";
+        EXPECT_EQ(expected_result[j], overlay_map->data[j])
+            << " Different at: (" << j % map_layer->info.width << "," << j / 5 << ")";
       }
     }
   }

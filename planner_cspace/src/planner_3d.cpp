@@ -2125,7 +2125,7 @@ protected:
 
     if (hyst)
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts_hyst = boost::chrono::high_resolution_clock::now();
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -2178,12 +2178,12 @@ protected:
         hyst_updated_cells_.push_back(p);
       }
       has_hysteresis_map_ = true;
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const float dur = boost::chrono::duration<float>(tnow - ts).count();
-      RCLCPP_DEBUG(this->get_logger(), "Hysteresis map generated (%0.4f sec.)", dur);
+      const auto tnow2 = boost::chrono::high_resolution_clock::now();
+      const float dur2 = boost::chrono::duration<float>(tnow2 - ts_hyst).count();
+      RCLCPP_DEBUG(this->get_logger(), "Hysteresis map generated (%0.4f sec.)", dur2);
       metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "hyst_map_dur",
-          dur,
+          dur2,
           "second"));
       publishDebug();
     }
@@ -2329,24 +2329,24 @@ protected:
 
           // Calculate distance map gradient
           float grad[2] = {0, 0};
-          for (Astar::Vec d(0, -1, 0); d[1] <= 1; d[1]++)
+          for (Astar::Vec d2(0, -1, 0); d2[1] <= 1; d2[1]++)
           {
-            for (d[0] = -1; d[0] <= 1; d[0]++)
+            for (d2[0] = -1; d2[0] <= 1; d2[0]++)
             {
-              if (d[0] == 0 && d[1] == 0)
+              if (d2[0] == 0 && d2[1] == 0)
               {
                 continue;
               }
 
-              const auto p = te + d;
+              const auto p = te + d2;
               const auto cost2 = cost_estim_cache_static_[p];
               if (cost2 == std::numeric_limits<float>::max())
               {
                 continue;
               }
               const float cost_diff = cost2 - cost;
-              grad[0] += -cost_diff * d[0];
-              grad[1] += -cost_diff * d[1];
+              grad[0] += -cost_diff * d2[0];
+              grad[1] += -cost_diff * d2[1];
             }
           }
           if (grad[0] == 0 && grad[1] == 0)

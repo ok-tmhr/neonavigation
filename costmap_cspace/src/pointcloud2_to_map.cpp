@@ -141,10 +141,10 @@ private:
     float robot_z;
     try
     {
-      tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::Stamped<tf2::Transform> trans_to_robot;
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans_to_robot);
 
-      auto pos = trans.getOrigin();
+      auto pos = trans_to_robot.getOrigin();
       float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;
       float y = static_cast<int>(pos.y() / map_.info.resolution) * map_.info.resolution;
       map_.info.origin.position.x = x - map_.info.width * map_.info.resolution * 0.5;

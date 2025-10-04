@@ -230,10 +230,10 @@ public:
     }
     size_ = size;
   }
-  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size_)
+  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size)
     : BlockMemGridmap()
   {
-    reset(size_);
+    reset(size);
   }
   BlockMemGridmap()
     : ser_capacity_(0)

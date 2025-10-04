@@ -53,9 +53,9 @@ public:
   {
     Astar::Vec min;
     Astar::Vec max;
-    Rect(const Astar::Vec& min, const Astar::Vec& max)
-      : min(min)
-      , max(max)  // NOLINT(build/include_what_you_use)
+    Rect(const Astar::Vec& v_min, const Astar::Vec& v_max)
+      : min(v_min)
+      , max(v_max)  // NOLINT(build/include_what_you_use)
     {
     }
   };
