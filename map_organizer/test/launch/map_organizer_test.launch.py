@@ -14,13 +14,15 @@ from launch_testing.actions import ReadyToTest
 
 
 def generate_test_description():
-    arg_tmpfile_prefix = DeclareLaunchArgument("tmpfile_prefix", default_value="/tmp/tmp-map-organizer-988dbe-")
+    arg_tmpfile_prefix = DeclareLaunchArgument(
+        "tmpfile_prefix", default_value="/tmp/tmp-map-organizer-988dbe-"
+    )
     gtest = Node(
         package="map_organizer",
         executable="test_map_organizer",
         name="test_map_organizer",
         output="screen",
-        parameters=[("file_prefix",LaunchConfiguration("tmpfile_prefix"))]
+        parameters=[{"file_prefix": LaunchConfiguration("tmpfile_prefix")}],
     )
     launch_file = IncludeLaunchDescription(
         FrontendLaunchDescriptionSource(
@@ -30,9 +32,11 @@ def generate_test_description():
                 "map_organizer_rostest.test",
             )
         ),
-        launch_arguments=[("file_prefix",LaunchConfiguration("tmpfile_prefix"))],
+        launch_arguments=[("file_prefix", LaunchConfiguration("tmpfile_prefix"))],
     )
-    return LaunchDescription([arg_tmpfile_prefix, gtest, launch_file, ReadyToTest()]), {"test_node": gtest}
+    return LaunchDescription([arg_tmpfile_prefix, gtest, launch_file, ReadyToTest()]), {
+        "test_node": gtest
+    }
 
 
 class TestGTestWaitForCompletion(unittest.TestCase):
