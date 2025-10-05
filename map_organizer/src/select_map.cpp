@@ -38,73 +38,87 @@
 #include <vector>
 
 
-map_organizer_msgs::msg::OccupancyGridArray maps;
-std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos;
-int floor_cur = 0;
+class SelectMap : public rclcpp::Node
+{
+  rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr subMaps_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr subFloor_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pubMap_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
+  map_organizer_msgs::msg::OccupancyGridArray maps_;
+  std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos_;
+  geometry_msgs::msg::TransformStamped trans_;
+  int floor_cur_;
+  int floor_prev_;
 
-void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg)
-{
-  RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
-  maps = *msg;
-  orig_mapinfos.clear();
-  for (auto& map : maps.maps)
+  void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg)
   {
-    orig_mapinfos.push_back(map.info);
-    map.info.origin.position.z = 0.0;
+    RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
+    maps_ = *msg;
+    orig_mapinfos_.clear();
+    for (auto& map : maps_.maps)
+    {
+      orig_mapinfos_.push_back(map.info);
+      map.info.origin.position.z = 0.0;
+    }
   }
-}
-void cbFloor(const std_msgs::msg::Int32::SharedPtr msg)
-{
-  floor_cur = msg->data;
-}
+  void cbFloor(const std_msgs::msg::Int32::SharedPtr msg)
+  {
+    floor_cur_ = msg->data;
+  }
+  void on_timer()
+  {
+    if (maps_.maps.size() == 0)
+      return;
+
+    if (floor_cur_ != floor_prev_)
+    {
+      if (floor_cur_ >= 0 && floor_cur_ < static_cast<int>(maps_.maps.size()))
+      {
+        pubMap_->publish(maps_.maps[floor_cur_]);
+        trans_.transform.translation.z = orig_mapinfos_[floor_cur_].origin.position.z;
+      }
+      else
+      {
+        RCLCPP_INFO(this->get_logger(), "Floor out of range");
+      }
+      floor_prev_ = floor_cur_;
+    }
+    trans_.header.stamp = this->now() + rclcpp::Duration::from_seconds(0.15);
+    tfb_->sendTransform(trans_);
+  }
+
+public:
+  SelectMap() : Node("select_map")
+  , floor_cur_(0)
+  , floor_prev_(-1)
+  {
+    subMaps_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
+        "maps",
+        1, [this](const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg){cbMaps(msg);});
+    subFloor_ = this->create_subscription<std_msgs::msg::Int32>(
+        "floor",
+        1, [this](const std_msgs::msg::Int32::SharedPtr msg){cbFloor(msg);});
+    pubMap_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+        "map",
+        rclcpp::QoS(1).transient_local());
+
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+    trans_.header.frame_id = "map_ground";
+    trans_.child_frame_id = "map";
+    trans_.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
+
+    timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(1.0 / 10.0),
+      std::bind(&SelectMap::on_timer, this));
+  }
+};
 
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("select_map");
+  auto node = std::make_shared<SelectMap>();
 
-  auto subMaps = node->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
-      "maps",
-      1, cbMaps);
-  auto subFloor = node->create_subscription<std_msgs::msg::Int32>(
-      "floor",
-      1, cbFloor);
-  auto pubMap = node->create_publisher<nav_msgs::msg::OccupancyGrid>(
-      "map",
-      rclcpp::QoS(1).transient_local());
-
-  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb = std::make_unique<tf2_ros::TransformBroadcaster>(node);
-  geometry_msgs::msg::TransformStamped trans;
-  trans.header.frame_id = "map_ground";
-  trans.child_frame_id = "map";
-  trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
-
-  rclcpp::Rate wait(10);
-  int floor_prev = -1;
-  while (rclcpp::ok())
-  {
-    wait.sleep();
-    rclcpp::spin_some(node);
-
-    if (maps.maps.size() == 0)
-      continue;
-
-    if (floor_cur != floor_prev)
-    {
-      if (floor_cur >= 0 && floor_cur < static_cast<int>(maps.maps.size()))
-      {
-        pubMap->publish(maps.maps[floor_cur]);
-        trans.transform.translation.z = orig_mapinfos[floor_cur].origin.position.z;
-      }
-      else
-      {
-        RCLCPP_INFO(node->get_logger(), "Floor out of range");
-      }
-      floor_prev = floor_cur;
-    }
-    trans.header.stamp = node->now() + rclcpp::Duration::from_seconds(0.15);
-    tfb->sendTransform(trans);
-  }
-
+  rclcpp::spin(node);
   return 0;
 }
