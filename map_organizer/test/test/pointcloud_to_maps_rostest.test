@@ -7,5 +7,4 @@
     <param name="floor_area_thresh_rate" value="0.0" />
   </node>
 
-  <node name="test_pointcloud_to_maps" pkg="map_organizer" exec="test_pointcloud_to_maps" output="screen" />
 </launch>

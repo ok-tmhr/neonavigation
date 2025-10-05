@@ -16,9 +16,3 @@ target_include_directories(test_pointcloud_accumulator PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(test_pointcloud_accumulator ${LIBRARIES})
-
-install(TARGETS
-        test_costmap_3d
-        test_pointcloud_accumulator
-    DESTINATION lib/${PROJECT_NAME}
-)

@@ -64,6 +64,7 @@ ament_target_dependencies(safety_limiter ${COLCON_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
   find_package(nav_msgs REQUIRED)
   find_package(tf2_geometry_msgs REQUIRED)
   add_subdirectory(test)

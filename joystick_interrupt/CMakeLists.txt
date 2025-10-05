@@ -38,6 +38,7 @@ ament_target_dependencies(joystick_mux ${COLCON_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
   add_subdirectory(test)
 
   find_package(ament_lint_auto REQUIRED)

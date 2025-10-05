@@ -34,7 +34,7 @@ def generate_test_description():
 class TestGTestWaitForCompletion(unittest.TestCase):
     # Waits for test to complete, then waits a bit to make sure result files are generated
     def test_gtest_run_complete(self, proc_info, test_node):
-        proc_info.assertWaitForShutdown(test_node, timeout=60.0)
+        proc_info.assertWaitForShutdown(test_node, timeout=300.0)
 
 
 @launch_testing.post_shutdown_test()

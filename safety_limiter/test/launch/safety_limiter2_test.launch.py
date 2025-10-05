@@ -8,32 +8,31 @@ from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
 from launch.launch_description_sources import (
     FrontendLaunchDescriptionSource,
 )
-from launch_ros.actions import Node, SetParameter
+from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
 
 
 def generate_test_description():
     set_env = SetEnvironmentVariable(
-        "GCOV_PREFIX", "/tmp/gcov/trajectory_tracker_with_odom"
+        "GCOV_PREFIX", "/tmp/gcov/safety_limiter_safert_limiter2"
     )
-    use_sim_time = SetParameter("use_sim_time", "false")
     gtest = Node(
-        package="trajectory_tracker",
-        executable="test_trajectory_tracker_with_odom",
-        name="test_trajectory_tracker_with_odom",
+        package="safety_limiter",
+        executable="test_safety_limiter2",
+        name="test_safety_limiter2",
         output="screen",
     )
     launch_file = IncludeLaunchDescription(
         FrontendLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory("trajectory_tracker"),
+                get_package_share_directory("safety_limiter"),
                 "test",
-                "trajectory_tracker_with_odom_rostest.test",
+                "safety_limiter2_rostest.test",
             )
         )
     )
     return LaunchDescription(
-        [set_env, use_sim_time, gtest, launch_file, ReadyToTest()]
+        [set_env, gtest, launch_file, ReadyToTest()]
     ), {"test_node": gtest}
 
 

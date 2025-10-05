@@ -1,13 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-  <set_env name="GCOV_PREFIX" value="/tmp/gcov/safety_limiter_safert_limiter" />
-
-  <node name="test_safety_limiter" pkg="safety_limiter" exec="test_safety_limiter" output="screen" />
-
-  <timer period="120.0">
-    <shutdown />
-  </timer>
-
   <node pkg="safety_limiter" exec="safety_limiter" name="safety_limiter" output="screen">
     <param name="footprint" value="'[[0.0, -0.1], [0.0, 0.1], [-2.0, 0.1], [-2.0, -0.1]]'" />
     <param name="allow_empty_cloud" value="false" />

@@ -4,36 +4,32 @@ import unittest
 import launch_testing
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import (
     FrontendLaunchDescriptionSource,
 )
-from launch_ros.actions import Node, SetParameter
+from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
 
 
 def generate_test_description():
-    set_env = SetEnvironmentVariable(
-        "GCOV_PREFIX", "/tmp/gcov/trajectory_tracker_with_odom"
-    )
-    use_sim_time = SetParameter("use_sim_time", "false")
     gtest = Node(
-        package="trajectory_tracker",
-        executable="test_trajectory_tracker_with_odom",
-        name="test_trajectory_tracker_with_odom",
+        package="map_organizer",
+        executable="test_pointcloud_to_maps",
+        name="test_pointcloud_to_maps",
         output="screen",
     )
     launch_file = IncludeLaunchDescription(
         FrontendLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory("trajectory_tracker"),
+                get_package_share_directory("map_organizer"),
                 "test",
-                "trajectory_tracker_with_odom_rostest.test",
+                "pointcloud_to_maps_rostest.test",
             )
         )
     )
     return LaunchDescription(
-        [set_env, use_sim_time, gtest, launch_file, ReadyToTest()]
+        [gtest, launch_file, ReadyToTest()]
     ), {"test_node": gtest}
 
 

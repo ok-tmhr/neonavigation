@@ -4,37 +4,35 @@ import unittest
 import launch_testing
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import (
     FrontendLaunchDescriptionSource,
 )
-from launch_ros.actions import Node, SetParameter
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
 
 
 def generate_test_description():
-    set_env = SetEnvironmentVariable(
-        "GCOV_PREFIX", "/tmp/gcov/trajectory_tracker_with_odom"
-    )
-    use_sim_time = SetParameter("use_sim_time", "false")
+    arg_tmpfile_prefix = DeclareLaunchArgument("tmpfile_prefix", default_value="/tmp/tmp-map-organizer-988dbe-")
     gtest = Node(
-        package="trajectory_tracker",
-        executable="test_trajectory_tracker_with_odom",
-        name="test_trajectory_tracker_with_odom",
+        package="map_organizer",
+        executable="test_map_organizer",
+        name="test_map_organizer",
         output="screen",
+        parameters=[("file_prefix",LaunchConfiguration("tmpfile_prefix"))]
     )
     launch_file = IncludeLaunchDescription(
         FrontendLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory("trajectory_tracker"),
+                get_package_share_directory("map_organizer"),
                 "test",
-                "trajectory_tracker_with_odom_rostest.test",
+                "map_organizer_rostest.test",
             )
-        )
+        ),
+        launch_arguments=[("file_prefix",LaunchConfiguration("tmpfile_prefix"))],
     )
-    return LaunchDescription(
-        [set_env, use_sim_time, gtest, launch_file, ReadyToTest()]
-    ), {"test_node": gtest}
+    return LaunchDescription([arg_tmpfile_prefix, gtest, launch_file, ReadyToTest()]), {"test_node": gtest}
 
 
 class TestGTestWaitForCompletion(unittest.TestCase):
