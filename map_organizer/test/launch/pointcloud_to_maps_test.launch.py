@@ -5,11 +5,9 @@ import launch_testing
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import (
-    FrontendLaunchDescriptionSource,
-)
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 
 def generate_test_description():
@@ -20,7 +18,7 @@ def generate_test_description():
         output="screen",
     )
     launch_file = IncludeLaunchDescription(
-        FrontendLaunchDescriptionSource(
+        XMLLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("map_organizer"),
                 "test",

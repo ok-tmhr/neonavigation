@@ -11,12 +11,10 @@ from launch.actions import (
     OpaqueFunction,
     SetEnvironmentVariable,
 )
-from launch.launch_description_sources import (
-    FrontendLaunchDescriptionSource,
-)
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node, SetUseSimTime
 from launch_testing.actions import ReadyToTest
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 watch = {"test_node": ExecuteProcess(cmd=["ls"])}
 
@@ -76,7 +74,7 @@ def generate_test_description():
         DeclareLaunchArgument("use_time_optimal_control", default_value="true"),
     ]
     launch_file = IncludeLaunchDescription(
-        FrontendLaunchDescriptionSource(
+        XMLLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("trajectory_tracker"),
                 "test",

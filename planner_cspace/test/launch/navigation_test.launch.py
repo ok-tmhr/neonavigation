@@ -12,12 +12,10 @@ from launch.actions import (
     OpaqueFunction,
     SetEnvironmentVariable,
 )
-from launch.launch_description_sources import (
-    FrontendLaunchDescriptionSource,
-)
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
+from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 watch = {"test_node": ExecuteProcess(cmd=["ls"])}
 
@@ -53,7 +51,7 @@ def generate_test_description():
         DeclareLaunchArgument("enable_crowd_mode", default_value="false"),
     ]
     launch_file = IncludeLaunchDescription(
-        FrontendLaunchDescriptionSource(
+        XMLLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("planner_cspace"),
                 "test",
