@@ -1,12 +1,4 @@
 <?xml version="1.0"?>
 <launch>
-  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_preempt" />
-
-  <node name="test_preempt" pkg="planner_cspace" exec="test_preempt" output="screen" />
-
-  <timer period="90.0">
-    <shutdown />
-  </timer>
-
-  <include file="$(find-pkg-share planner_cspace)/test/test/actionlib_common_rostest.test" />
+  <include file="$(find-pkg-share planner_cspace)/test/actionlib_common_rostest.test" />
 </launch>
