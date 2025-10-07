@@ -4,24 +4,6 @@
   <arg name="use_odom" default="false" />
   <arg name="use_time_optimal_control" default="true" />
 
-  <set_env name="GCOV_PREFIX" value="/tmp/gcov/trajectory_tracker_d$(var odom_delay)_$(var use_odom)_$(var use_time_optimal_control)" />
-
-  <set_parameter name="use_sim_time" value="true" /><!-- clock is provided by the test node -->
-
-  <node pkg="trajectory_tracker" exec="test_trajectory_tracker" output="screen" if="$(var use_odom)" ros_args="-r trajectory_tracker_test:__node:=test_trajectory_tracker">
-    <param name="odom_delay" value="$(var odom_delay)" />
-  </node>
-
-  <node pkg="trajectory_tracker" exec="test_trajectory_tracker" output="screen" unless="$(var use_odom)" ros_args="-r trajectory_tracker_test:__node:=test_trajectory_tracker">
-    <param name="odom_delay" value="$(var odom_delay)" />
-    <param name="error_lin" value="0.03" />
-    <param name="error_ang" value="0.02" />
-  </node>
-
-  <timer period="120.0">
-    <shutdown />
-  </timer>
-
   <node pkg="trajectory_tracker" exec="trajectory_tracker" name="trajectory_tracker" output="screen">
     <param name="max_vel" value="1.0" />
     <param name="max_acc" value="2.0" />

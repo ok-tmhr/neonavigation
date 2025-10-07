@@ -11,19 +11,21 @@ ament_add_gtest_executable(test_trajectory_recorder
 target_link_libraries(test_trajectory_recorder rclcpp::rclcpp tf2_ros::tf2_ros ${tf2_geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${std_srvs_TARGETS})
 add_launch_test(launch/trajectory_recorder_test.launch.py TIMEOUT 60)
 
-ament_add_gtest_executable(test_trajectory_tracker test/trajectory_tracker_rostest.test
+ament_add_gtest_executable(test_trajectory_tracker
     src/test_trajectory_tracker.cpp)
 target_link_libraries(test_trajectory_tracker Eigen3::Eigen rclcpp::rclcpp ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
 
-# add_rostest(test/trajectory_tracker_rostest.test
-#   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=true
-#   DEPENDENCIES test_trajectory_tracker
-# )
+add_launch_test(launch/trajectory_tracker_test.launch.py
+  ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=true
+  TARGET test_trajectory_tracker_rostest1
+  TIMEOUT 120
+)
 
-# add_rostest(test/trajectory_tracker_rostest.test
-#   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=false
-#   DEPENDENCIES test_trajectory_tracker
-# )
+add_launch_test(launch/trajectory_tracker_test.launch.py
+  ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=false
+  TARGET test_trajectory_tracker_rostest2
+  TIMEOUT 120
+)
 
 ament_add_gtest_executable(test_trajectory_tracker_with_odom
     src/test_trajectory_tracker_with_odom.cpp)
