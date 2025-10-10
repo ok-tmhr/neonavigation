@@ -31,6 +31,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <gtest/gtest.h>
 
 #include <trajectory_tracker_test.h>
 
@@ -623,7 +624,7 @@ void timeSource()
 
   auto pub = nh->create_publisher<rosgraph_msgs::msg::Clock>("clock", 1);
 
-  rclcpp::WallRate rate(400.0);  // 400% speed
+  rclcpp::WallRate rate(100.0);  // 400% speed
   auto time = rclcpp::Clock().now();
   while (rclcpp::ok())
   {
@@ -642,5 +643,8 @@ int main(int argc, char** argv)
 
   std::thread time_thread(timeSource);
 
-  return RUN_ALL_TESTS();
+  int result = RUN_ALL_TESTS();
+  rclcpp::shutdown();
+  time_thread.join();
+  return result;
 }

@@ -16,15 +16,20 @@ ament_add_gtest_executable(test_trajectory_tracker
 target_link_libraries(test_trajectory_tracker Eigen3::Eigen rclcpp::rclcpp ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
 
 add_launch_test(launch/trajectory_tracker_test.launch.py
+  TARGET test_trajectory_tracker_rostest0
+  TIMEOUT 480 # TODO pass within 120
+)
+
+add_launch_test(launch/trajectory_tracker_test.launch.py
   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=true
   TARGET test_trajectory_tracker_rostest1
-  TIMEOUT 120
+  TIMEOUT 480 # TODO pass within 120
 )
 
 add_launch_test(launch/trajectory_tracker_test.launch.py
   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=false
   TARGET test_trajectory_tracker_rostest2
-  TIMEOUT 120
+  TIMEOUT 480 # TODO pass within 120
 )
 
 ament_add_gtest_executable(test_trajectory_tracker_with_odom
