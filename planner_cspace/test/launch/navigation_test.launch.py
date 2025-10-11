@@ -1,5 +1,4 @@
 import os
-import sys
 import unittest
 
 import launch_testing
@@ -7,19 +6,17 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
-    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
     SetEnvironmentVariable,
 )
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 from launch_testing.actions import ReadyToTest
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
-watch = {"test_node": ExecuteProcess(cmd=["ls"])}
 
-def setup_launch(context: LaunchContext, ld: LaunchDescription):
+def setup_launch(context: LaunchContext):
     antialias_start = LaunchConfiguration("antialias_start").perform(context)
     fast_map_update = LaunchConfiguration("fast_map_update").perform(context)
     with_tolerance = LaunchConfiguration("with_tolerance").perform(context)
@@ -28,19 +25,7 @@ def setup_launch(context: LaunchContext, ld: LaunchDescription):
     gcov_prefix = f"/tmp/gcov/planner_cspace_navigation_{antialias_start}_{fast_map_update}_{with_tolerance}_{enable_crowd_mode}"
     set_env = SetEnvironmentVariable("GCOV_PREFIX", gcov_prefix)
 
-    node_name = f"test_navigate_{antialias_start}_{fast_map_update}_{with_tolerance}_{enable_crowd_mode}"
-    gtest = Node(
-        package="planner_cspace",
-        executable="test_navigate",
-        name=node_name,
-        output="screen",
-        parameters=[{"enable_crowd_mode": LaunchConfiguration("enable_crowd_mode")}],
-    )
-
-    ld.add_action(set_env)
-    ld.add_action(gtest)
-    global watch
-    watch["test_node"] = gtest
+    return (set_env,)
 
 
 def generate_test_description():
@@ -59,11 +44,30 @@ def generate_test_description():
             )
         )
     )
-    ld = LaunchDescription([*args, launch_file, ReadyToTest()])
-    setup = OpaqueFunction(function=setup_launch, args=[ld])
-    ld.add_action(setup)
-    global watch
-    return ld, watch
+    node_name = PythonExpression(
+        [
+            "'test_navigate_' + '",
+            LaunchConfiguration("antialias_start"),
+            "' + '_' + '",
+            LaunchConfiguration("fast_map_update"),
+            "' + '_' + '",
+            LaunchConfiguration("with_tolerance"),
+            "' + '_' + '",
+            LaunchConfiguration("enable_crowd_mode"),
+            "'",
+        ]
+    )
+    gtest = Node(
+        package="planner_cspace",
+        executable="test_navigate",
+        name=node_name,
+        output="screen",
+        parameters=[{"enable_crowd_mode": LaunchConfiguration("enable_crowd_mode")}],
+    )
+    setup = OpaqueFunction(function=setup_launch)
+    return LaunchDescription([*args, setup, launch_file, gtest, ReadyToTest()]), {
+        "test_node": gtest
+    }
 
 
 class TestGTestWaitForCompletion(unittest.TestCase):

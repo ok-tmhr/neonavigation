@@ -35,6 +35,7 @@ ament_add_gtest(test_distance_map
   ../src/motion_cache.cpp
   ../src/motion_primitive_builder.cpp
   ../src/rotation_cache.cpp
+  TIMEOUT 120
 )
 target_link_libraries(test_distance_map ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(test_distance_map ${COLCON_DEPENDS})
@@ -108,6 +109,11 @@ ament_add_gtest_executable(test_navigate
 )
 target_link_libraries(test_navigate)
 ament_target_dependencies(test_navigate ${COLCON_DEPENDS})
+
+add_launch_test(launch/navigation_test.launch.py
+  TARGET test_navigation_rostest0
+  TIMEOUT 200
+)
 
 add_launch_test(launch/navigation_test.launch.py
   ARGS antialias_start:=true
