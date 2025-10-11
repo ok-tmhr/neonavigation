@@ -48,49 +48,39 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <map_organizer/pointcloud_to_maps_parameters.hpp>
 
+namespace map_organizer
+{
 class PointcloudToMapsNode : public rclcpp::Node
 {
 private:
   std::map<std::string, rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_maps_;
   rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_points_;
+  std::shared_ptr<pointcloud_to_maps::ParamListener> param_listener_;
 
 public:
-  PointcloudToMapsNode() : Node("pointcloud_to_maps")
+  PointcloudToMapsNode(const rclcpp::NodeOptions& options) : Node("pointcloud_to_maps", options)
   {
-      sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+    sub_points_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
-        rclcpp::QoS(1).transient_local(), std::bind(&PointcloudToMapsNode::cbPoints, this, std::placeholders::_1));
+        rclcpp::QoS(1).transient_local(), [this](const sensor_msgs::msg::PointCloud2::SharedPtr msg){ cbPoints(msg); });
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
+    param_listener_ = std::make_shared<pointcloud_to_maps::ParamListener>(get_node_parameters_interface());
   }
   void cbPoints(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
   {
     std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc(new pcl::PointCloud<pcl::PointXYZ>());
     pcl::fromROSMsg(*msg, *pc);
 
-    double grid;
-    int min_points;
-    double robot_height_f;
-    int robot_height;
-    double floor_height_f;
-    int floor_height;
-    double min_floor_area;
-    double floor_area_thresh_rate;
-    double floor_tolerance_f;
-    int floor_tolerance;
-    double points_thresh_rate;
+    auto params = param_listener_->get_params();
 
-    grid = this->declare_parameter("grid", 0.05);
-    points_thresh_rate = this->declare_parameter("points_thresh_rate", 0.5);
-    robot_height_f = this->declare_parameter("robot_height", 1.0);
-    floor_height_f = this->declare_parameter("floor_height", 0.1);
-    floor_tolerance_f = this->declare_parameter("floor_tolerance", 0.2);
-    min_floor_area = this->declare_parameter("min_floor_area", 100.0);
-    floor_area_thresh_rate = this->declare_parameter("floor_area_thresh_rate", 0.8);
-    robot_height = std::lround(robot_height_f / grid);
-    floor_height = std::lround(floor_height_f / grid);
-    floor_tolerance = std::lround(floor_tolerance_f / grid);
+    int min_points;
+
+    int robot_height = std::lround(params.robot_height / params.grid);
+    int floor_height = std::lround(params.floor_height / params.grid);
+    int floor_tolerance = std::lround(params.floor_tolerance / params.grid);
 
     std::map<int, int> hist;
     int x_min = std::numeric_limits<int>::max(), x_max = 0;
@@ -99,9 +89,9 @@ public:
 
     for (const auto& p : pc->points)
     {
-      const int h = (p.z / grid);
-      const int x = (p.x / grid);
-      const int y = (p.y / grid);
+      const int h = (p.z / params.grid);
+      const int x = (p.x / params.grid);
+      const int y = (p.y / params.grid);
       if (x_min > x)
         x_min = x;
       if (y_min > y)
@@ -126,9 +116,9 @@ public:
       floor_area[i] = 0;
 
     nav_msgs::msg::MapMetaData mmd;
-    mmd.resolution = grid;
-    mmd.origin.position.x = x_min * grid;
-    mmd.origin.position.y = y_min * grid;
+    mmd.resolution = params.grid;
+    mmd.origin.position.x = x_min * params.grid;
+    mmd.origin.position.y = y_min * params.grid;
     mmd.origin.orientation.w = 1.0;
     mmd.width = x_max - x_min + 1;
     mmd.height = y_max - y_min + 1;
@@ -140,7 +130,7 @@ public:
       if (h.second > hist_max)
         hist_max = h.second;
 
-    min_points = hist_max * points_thresh_rate;
+    min_points = hist_max * params.points_thresh_rate;
 
     double floor_area_max = 0;
     double floor_runnable_area_max = 0;
@@ -151,9 +141,9 @@ public:
       {
         for (auto& p : pc->points)
         {
-          const int x = (p.x / grid);
-          const int y = (p.y / grid);
-          const int z = (p.z / grid);
+          const int x = (p.x / params.grid);
+          const int y = (p.y / params.grid);
+          const int z = (p.z / params.grid);
           const auto v = std::pair<int, int>(x, y);
 
           if (std::abs(i - z) <= floor_height)
@@ -175,8 +165,8 @@ public:
           if (m.second == 0)
             cnt++;
         }
-        floor_runnable_area[i] = cnt * (grid * grid);
-        floor_area[i] = floor[i].size() * (grid * grid);
+        floor_runnable_area[i] = cnt * (params.grid * params.grid);
+        floor_area[i] = floor[i].size() * (params.grid * params.grid);
         if (floor_area_max < floor_area[i])
           floor_area_max = floor_area[i];
         if (floor_runnable_area_max < floor_runnable_area[i])
@@ -187,7 +177,7 @@ public:
         floor_area[i] = 0;
       }
     }
-    const double floor_area_filter = floor_runnable_area_max * floor_area_thresh_rate;
+    const double floor_area_filter = floor_runnable_area_max * params.floor_area_thresh_rate;
     int map_num = 0;
     for (int i = min_height; i <= max_height; i++)
     {
@@ -199,7 +189,7 @@ public:
         {
           nav_msgs::msg::OccupancyGrid map;
           map.info = mmd;
-          map.info.origin.position.z = i * grid;
+          map.info.origin.position.z = i * params.grid;
           map.header = msg->header;
           map.data.resize(mmd.width * mmd.height);
           for (auto& c : map.data)
@@ -224,9 +214,9 @@ public:
     auto it_prev = maps.rbegin();
     for (auto it = maps.rbegin() + 1; it != maps.rend() && it_prev != maps.rend(); it++)
     {
-      const int h = it->info.origin.position.z / grid;
-      const int h_prev = it_prev->info.origin.position.z / grid;
-      if (std::abs(it_prev->info.origin.position.z - it->info.origin.position.z) < grid * 1.5)
+      const int h = it->info.origin.position.z / params.grid;
+      const int h_prev = it_prev->info.origin.position.z / params.grid;
+      if (std::abs(it_prev->info.origin.position.z - it->info.origin.position.z) < params.grid * 1.5)
       {
         // merge slopes
         for (size_t i = 0; i < it->data.size(); i++)
@@ -245,18 +235,18 @@ public:
         for (const auto c : it->data)
           if (c == 0)
             ++cnt;
-        floor_runnable_area[h] = cnt * grid * grid;
+        floor_runnable_area[h] = cnt * params.grid * params.grid;
         int cnt_prev = 0;
         for (const auto c : it_prev->data)
           if (c == 0)
             ++cnt_prev;
-        floor_runnable_area[h_prev] = cnt_prev * grid * grid;
+        floor_runnable_area[h_prev] = cnt_prev * params.grid * params.grid;
       }
       it_prev = it;
     }
     for (int i = max_height; i >= min_height; i--)
     {
-      printf(" %6.2f ", i * grid);
+      printf(" %6.2f ", i * params.grid);
       for (int j = 0; j <= 16; j++)
       {
         if (j <= hist[i] * 16 / hist_max)
@@ -275,8 +265,8 @@ public:
     for (auto& map : maps)
     {
       num++;
-      int h = map.info.origin.position.z / grid;
-      if (floor_runnable_area[h] < min_floor_area)
+      int h = map.info.origin.position.z / params.grid;
+      if (floor_runnable_area[h] < params.min_floor_area)
       {
         RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm skipped",
                  floor_num, floor_runnable_area[num], map.info.origin.position.z);
@@ -344,12 +334,7 @@ public:
   }
 };
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto p2m = std::make_shared<PointcloudToMapsNode>();
-  rclcpp::spin(p2m);
-
-  return 0;
 }
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(map_organizer::PointcloudToMapsNode)

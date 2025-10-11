@@ -25,14 +25,11 @@ set(COLCON_DEPENDS
   map_organizer_msgs
 )
 
-find_package(ament_cmake REQUIRED)
-foreach(COLCON_DEPEND ${COLCON_DEPENDS})
-  find_package(${COLCON_DEPEND} REQUIRED)
-endforeach()
+find_package(ament_cmake_auto REQUIRED)
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
-
+ament_auto_find_build_dependencies()
 
 include_directories(${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -56,41 +53,28 @@ remove_definitions(-DDISABLE_LIBUSB-1.0)
 # Define PCL_NO_PRECOMPILE to disable using the binary version.
 add_definitions(-DPCL_NO_PRECOMPILE)
 
-
-add_executable(pointcloud_to_maps src/pointcloud_to_maps.cpp)
-target_include_directories(pointcloud_to_maps PUBLIC
+generate_parameter_library(
+  pointcloud_to_maps_parameters
+  param/pointcloud_to_maps_parameters.yaml
+)
+add_library(pointcloud_to_maps_component SHARED src/pointcloud_to_maps.cpp)
+target_include_directories(pointcloud_to_maps_component PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(pointcloud_to_maps ${PCL_LIBRARIES})
-ament_target_dependencies(pointcloud_to_maps ${COLCON_DEPENDS})
+target_link_libraries(pointcloud_to_maps_component ${PCL_LIBRARIES} pointcloud_to_maps_parameters)
+ament_target_dependencies(pointcloud_to_maps_component ${COLCON_DEPENDS} rclcpp_components)
 
-add_executable(tie_maps src/tie_maps.cpp)
-target_include_directories(tie_maps PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_auto_add_executable(tie_maps src/tie_maps.cpp)
 target_link_libraries(tie_maps yaml-cpp ${PCL_LIBRARIES})
-ament_target_dependencies(tie_maps ${COLCON_DEPENDS})
 
-add_executable(save_maps src/save_maps.cpp)
-target_include_directories(save_maps PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_auto_add_executable(save_maps src/save_maps.cpp)
 target_link_libraries(save_maps ${PCL_LIBRARIES})
-ament_target_dependencies(save_maps ${COLCON_DEPENDS})
 
-add_executable(select_map src/select_map.cpp)
-target_include_directories(select_map PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_auto_add_executable(select_map src/select_map.cpp)
 target_link_libraries(select_map ${PCL_LIBRARIES})
-ament_target_dependencies(select_map ${COLCON_DEPENDS})
 
-add_executable(pose_transform src/pose_transform.cpp)
-target_include_directories(pose_transform PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+ament_auto_add_executable(pose_transform src/pose_transform.cpp)
 target_link_libraries(pose_transform ${PCL_LIBRARIES})
-ament_target_dependencies(pose_transform ${COLCON_DEPENDS})
 
 
 if(BUILD_TESTING)
@@ -105,14 +89,19 @@ if(BUILD_TESTING)
 endif()
 
 
-install(TARGETS
-    pointcloud_to_maps
-    pose_transform
-    save_maps
-    select_map
-    tie_maps
-  DESTINATION lib/${PROJECT_NAME}
+rclcpp_components_register_node(
+  pointcloud_to_maps_component
+  PLUGIN map_organizer::PointCloudToMaps
+  EXECUTABLE pointcloud_to_maps
 )
 
-ament_package()
+ament_export_targets(export_pointcloud_to_maps_component HAS_LIBRARY_TARGET)
+install(TARGETS pointcloud_to_maps_component pointcloud_to_maps_parameters
+  EXPORT export_pointcloud_to_maps_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+ament_auto_package()
 
