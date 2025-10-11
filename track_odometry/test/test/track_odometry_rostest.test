@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-  <node name="test_track_odometry" pkg="track_odometry" exec="test_track_odometry" output="screen" />
-
   <node pkg="track_odometry" exec="track_odometry" name="track_odometry">
     <param name="base_link_id" value="base_link" />
     <param name="use_kf" value="false" />

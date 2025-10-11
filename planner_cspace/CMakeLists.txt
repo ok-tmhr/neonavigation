@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(planner_cspace)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
@@ -33,12 +38,7 @@ foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
 
-find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
-
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
 
@@ -57,7 +57,7 @@ add_executable(planner_3d
 target_include_directories(planner_3d PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(planner_3d ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(planner_3d ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(planner_3d ${COLCON_DEPENDS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
@@ -76,7 +76,7 @@ add_executable(planner_2dof_serial_joints
 target_include_directories(planner_2dof_serial_joints PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(planner_2dof_serial_joints ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
+target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS})
 ament_target_dependencies(planner_2dof_serial_joints ${COLCON_DEPENDS})
 
 add_executable(dummy_robot src/dummy_robot.cpp)
@@ -96,8 +96,11 @@ ament_target_dependencies(patrol ${COLCON_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
   add_subdirectory(test)
   find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
@@ -107,9 +110,7 @@ install(TARGETS
     patrol
     planner_2dof_serial_joints
     planner_3d
-  ARCHIVE DESTINATION lib/${PROJECT_NAME}
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME}
   PUBLIC_HEADER DESTINATION include
 )
 

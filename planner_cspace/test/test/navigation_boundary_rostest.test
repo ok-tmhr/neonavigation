@@ -1,13 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-  <set_env name="GCOV_PREFIX" value="/tmp/gcov/planner_cspace_costmap_watchdog" />
-
-  <node name="test_navigate_boundary" pkg="planner_cspace" exec="test_navigate_boundary" output="screen" />
-
-  <timer period="45.0">
-    <shutdown />
-  </timer>
-
   <node pkg="costmap_cspace" exec="costmap_3d" name="costmap_3d">
     <param name="footprint" value="'[[0.2, -0.1], [0.2, 0.1], [-0.2, 0.1], [-0.2, -0.1]]'" />
 

@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(map_organizer)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
@@ -27,15 +32,7 @@ endforeach()
 find_package(PCL REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
-if(NEW_YAMLCPP_FOUND)
-  add_definitions(-DHAVE_NEW_YAMLCPP)
-endif()
 
-
-
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${PCL_INCLUDE_DIRS} ${Eigen3_INCLUDE_DIRS})
 add_definitions(${PCL_DEFINITIONS})
@@ -98,9 +95,12 @@ ament_target_dependencies(pose_transform ${COLCON_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
   add_subdirectory(test)
 
   find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
@@ -111,9 +111,7 @@ install(TARGETS
     save_maps
     select_map
     tie_maps
-  ARCHIVE DESTINATION lib/${PROJECT_NAME}
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()

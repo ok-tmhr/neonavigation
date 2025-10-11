@@ -57,7 +57,7 @@ public:
   void spin();
 
 private:
-  bool clearPath(std_srvs::srv::Empty::Request::SharedPtr req,
+  void clearPath(const std_srvs::srv::Empty::Request::SharedPtr req,
                  std_srvs::srv::Empty::Response::SharedPtr res);
 
   std::string frame_robot_;
@@ -68,6 +68,7 @@ private:
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srs_clear_path_;
 
@@ -89,6 +90,10 @@ RecorderNode::RecorderNode() : Node("trajectory_recorder")
 
   tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
+
+  timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(1.0 / 50.0),
+    std::bind(&RecorderNode::spin, this));
 }
 
 RecorderNode::~RecorderNode()
@@ -100,19 +105,16 @@ float dist2d(geometry_msgs::msg::Point& a, geometry_msgs::msg::Point& b)
   return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
-bool RecorderNode::clearPath(std_srvs::srv::Empty::Request::SharedPtr /* req */,
+void RecorderNode::clearPath(const std_srvs::srv::Empty::Request::SharedPtr /* req */,
                              std_srvs::srv::Empty::Response::SharedPtr /* res */)
 {
   path_.poses.clear();
-  return true;
 }
 
 void RecorderNode::spin()
 {
-  rclcpp::Rate loop_rate(50);
   path_.header.frame_id = frame_global_;
 
-  while (rclcpp::ok())
   {
     rclcpp::Time now = rclcpp::Time(0, 0, RCL_ROS_TIME);
     if (store_time_)
@@ -126,7 +128,7 @@ void RecorderNode::spin()
     catch (tf2::TransformException& e)
     {
       RCLCPP_WARN(this->get_logger(), "TF exception: %s", e.what());
-      continue;
+      return;
     }
     geometry_msgs::msg::PoseStamped pose;
     tf2::Quaternion q;
@@ -151,9 +153,6 @@ void RecorderNode::spin()
       path_.poses.push_back(pose);
       pub_path_->publish(path_);
     }
-
-    rclcpp::spin_some(shared_from_this());
-    loop_rate.sleep();
   }
 }
 
@@ -162,7 +161,7 @@ int main(int argc, char** argv)
   rclcpp::init(argc, argv);
 
   auto rec = std::make_shared<RecorderNode>();
-  rec->spin();
+  rclcpp::spin(rec);
 
   return 0;
 }

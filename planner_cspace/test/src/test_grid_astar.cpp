@@ -28,11 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <atomic>
 #include <list>
+#include <thread>
 #include <unordered_map>
 #include <vector>
-
-#include <boost/thread.hpp>
 
 #include <omp.h>
 
@@ -272,24 +272,22 @@ TEST(GridAstar, FindPathLooped)
   as.parentMap()[Vec(1)] = Vec(2);
 
   std::list<Vec> path;
-  const auto timeout_func = []()
+  std::atomic<bool> done = false;
+  const auto timeout_func = [&]()
   {
-    try
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (!done)
     {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+      EXPECT_TRUE(false) << "Looks entered endless loop. Test will be aborted.";
+      std::abort();
     }
-    catch (boost::thread_interrupted&)
-    {
-      return;
-    }
-    EXPECT_TRUE(false) << "Looks entered endless loop. Test will be aborted.";
-    abort();
   };
-  boost::thread timeout(timeout_func);
+  std::thread timeout(timeout_func);
   std::vector<GridAstarTestWrapper::VecWithCost> starts;
   starts.emplace_back(Vec(0));
   ASSERT_FALSE(as.findPath(starts, Vec(3), path));
-  timeout.interrupt();
+  done = true;
+  timeout.join();
 }
 
 TEST(GridAstar, FindPathUnconnected)

@@ -78,7 +78,6 @@ class TrackerNode : public rclcpp::Node
 public:
   TrackerNode();
   ~TrackerNode();
-  void spin();
 
 private:
   std::string frame_robot_;
@@ -125,6 +124,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
   std::shared_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
+  rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
   std::shared_ptr<rclcpp::ParameterEventCallbackHandle> callback_handle_;
@@ -277,6 +277,11 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
       }
     }
   );
+
+  if (!use_odom_)
+  {
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&TrackerNode::cbTimer, this));
+  }
 
 }
 
@@ -436,16 +441,6 @@ void TrackerNode::cbOdomTimeout()
   status.path_header = path_header_;
   status.status = trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::NO_PATH;
   pub_status_->publish(status);
-}
-
-void TrackerNode::spin()
-{
-  rclcpp::TimerBase::SharedPtr timer;
-  if (!use_odom_)
-  {
-    timer = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&TrackerNode::cbTimer, this));
-  }
-  rclcpp::spin(shared_from_this());
 }
 
 void TrackerNode::control(
@@ -751,7 +746,7 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   auto track = std::make_shared<trajectory_tracker::TrackerNode>();
-  track->spin();
+  rclcpp::spin(track);
 
   return 0;
 }

@@ -48,8 +48,6 @@
 
 #include <omp.h>
 
-#include <boost/bind/bind.hpp>
-#include <boost/chrono.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <costmap_cspace_msgs/msg/c_space3_d.hpp>
@@ -332,13 +330,13 @@ protected:
     return point;
   }
 
-  bool cbMakePlan(nav_msgs::srv::GetPlan::Request::SharedPtr req,
+  void cbMakePlan(const nav_msgs::srv::GetPlan::Request::SharedPtr req,
                   nav_msgs::srv::GetPlan::Response::SharedPtr res)
   {
     if (!has_map_)
     {
       RCLCPP_ERROR(this->get_logger(), "make_plan service is called without map.");
-      return false;
+      return;
     }
 
     if (req->start.header.frame_id != map_header_.frame_id ||
@@ -348,7 +346,7 @@ protected:
                 req->start.header.frame_id.c_str(),
                 req->goal.header.frame_id.c_str(),
                 map_header_.frame_id.c_str());
-      return false;
+      return;
     }
 
     Astar::Vec s = metric2Grid(req->start.pose);
@@ -362,10 +360,10 @@ protected:
     {
       case DiscretePoseStatus::OUT_OF_MAP:
         RCLCPP_ERROR(this->get_logger(), "Given start is not on the map.");
-        return false;
+        return;
       case DiscretePoseStatus::IN_ROCK:
         RCLCPP_ERROR(this->get_logger(), "Given start is in Rock.");
-        return false;
+        return;
       case DiscretePoseStatus::RELOCATED:
         RCLCPP_INFO(this->get_logger(), "Given start is moved (%d, %d)", s[0], s[1]);
         break;
@@ -376,10 +374,10 @@ protected:
     {
       case DiscretePoseStatus::OUT_OF_MAP:
         RCLCPP_ERROR(this->get_logger(), "Given goal is not on the map.");
-        return false;
+        return;
       case DiscretePoseStatus::IN_ROCK:
         RCLCPP_ERROR(this->get_logger(), "Given goal is in Rock.");
-        return false;
+        return;
       case DiscretePoseStatus::RELOCATED:
         RCLCPP_INFO(this->get_logger(), "Given goal is moved (%d, %d)", e[0], e[1]);
         break;
@@ -392,7 +390,7 @@ protected:
       return true;
     };
 
-    const auto ts = boost::chrono::high_resolution_clock::now();
+    const auto ts = std::chrono::high_resolution_clock::now();
 
     GridAstarModel2D::SharedPtr model_2d(new GridAstarModel2D(model_));
 
@@ -406,11 +404,11 @@ protected:
             0, 1.0f / freq_min_, find_best_))
     {
       RCLCPP_WARN(this->get_logger(), "Path plan failed (goal unreachable)");
-      return false;
+      return;
     }
-    const auto tnow = boost::chrono::high_resolution_clock::now();
+    const auto tnow = std::chrono::high_resolution_clock::now();
     RCLCPP_INFO(this->get_logger(), "Path found (%0.4f sec.)",
-             boost::chrono::duration<float>(tnow - ts).count());
+             std::chrono::duration<float>(tnow - ts).count());
 
     nav_msgs::msg::Path path;
     path.header = map_header_;
@@ -425,7 +423,7 @@ protected:
     {
       res->plan.poses[i] = path.poses[i];
     }
-    return true;
+    return;
   }
 
   void cbGoal(const geometry_msgs::msg::PoseStamped::ConstSharedPtr msg)
@@ -648,10 +646,10 @@ protected:
     }
 
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       cost_estim_cache_.create(s, e);
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      const auto tnow = std::chrono::high_resolution_clock::now();
+      const float dur = std::chrono::duration<float>(tnow - ts).count();
       RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache generated (%0.4f sec.)", dur);
 
       metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
@@ -791,7 +789,7 @@ protected:
 
   void applyCostmapUpdate(const costmap_cspace_msgs::msg::CSpace3DUpdate::ConstSharedPtr msg)
   {
-    const auto ts_cm_init_start = boost::chrono::high_resolution_clock::now();
+    const auto ts_cm_init_start = std::chrono::high_resolution_clock::now();
     const rclcpp::Time now = this->now();
 
     const int map_update_x_min = static_cast<int>(msg->x);
@@ -890,8 +888,8 @@ protected:
       }
     }
     map_update_retained_ = nullptr;
-    const auto ts_cm_init_end = boost::chrono::high_resolution_clock::now();
-    const float ts_cm_init_dur = boost::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count();
+    const auto ts_cm_init_end = std::chrono::high_resolution_clock::now();
+    const float ts_cm_init_dur = std::chrono::duration<float>(ts_cm_init_end - ts_cm_init_start).count();
     RCLCPP_DEBUG(this->get_logger(), "Costmaps updated (%.4f)", ts_cm_init_dur);
     metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "costmap_dur",
@@ -912,15 +910,15 @@ protected:
 
     if (remember_updates_)
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       bbf_costmap_->remember(
           &cm_updates_, s,
           remember_hit_odds_, remember_miss_odds_,
           hist_ignore_range_, hist_ignore_range_max_);
       publishRememberedMap();
       bbf_costmap_->updateCostmap();
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      const auto tnow = std::chrono::high_resolution_clock::now();
+      const float dur = std::chrono::duration<float>(tnow - ts).count();
       RCLCPP_DEBUG(this->get_logger(), "Remembered costmap updated (%0.4f sec.)", dur);
     }
     if (!has_goal_)
@@ -941,14 +939,14 @@ protected:
     }
 
     {
-      const auto ts = boost::chrono::high_resolution_clock::now();
+      const auto ts = std::chrono::high_resolution_clock::now();
       cost_estim_cache_.update(
           s, e,
           DistanceMap::Rect(
               Astar::Vec(search_range_x_min, search_range_y_min, 0),
               Astar::Vec(search_range_x_max, search_range_y_max, 0)));
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const float dur = boost::chrono::duration<float>(tnow - ts).count();
+      const auto tnow = std::chrono::high_resolution_clock::now();
+      const float dur = std::chrono::duration<float>(tnow - ts).count();
       RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache updated (%0.4f sec.)", dur);
       metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "distance_map_update_dur", dur, "second"));
@@ -2051,12 +2049,12 @@ protected:
     }
 
     const float range_limit = initial_2dof_cost - (local_range_ + range_) * ec_[0];
-    const auto ts = boost::chrono::high_resolution_clock::now();
+    const auto ts = std::chrono::high_resolution_clock::now();
     const auto cb_progress =
         [this, ts, start_grid, end_grid](const std::list<Astar::Vec>& /*path_grid*/, const SearchStats& stats) -> bool
     {
-      const auto tnow = boost::chrono::high_resolution_clock::now();
-      const auto tdiff = boost::chrono::duration<float>(tnow - ts).count();
+      const auto tnow = std::chrono::high_resolution_clock::now();
+      const auto tdiff = std::chrono::duration<float>(tnow - ts).count();
       publishEmptyPath();
       if (tdiff > search_timeout_abort_)
       {
@@ -2101,8 +2099,8 @@ protected:
       if (!find_best_)
         return false;
     }
-    const auto tnow = boost::chrono::high_resolution_clock::now();
-    const float dur = boost::chrono::duration<float>(tnow - ts).count();
+    const auto tnow = std::chrono::high_resolution_clock::now();
+    const float dur = std::chrono::duration<float>(tnow - ts).count();
     RCLCPP_DEBUG(this->get_logger(), "Path found (%0.4f sec.)", dur);
     metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
         "path_search_dur",
@@ -2126,7 +2124,7 @@ protected:
 
     if (hyst)
     {
-      const auto ts_hyst = boost::chrono::high_resolution_clock::now();
+      const auto ts_hyst = std::chrono::high_resolution_clock::now();
       std::unordered_map<Astar::Vec, bool, Astar::Vec> path_points;
       const float max_dist = cc_.hysteresis_max_dist_ / map_info_.linear_resolution;
       const float expand_dist = cc_.hysteresis_expand_ / map_info_.linear_resolution;
@@ -2179,8 +2177,8 @@ protected:
         hyst_updated_cells_.push_back(p);
       }
       has_hysteresis_map_ = true;
-      const auto tnow2 = boost::chrono::high_resolution_clock::now();
-      const float dur2 = boost::chrono::duration<float>(tnow2 - ts_hyst).count();
+      const auto tnow2 = std::chrono::high_resolution_clock::now();
+      const float dur2 = std::chrono::duration<float>(tnow2 - ts_hyst).count();
       RCLCPP_DEBUG(this->get_logger(), "Hysteresis map generated (%0.4f sec.)", dur2);
       metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
           "hyst_map_dur",
@@ -2237,14 +2235,14 @@ protected:
       const Astar::Vec g_orig = metric2Grid(goal_original_.pose);
 
       {
-        const auto ts = boost::chrono::high_resolution_clock::now();
+        const auto ts = std::chrono::high_resolution_clock::now();
         // Update without region.
         // Distance map will expand distance map using edges_buf if needed.
         cost_estim_cache_static_.update(
             s, g_orig,
             DistanceMap::Rect(Astar::Vec(1, 1, 0), Astar::Vec(0, 0, 0)));
-        const auto tnow = boost::chrono::high_resolution_clock::now();
-        const float dur = boost::chrono::duration<float>(tnow - ts).count();
+        const auto tnow = std::chrono::high_resolution_clock::now();
+        const float dur = std::chrono::duration<float>(tnow - ts).count();
         RCLCPP_DEBUG(this->get_logger(), "Cost estimation cache for static map updated (%0.4f sec.)", dur);
         metrics_.data.push_back(neonavigation_metrics_msgs::msg::metric(
             "distance_map_static_update_dur", dur, "second"));

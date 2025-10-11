@@ -42,8 +42,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <boost/chrono.hpp>
-
 #include <planner_cspace/reservable_priority_queue.h>
 
 namespace planner_cspace

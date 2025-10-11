@@ -16,20 +16,19 @@ target_include_directories(test_tf_projection PUBLIC
    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>"
    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 
-ament_add_gtest(test_track_odometry
-  test/track_odometry_rostest.test
+ament_add_gtest_executable(test_track_odometry
   src/test_track_odometry.cpp
 )
 target_link_libraries(test_track_odometry ${LIBRARIES})
+add_launch_test(launch/track_odometry_test.launch.py TIMEOUT 60)
 
-ament_add_gtest(test_tf_projection_node
-  test/tf_projection_rostest.test
+ament_add_gtest_executable(test_tf_projection_node
   src/test_tf_projection_node.cpp
 )
 target_link_libraries(test_tf_projection_node ${LIBRARIES})
+add_launch_test(launch/tf_projection_test.launch.py TIMEOUT 60)
 
 install(TARGETS
-    test_tf_projection
     test_track_odometry
     test_tf_projection_node
   DESTINATION lib/${PROJECT_NAME}

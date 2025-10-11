@@ -38,8 +38,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/thread.hpp>
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 

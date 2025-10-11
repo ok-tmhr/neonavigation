@@ -28,7 +28,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-// #define HAVE_NEW_YAMLCPP
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
@@ -45,7 +44,6 @@
 #include <nav2_map_server/map_io.hpp>
 #include <yaml-cpp/yaml.h>
 
-#ifdef HAVE_NEW_YAMLCPP
 // The >> operator disappeared in yaml-cpp 0.5, so this function is
 // added to provide support for code written under the yaml-cpp 0.3 API.
 template <typename T>
@@ -53,7 +51,6 @@ void operator>>(const YAML::Node& node, T& i)
 {
   i = node.as<T>();
 }
-#endif
 
 class TieMapNode : public rclcpp::Node
 {
@@ -91,14 +88,7 @@ public:
         rclcpp::shutdown();
         return;
       }
-#ifdef HAVE_NEW_YAMLCPP
-      // The document loading process changed in yaml-cpp 0.5.
       YAML::Node doc = YAML::Load(fin);
-#else
-      YAML::Parser parser(fin);
-      YAML::Node doc;
-      parser.GetNextDocument(doc);
-#endif
       try
       {
         doc["resolution"] >> res;

@@ -1,7 +1,5 @@
 <?xml version="1.0"?>
 <launch>
 
-  <node name="test_trajectory_recorder" pkg="trajectory_tracker" exec="test_trajectory_recorder" output="screen" />
-
   <node pkg="trajectory_tracker" exec="trajectory_recorder" name="trajectory_recorder" output="screen" />
 </launch>

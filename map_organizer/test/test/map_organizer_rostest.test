@@ -21,7 +21,4 @@
 
   <node pkg="map_organizer" exec="select_map" name="select_map" output="screen" />
 
-  <node name="test_map_organizer" pkg="map_organizer" exec="test_map_organizer" output="screen">
-    <param name="file_prefix" value="$(var tmpfile_prefix)" />
-  </node>
 </launch>

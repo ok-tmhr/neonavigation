@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(track_odometry)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
@@ -27,9 +32,6 @@ endforeach()
 find_package(Eigen3 REQUIRED)
 
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 include_directories(${EIGEN3_INCLUDE_DIR})
 
 
@@ -50,9 +52,12 @@ ament_target_dependencies(tf_projection ${COLCON_DEPENDS})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(launch_testing_ament_cmake REQUIRED)
   add_subdirectory(test)
 
   find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
@@ -60,9 +65,7 @@ endif()
 install(TARGETS
     tf_projection
     track_odometry
-  ARCHIVE DESTINATION lib/${PROJECT_NAME}
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()

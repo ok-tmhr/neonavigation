@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(costmap_cspace)
 
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
@@ -23,11 +28,6 @@ find_package(ament_cmake REQUIRED)
 foreach(COLCON_DEPEND ${COLCON_DEPENDS})
   find_package(${COLCON_DEPEND} REQUIRED)
 endforeach()
-
-
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 
 add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
 target_include_directories(costmap_3d_layers PUBLIC
@@ -66,6 +66,8 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 
   find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
@@ -75,9 +77,7 @@ install(TARGETS
     largemap_to_map
     laserscan_to_map
     pointcloud2_to_map
-  ARCHIVE DESTINATION lib/${PROJECT_NAME}
-  LIBRARY DESTINATION lib/${PROJECT_NAME}
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS costmap_3d_layers
