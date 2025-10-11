@@ -44,14 +44,8 @@
 #include <nav2_map_server/map_io.hpp>
 #include <yaml-cpp/yaml.h>
 
-// The >> operator disappeared in yaml-cpp 0.5, so this function is
-// added to provide support for code written under the yaml-cpp 0.3 API.
-template <typename T>
-void operator>>(const YAML::Node& node, T& i)
+namespace map_organizer
 {
-  i = node.as<T>();
-}
-
 class TieMapNode : public rclcpp::Node
 {
 private:
@@ -59,22 +53,15 @@ private:
   std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
 
 public:
-  TieMapNode() : Node("tie_maps")
+  TieMapNode(const rclcpp::NodeOptions& options) : Node("tie_maps", options)
   {
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 
     map_organizer_msgs::msg::OccupancyGridArray maps;
 
-    std::string files_str;
-    std::string mapfname;
-    double res;
-    double origin[3], height;
-    int negate;
-    double occ_th, free_th;
-    nav2_map_server::MapMode mode;
-    std::string frame_id;
-    files_str = this->declare_parameter("map_files", std::string(""));
-    frame_id = this->declare_parameter("frame_id", std::string("map"));
+    double height;
+    std::string files_str = this->declare_parameter("map_files", "");
+    std::string frame_id = this->declare_parameter("frame_id", "map");
 
     int i = 0;
     std::string file;
@@ -88,127 +75,19 @@ public:
         rclcpp::shutdown();
         return;
       }
+
       YAML::Node doc = YAML::Load(fin);
       try
       {
-        doc["resolution"] >> res;
+        height = doc["height"].as<double>();
       }
-      catch (YAML::InvalidScalar& e)
+      catch(YAML::Exception& e)
       {
-        RCLCPP_ERROR(this->get_logger(), "The map does not contain a resolution tag or it is invalid: %s", e.what());
-        rclcpp::shutdown();
-        return;
+        height = 0.0;
       }
-      try
-      {
-        doc["negate"] >> negate;
-      }
-      catch (YAML::InvalidScalar& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "The map does not contain a negate tag or it is invalid: %s", e.what());
-        rclcpp::shutdown();
-        return;
-      }
-      try
-      {
-        doc["occupied_thresh"] >> occ_th;
-      }
-      catch (YAML::InvalidScalar& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "The map does not contain an occupied_thresh tag or it is invalid: %s", e.what());
-        rclcpp::shutdown();
-        return;
-      }
-      try
-      {
-        doc["free_thresh"] >> free_th;
-      }
-      catch (YAML::InvalidScalar& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "The map does not contain a free_thresh tag or it is invalid: %s", e.what());
-        rclcpp::shutdown();
-        return;
-      }
-      try
-      {
-        std::string modeS = "";
-        doc["mode"] >> modeS;
-
-        if (modeS == "trinary")
-          mode = nav2_map_server::MapMode::Trinary;
-        else if (modeS == "scale")
-          mode = nav2_map_server::MapMode::Scale;
-        else if (modeS == "raw")
-          mode = nav2_map_server::MapMode::Raw;
-        else
-        {
-          RCLCPP_ERROR(this->get_logger(), "Invalid mode tag \"%s\".", modeS.c_str());
-          exit(-1);
-        }
-      }
-      catch (YAML::Exception& e)
-      {
-        RCLCPP_DEBUG(this->get_logger(), "The map does not contain a mode tag or it is invalid... assuming trinary: %s", e.what());
-        mode = nav2_map_server::MapMode::Trinary;
-      }
-      try
-      {
-        doc["origin"][0] >> origin[0];
-        doc["origin"][1] >> origin[1];
-        doc["origin"][2] >> origin[2];
-      }
-      catch (YAML::InvalidScalar& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "The map does not contain an origin tag or it is invalid: %s", e.what());
-        rclcpp::shutdown();
-        return;
-      }
-      try
-      {
-        doc["height"] >> height;
-      }
-      catch (YAML::Exception& e)
-      {
-        height = 0;
-      }
-      try
-      {
-        doc["image"] >> mapfname;
-        // TODO(at-wat): make this path-handling more robust
-        if (mapfname.size() == 0)
-        {
-          RCLCPP_ERROR(this->get_logger(), "The image tag cannot be an empty string.");
-          rclcpp::shutdown();
-          return;
-        }
-        if (mapfname[0] != '/')
-        {
-          // dirname can modify what you pass it
-          char* fname_copy = strdup(file.c_str());
-          mapfname = std::string(dirname(fname_copy)) + '/' + mapfname;
-          free(fname_copy);
-        }
-      }
-      catch (YAML::InvalidScalar& e)
-      {
-        RCLCPP_ERROR(this->get_logger(), "The map does not contain an image tag or it is invalid: e.what()");
-        rclcpp::shutdown();
-        return;
-      }
-
-      RCLCPP_INFO(this->get_logger(), "Loading map from image \"%s\"", mapfname.c_str());
 
       nav_msgs::msg::OccupancyGrid map_resp;
-      nav2_map_server::LoadParameters load_parameters{
-        mapfname,
-        res,
-        std::vector<double>(origin, origin + 3),
-        free_th,
-        occ_th,
-        mode,
-        static_cast<bool>(negate)
-      };
-      nav2_map_server::loadMapFromFile(load_parameters, map_resp);
+      nav2_map_server::loadMapFromYaml(file, map_resp);
       map_resp.info.origin.position.z = height;
       map_resp.info.map_load_time = this->now();
       map_resp.header.frame_id = frame_id;
@@ -227,12 +106,7 @@ public:
   }
 };
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto tmn = std::make_shared<TieMapNode>();
-  rclcpp::spin(tmn);
-
-  return 0;
 }
+
+#include <rclcpp_components/register_node_macro.hpp>
+RCLCPP_COMPONENTS_REGISTER_NODE(map_organizer::TieMapNode)
