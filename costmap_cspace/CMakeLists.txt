@@ -66,6 +66,8 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 
   find_package(ament_lint_auto REQUIRED)
+  set(ament_cmake_copyright_FOUND TRUE)
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
