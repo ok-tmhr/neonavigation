@@ -1,85 +1,22 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(safety_limiter)
 
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
-endif()
-
-set(COLCON_DEPENDS
-    rclcpp
-
-    diagnostic_updater
-    geometry_msgs
-    pcl_conversions
-    sensor_msgs
-    std_msgs
-    tf2_ros
-    tf2_sensor_msgs
-    safety_limiter_msgs
-
-  )
-
-find_package(ament_cmake REQUIRED)
-foreach(COLCON_DEPEND ${COLCON_DEPENDS})
-  find_package(${COLCON_DEPEND} REQUIRED)
-endforeach()
-find_package(PCL REQUIRED)
-find_package(Eigen3 REQUIRED)
-
-
-include_directories(${PCL_INCLUDE_DIRS} ${Eigen_INCLUDE_DIRS})
-add_definitions(${PCL_DEFINITIONS})
-
-
-# Workaround for debian stretch build (https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=894656)
-list(REMOVE_ITEM PCL_LIBRARIES
-  "vtkGUISupportQt"
-  "vtkGUISupportQtOpenGL"
-  "vtkGUISupportQtSQL"
-  "vtkGUISupportQtWebkit"
-  "vtkViewsQt"
-  "vtkRenderingQt"
-)
-
-# Workaround for the bug in PCL(<1.8.1) https://github.com/PointCloudLibrary/pcl/issues/1406
-remove_definitions(-DDISABLE_LIBUSB-1.0)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
 # Binary installed pcl provided by Linux distro is built with -march=native
 # which causes a lot of compatibility problems.
 # Define PCL_NO_PRECOMPILE to disable using the binary version.
 add_definitions(-DPCL_NO_PRECOMPILE)
 
-
-add_executable(safety_limiter src/safety_limiter.cpp)
-target_include_directories(safety_limiter PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(safety_limiter ${PCL_LIBRARIES})
-ament_target_dependencies(safety_limiter ${COLCON_DEPENDS})
+ament_auto_add_executable(safety_limiter src/safety_limiter.cpp)
 
 if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  find_package(launch_testing_ament_cmake REQUIRED)
-  find_package(nav_msgs REQUIRED)
-  find_package(tf2_geometry_msgs REQUIRED)
+  ament_auto_find_test_dependencies()
   add_subdirectory(test)
-
-  find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
 endif()
 
-
-install(TARGETS
-    safety_limiter
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-ament_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
 
