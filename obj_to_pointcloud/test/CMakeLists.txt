@@ -1,13 +1,8 @@
-ament_add_gtest_executable(test_obj_to_pointcloud
+ament_auto_add_gtest(test_obj_to_pointcloud SKIP_TEST
   src/test_obj_to_pointcloud.cpp
 )
-target_link_libraries(test_obj_to_pointcloud rclcpp::rclcpp ${sensor_msgs_TARGETS})
 add_launch_test(launch/obj_to_pointcloud_test.launch.py TIMEOUT 120)
 
-install(DIRECTORY test
+install(DIRECTORY test data
   DESTINATION share/${PROJECT_NAME}
-)
-
-install(DIRECTORY data
-  DESTINATION share/${PROJECT_NAME}/test
 )
