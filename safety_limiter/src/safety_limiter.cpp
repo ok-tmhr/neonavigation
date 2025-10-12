@@ -139,7 +139,7 @@ protected:
   diagnostic_updater::Updater diag_updater_;
 
 public:
-  SafetyLimiterNode() : Node("safety_limiter")
+  SafetyLimiterNode(const rclcpp::NodeOptions& options) : Node("safety_limiter", options)
     , last_cloud_stamp_(0L, RCL_ROS_TIME)
     , cloud_accum_(new pcl::PointCloud<pcl::PointXYZ>)
     , cloud_clear_(false)
@@ -154,7 +154,7 @@ public:
     , stuck_started_since_(rclcpp::Time(0L, RCL_ROS_TIME))
     , diag_updater_(this)
   {
-      pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
+    pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
         rclcpp::QoS(1).transient_local());
     pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud>("collision", rclcpp::QoS(1).transient_local());
@@ -162,13 +162,13 @@ public:
     using std::placeholders::_1;
     sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel_in",
-        1, std::bind(&SafetyLimiterNode::cbTwist, this, _1));
+        1, [this](const geometry_msgs::msg::Twist::ConstSharedPtr msg){ cbTwist(msg); });
     sub_disable_ = this->create_subscription<std_msgs::msg::Bool>(
         "disable_safety",
-        1, std::bind(&SafetyLimiterNode::cbDisable, this, _1));
+        1, [this](const std_msgs::msg::Bool::ConstSharedPtr msg){ cbDisable(msg); });
     sub_watchdog_ = this->create_subscription<std_msgs::msg::Empty>(
         "watchdog_reset",
-        1, std::bind(&SafetyLimiterNode::cbWatchdogReset, this, _1));
+        1, [this](const std_msgs::msg::Empty::ConstSharedPtr msg){ cbWatchdogReset(msg); });
 
     param_listener_ = std::make_shared<ParamListener>(get_node_parameters_interface());
     params_ = param_listener_->get_params();
@@ -177,19 +177,17 @@ public:
     {
       sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
           "cloud",
-          1, std::bind(&SafetyLimiterNode::cbCloud, this, _1)));
+          1, [this](const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg){ cbCloud(msg); }));
     }
     else
     {
       for (int i = 0; i < params_.num_input_clouds; ++i)
       {
         sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
-            "cloud" + std::to_string(i), 1, std::bind(&SafetyLimiterNode::cbCloud, this, _1)));
+            "cloud" + std::to_string(i), 1, [this](const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg){ cbCloud(msg); }));
       }
     }
 
-    if (this->has_parameter("t_margin"))
-      RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
     watchdog_interval_ = rclcpp::Duration::from_seconds(params_.watchdog_interval);
     max_values_[0] = std::numeric_limits<double>::infinity();
     max_values_[1] = std::numeric_limits<double>::infinity();
@@ -671,12 +669,5 @@ protected:
 
 }  // namespace safety_limiter
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto limiter = std::make_shared<safety_limiter::SafetyLimiterNode>();
-  rclcpp::spin(limiter);
-
-  return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(safety_limiter::SafetyLimiterNode)

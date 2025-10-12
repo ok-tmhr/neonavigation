@@ -6,13 +6,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-generate_parameter_library(
-  safety_limiter_parameters
-  param/safety_limiter_parameters.yaml
+rclcpp_components_auto_register_node(
+  safety_limiter
+  PLUGIN safety_limiter::SafetyLimiterNode
+  PARAMETERS param/safety_limiter_parameters.yaml
+  src/safety_limiter.cpp
 )
-
-ament_auto_add_executable(safety_limiter src/safety_limiter.cpp)
-target_link_libraries(safety_limiter safety_limiter_parameters)
 
 if(BUILD_TESTING)
   ament_auto_find_test_dependencies()
