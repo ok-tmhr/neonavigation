@@ -65,6 +65,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <safety_limiter/safety_limiter_parameters.hpp>
+#include <safety_limiter/utility.hpp>
 
 namespace safety_limiter
 {
@@ -106,8 +107,6 @@ protected:
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
   std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
-  std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
-  std::shared_ptr<rclcpp::ParameterEventCallbackHandle> event_callback_handle_;
 
   std::shared_ptr<ParamListener> param_listener_;
   Params params_;
@@ -116,28 +115,18 @@ protected:
   rclcpp::Time last_cloud_stamp_;
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_accum_;
   bool cloud_clear_;
-  double hz_;
-  double timeout_;
-  double disable_timeout_;
   double vel_[2];
   double acc_[2];
   double tmax_;
-  double dt_;
-  double d_margin_;
-  double d_escape_;
-  double yaw_margin_;
-  double yaw_escape_;
   double r_lim_;
   double max_values_[2];
   double z_range_[2];
   float footprint_radius_;
-  double downsample_grid_;
 
   rclcpp::Time last_disable_cmd_;
   rclcpp::Duration hold_;
   rclcpp::Time hold_off_;
   rclcpp::Duration watchdog_interval_;
-  bool allow_empty_cloud_;
 
   bool watchdog_stop_;
   bool has_cloud_;
@@ -184,8 +173,7 @@ public:
     param_listener_ = std::make_shared<ParamListener>(get_node_parameters_interface());
     params_ = param_listener_->get_params();
 
-    int num_input_clouds = params_.num_input_clouds;
-    if (num_input_clouds == 1)
+    if (params_.num_input_clouds == 1)
     {
       sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
           "cloud",
@@ -193,7 +181,7 @@ public:
     }
     else
     {
-      for (int i = 0; i < num_input_clouds; ++i)
+      for (int i = 0; i < params_.num_input_clouds; ++i)
       {
         sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "cloud" + std::to_string(i), 1, std::bind(&SafetyLimiterNode::cbCloud, this, _1)));
@@ -202,20 +190,12 @@ public:
 
     if (this->has_parameter("t_margin"))
       RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
-    double watchdog_interval_d = params_.watchdog_interval;
-    watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
+    watchdog_interval_ = rclcpp::Duration::from_seconds(params_.watchdog_interval);
     max_values_[0] = std::numeric_limits<double>::infinity();
     max_values_[1] = std::numeric_limits<double>::infinity();
 
-    auto footprint = params_.footprint;
-    if (!this->has_parameter("footprint"))
-    {
-      RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
-      throw std::runtime_error("Footprint doesn't specified");
-    }
-    this->get_parameter("footprint", footprint);
     std::regex pattern(R"(\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\])");
-    auto begin = std::sregex_iterator(footprint.begin(), footprint.end(), pattern);
+    auto begin = std::sregex_iterator(params_.footprint.begin(), params_.footprint.end(), pattern);
     auto end = std::sregex_iterator();
 
     footprint_radius_ = 0;
@@ -245,28 +225,12 @@ public:
     tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
-    // auto desc = [](const double from_, const double to_){
-    //   rcl_interfaces::msg::ParameterDescriptor d;
-    //   d.floating_point_range.resize(1);
-    //   d.floating_point_range[0].from_value = from_;
-    //   d.floating_point_range[0].to_value = to_;
-    //   return d;
-    // };
+    cbParameter(params_);
 
-    cbParameter();
-
-    param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
-    event_callback_handle_ = param_event_handler_->add_parameter_event_callback(
-      [this](const rcl_interfaces::msg::ParameterEvent& event){
-        if (event.node == this->get_fully_qualified_name())
-        {
-          cbParameter();
-        }
-      }
-    );
+    param_listener_->setUserCallback([this](const Params& params){ cbParameter(params); });
 
     predict_timer_ =
-        this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&SafetyLimiterNode::cbPredictTimer, this));
+        this->create_wall_timer(std::chrono::duration<double>(1.0 / params_.freq), std::bind(&SafetyLimiterNode::cbPredictTimer, this));
 
     if (watchdog_interval_ != rclcpp::Duration::from_seconds(0.0))
     {
@@ -298,7 +262,7 @@ protected:
     if (!has_cloud_)
       return;
 
-    if (this->now() - last_cloud_stamp_ > rclcpp::Duration::from_seconds(timeout_))
+    if (this->now() - last_cloud_stamp_ > rclcpp::Duration::from_seconds(params_.cloud_timeout))
     {
       RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "safety_limiter: PointCloud timed-out");
       geometry_msgs::msg::Twist cmd_vel;
@@ -325,15 +289,9 @@ protected:
 
     diag_updater_.force_update();
   }
-  void cbParameter()
+  void cbParameter(const Params& params)
   {
-    if (param_listener_->is_old(params_))
-    {
-      params_ = param_listener_->get_params();
-    }
-    hz_ = params_.freq;
-    timeout_ = params_.cloud_timeout;
-    disable_timeout_ = params_.disable_timeout;
+    params_ = params;
     vel_[0] = params_.lin_vel;
     acc_[0] = params_.lin_acc;
     vel_[1] = params_.ang_vel;
@@ -342,14 +300,7 @@ protected:
     max_values_[1] = params_.max_angular_vel;
     z_range_[0] = params_.z_range_min;
     z_range_[1] = params_.z_range_max;
-    dt_ = params_.dt;
-    d_margin_ = params_.d_margin;
-    d_escape_ = params_.d_escape;
-    yaw_margin_ = params_.yaw_margin;
-    yaw_escape_ = params_.yaw_escape;
-    downsample_grid_ = params_.downsample_grid;
-    hold_ = rclcpp::Duration::from_seconds(std::max(this->get_parameter("hold").as_double(), 1.0 / hz_));
-    this->get_parameter("allow_empty_cloud", allow_empty_cloud_);
+    hold_ = rclcpp::Duration::from_seconds(std::max(params_.hold, 1.0 / params_.freq));
 
     tmax_ = 0.0;
     for (int i = 0; i < 2; i++)
@@ -359,14 +310,14 @@ protected:
         tmax_ = t;
     }
     tmax_ *= 1.5;
-    tmax_ += std::max(d_margin_ / vel_[0], yaw_margin_ / vel_[1]);
+    tmax_ += std::max(params_.d_margin / vel_[0], params_.yaw_margin / vel_[1]);
     r_lim_ = 1.0;
   }
   double predict(const geometry_msgs::msg::Twist& /*in*/)
   {
     if (cloud_accum_->size() == 0)
     {
-      if (allow_empty_cloud_)
+      if (params_.allow_empty_cloud)
       {
         return 1.0;
       }
@@ -407,7 +358,7 @@ protected:
     std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc(new pcl::PointCloud<pcl::PointXYZ>);
     pcl::VoxelGrid<pcl::PointXYZ> ds;
     ds.setInputCloud(cloud_accum_);
-    ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
+    ds.setLeafSize(params_.downsample_grid, params_.downsample_grid, params_.downsample_grid);
     ds.filter(*pc);
 
     auto filter_z = [this](pcl::PointXYZ& p)
@@ -422,7 +373,7 @@ protected:
 
     if (pc->size() == 0)
     {
-      if (allow_empty_cloud_)
+      if (params_.allow_empty_cloud)
       {
         return 1.0;
       }
@@ -436,11 +387,11 @@ protected:
     Eigen::Affine3f move;
     Eigen::Affine3f move_inv;
     Eigen::Affine3f motion =
-        Eigen::AngleAxisf(-twist_.angular.z * dt_, Eigen::Vector3f::UnitZ()) *
-        Eigen::Translation3f(Eigen::Vector3f(-twist_.linear.x * dt_, -twist_.linear.y * dt_, 0.0));
+        Eigen::AngleAxisf(-twist_.angular.z * params_.dt, Eigen::Vector3f::UnitZ()) *
+        Eigen::Translation3f(Eigen::Vector3f(-twist_.linear.x * params_.dt, -twist_.linear.y * params_.dt, 0.0));
     Eigen::Affine3f motion_inv =
-        Eigen::Translation3f(Eigen::Vector3f(twist_.linear.x * dt_, twist_.linear.y * dt_, 0.0)) *
-        Eigen::AngleAxisf(twist_.angular.z * dt_, Eigen::Vector3f::UnitZ());
+        Eigen::Translation3f(Eigen::Vector3f(twist_.linear.x * params_.dt, twist_.linear.y * params_.dt, 0.0)) *
+        Eigen::AngleAxisf(twist_.angular.z * params_.dt, Eigen::Vector3f::UnitZ());
     move.setIdentity();
     move_inv.setIdentity();
     sensor_msgs::msg::PointCloud col_points;
@@ -455,14 +406,14 @@ protected:
     has_collision_at_now_ = false;
     const double linear_vel = std::hypot(twist_.linear.x, twist_.linear.y);
 
-    for (float t = 0; t < tmax_; t += dt_)
+    for (float t = 0; t < tmax_; t += params_.dt)
     {
       if (t != 0)
       {
-        d_col += linear_vel * dt_;
-        d_escape_remain -= linear_vel * dt_;
-        yaw_col += twist_.angular.z * dt_;
-        yaw_escape_remain -= std::abs(twist_.angular.z) * dt_;
+        d_col += linear_vel * params_.dt;
+        d_escape_remain -= linear_vel * params_.dt;
+        yaw_col += twist_.angular.z * params_.dt;
+        yaw_escape_remain -= std::abs(twist_.angular.z) * params_.dt;
         move = move * motion;
         move_inv = move_inv * motion_inv;
       }
@@ -494,14 +445,14 @@ protected:
       }
       if (colliding)
       {
-        d_col -= linear_vel * dt_;
-        yaw_col -= twist_.angular.z * dt_;
+        d_col -= linear_vel * params_.dt;
+        yaw_col -= twist_.angular.z * params_.dt;
         if (t == 0)
         {
           // The robot is already in collision.
-          // Allow movement under d_escape_ and yaw_escape_
-          d_escape_remain = d_escape_;
-          yaw_escape_remain = yaw_escape_;
+          // Allow movement under params_.d_escape and params_.yaw_escape
+          d_escape_remain = params_.d_escape;
+          yaw_escape_remain = params_.yaw_escape;
           has_collision_at_now_ = true;
         }
         if (d_escape_remain <= 0 || yaw_escape_remain <= 0)
@@ -533,11 +484,7 @@ protected:
     if (!has_collision)
       return 1.0;
 
-    // delay compensation:
-    //   solve for d_compensated: d_compensated = d - delay * sqrt(2 * acc * d_compensated)
-    //     d_compensated = d + acc * delay^2 - sqrt((acc * delay^2)^2 + 2 * d * acc * delay^2)
-
-    const float delay = 1.0 * (1.0 / hz_) + dt_;
+    const float delay = 1.0 * (1.0 / params_.freq) + params_.dt;
     const float acc_dtsq[2] =
         {
             static_cast<float>(acc_[0] * std::pow(delay, 2)),
@@ -546,11 +493,11 @@ protected:
 
     d_col = std::max<float>(
         0.0,
-        std::abs(d_col) - d_margin_ + acc_dtsq[0] -
+        std::abs(d_col) - params_.d_margin + acc_dtsq[0] -
             std::sqrt(std::pow(acc_dtsq[0], 2) + 2 * acc_dtsq[0] * std::abs(d_col)));
     yaw_col = std::max<float>(
         0.0,
-        std::abs(yaw_col) - yaw_margin_ + acc_dtsq[1] -
+        std::abs(yaw_col) - params_.yaw_margin + acc_dtsq[1] -
             std::sqrt(std::pow(acc_dtsq[1], 2) + 2 * acc_dtsq[1] * std::abs(yaw_col)));
 
     float d_r =
@@ -613,109 +560,6 @@ protected:
     return out;
   }
 
-  class vec
-  {
-  public:
-    float c[2];
-    vec(const float x, const float y)
-    {
-      c[0] = x;
-      c[1] = y;
-    }
-    vec()
-    {
-      c[0] = c[1] = 0.0;
-    }
-    float& operator[](const int& i)
-    {
-      assert(i < 2);
-      return c[i];
-    }
-    const float& operator[](const int& i) const
-    {
-      assert(i < 2);
-      return c[i];
-    }
-    vec operator-(const vec& a) const
-    {
-      vec out = *this;
-      out[0] -= a[0];
-      out[1] -= a[1];
-      return out;
-    }
-    float cross(const vec& a) const
-    {
-      return (*this)[0] * a[1] - (*this)[1] * a[0];
-    }
-    float dot(const vec& a) const
-    {
-      return (*this)[0] * a[0] + (*this)[1] * a[1];
-    }
-    float dist(const vec& a) const
-    {
-      return std::hypot((*this)[0] - a[0], (*this)[1] - a[1]);
-    }
-    float dist_line(const vec& a, const vec& b) const
-    {
-      return (b - a).cross((*this) - a) / b.dist(a);
-    }
-    float dist_linestrip(const vec& a, const vec& b) const
-    {
-      if ((b - a).dot((*this) - a) <= 0)
-        return this->dist(a);
-      if ((a - b).dot((*this) - b) <= 0)
-        return this->dist(b);
-      return std::abs(this->dist_line(a, b));
-    }
-  };
-  class polygon
-  {
-  public:
-    std::vector<vec> v;
-    void move(const float& x, const float& y, const float& yaw)
-    {
-      const float cos_v = cosf(yaw);
-      const float sin_v = sinf(yaw);
-      for (auto& p : v)
-      {
-        const auto tmp = p;
-        p[0] = cos_v * tmp[0] - sin_v * tmp[1] + x;
-        p[1] = sin_v * tmp[0] + cos_v * tmp[1] + y;
-      }
-    }
-    bool inside(const vec& a) const
-    {
-      int cn = 0;
-      for (size_t i = 0; i < v.size() - 1; i++)
-      {
-        auto& v1 = v[i];
-        auto& v2 = v[i + 1];
-        if ((v1[1] <= a[1] && a[1] < v2[1]) ||
-            (v2[1] <= a[1] && a[1] < v1[1]))
-        {
-          float lx;
-          lx = v1[0] + (v2[0] - v1[0]) * (a[1] - v1[1]) / (v2[1] - v1[1]);
-          if (a[0] < lx)
-            cn++;
-        }
-      }
-      return ((cn & 1) == 1);
-    }
-    float dist(const vec& a) const
-    {
-      float dist = std::numeric_limits<float>::max();
-      for (size_t i = 0; i < v.size() - 1; i++)
-      {
-        auto& v1 = v[i];
-        auto& v2 = v[i + 1];
-        auto d = a.dist_linestrip(v1, v2);
-        if (d < dist)
-          dist = d;
-      }
-      return dist;
-    }
-  };
-
   polygon footprint_p;
 
   void cbTwist(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
@@ -725,7 +569,7 @@ protected:
     twist_ = *msg;
     has_twist_ = true;
 
-    if (now - last_disable_cmd_ < rclcpp::Duration::from_seconds(disable_timeout_))
+    if (now - last_disable_cmd_ < rclcpp::Duration::from_seconds(params_.disable_timeout))
     {
       pub_twist_->publish(limitMaxVelocities(twist_));
     }
