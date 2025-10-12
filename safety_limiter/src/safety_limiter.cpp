@@ -64,6 +64,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
+#include <safety_limiter/safety_limiter_parameters.hpp>
 
 namespace safety_limiter
 {
@@ -108,6 +109,9 @@ protected:
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
   std::shared_ptr<rclcpp::ParameterEventCallbackHandle> event_callback_handle_;
 
+  std::shared_ptr<ParamListener> param_listener_;
+  Params params_;
+
   geometry_msgs::msg::Twist twist_;
   rclcpp::Time last_cloud_stamp_;
   std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_accum_;
@@ -128,8 +132,6 @@ protected:
   double z_range_[2];
   float footprint_radius_;
   double downsample_grid_;
-  std::string fixed_frame_id_;
-  std::string base_frame_id_;
 
   rclcpp::Time last_disable_cmd_;
   rclcpp::Duration hold_;
@@ -179,8 +181,10 @@ public:
         "watchdog_reset",
         1, std::bind(&SafetyLimiterNode::cbWatchdogReset, this, _1));
 
-    int num_input_clouds;
-    num_input_clouds = this->declare_parameter("num_input_clouds", 1);
+    param_listener_ = std::make_shared<ParamListener>(get_node_parameters_interface());
+    params_ = param_listener_->get_params();
+
+    int num_input_clouds = params_.num_input_clouds;
     if (num_input_clouds == 1)
     {
       sub_clouds_.push_back(this->create_subscription<sensor_msgs::msg::PointCloud2>(
@@ -198,15 +202,12 @@ public:
 
     if (this->has_parameter("t_margin"))
       RCLCPP_WARN(this->get_logger(), "safety_limiter: t_margin parameter is obsolated. Use d_margin and yaw_margin instead.");
-    base_frame_id_ = this->declare_parameter("base_frame", std::string("base_link"));
-    fixed_frame_id_ = this->declare_parameter("fixed_frame", std::string("odom"));
-    double watchdog_interval_d;
-    watchdog_interval_d = this->declare_parameter("watchdog_interval", 0.0);
+    double watchdog_interval_d = params_.watchdog_interval;
     watchdog_interval_ = rclcpp::Duration::from_seconds(watchdog_interval_d);
     max_values_[0] = std::numeric_limits<double>::infinity();
     max_values_[1] = std::numeric_limits<double>::infinity();
 
-    auto footprint = this->declare_parameter("footprint", "");
+    auto footprint = params_.footprint;
     if (!this->has_parameter("footprint"))
     {
       RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
@@ -244,33 +245,13 @@ public:
     tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
-    auto desc = [](const double from_, const double to_){
-      rcl_interfaces::msg::ParameterDescriptor d;
-      d.floating_point_range.resize(1);
-      d.floating_point_range[0].from_value = from_;
-      d.floating_point_range[0].to_value = to_;
-      return d;
-    };
-
-    this->declare_parameter("freq", 6.0, desc(0., 100.));
-    this->declare_parameter("cloud_timeout", 0.8, desc(0., 10.));
-    this->declare_parameter("disable_timeout", 0.1, desc(0., 10.));
-    this->declare_parameter("lin_vel", 0.5, desc(0., 10.));
-    this->declare_parameter("lin_acc", 1.0, desc(0., 10.));
-    this->declare_parameter("ang_vel", 0.8, desc(0., 10.));
-    this->declare_parameter("ang_acc", 1.6, desc(0., 10.));
-    this->declare_parameter("max_linear_vel", 10.0, desc(0., 10.));
-    this->declare_parameter("max_angular_vel", 10.0, desc(0., 10.));
-    this->declare_parameter("z_range_min", 0.0, desc(-3., 3.));
-    this->declare_parameter("z_range_max", 0.5, desc(-3., 3.));
-    this->declare_parameter("dt", 0.1, desc(0., 1.));
-    this->declare_parameter("d_margin", 0.2, desc(0., 1.));
-    this->declare_parameter("d_escape", 0.05, desc(0., 1.));
-    this->declare_parameter("yaw_margin", 0.2, desc(0., 1.57));
-    this->declare_parameter("yaw_escape", 0.05, desc(0., 1.57));
-    this->declare_parameter("downsample_grid", 0.05, desc(0., 1.));
-    this->declare_parameter("hold", 0.0, desc(0., 10.));
-    this->declare_parameter("allow_empty_cloud", false);
+    // auto desc = [](const double from_, const double to_){
+    //   rcl_interfaces::msg::ParameterDescriptor d;
+    //   d.floating_point_range.resize(1);
+    //   d.floating_point_range[0].from_value = from_;
+    //   d.floating_point_range[0].to_value = to_;
+    //   return d;
+    // };
 
     cbParameter();
 
@@ -346,23 +327,27 @@ protected:
   }
   void cbParameter()
   {
-    this->get_parameter("freq", hz_);
-    this->get_parameter("cloud_timeout", timeout_);
-    this->get_parameter("disable_timeout", disable_timeout_);
-    this->get_parameter("lin_vel", vel_[0]);
-    this->get_parameter("lin_acc", acc_[0]);
-    this->get_parameter("ang_vel", vel_[1]);
-    this->get_parameter("ang_acc", acc_[1]);
-    this->get_parameter("max_linear_vel", max_values_[0]);
-    this->get_parameter("max_angular_vel", max_values_[1]);
-    this->get_parameter("z_range_min", z_range_[0]);
-    this->get_parameter("z_range_max", z_range_[1]);
-    this->get_parameter("dt", dt_);
-    this->get_parameter("d_margin", d_margin_);
-    this->get_parameter("d_escape", d_escape_);
-    this->get_parameter("yaw_margin", yaw_margin_);
-    this->get_parameter("yaw_escape", yaw_escape_);
-    this->get_parameter("downsample_grid", downsample_grid_);
+    if (param_listener_->is_old(params_))
+    {
+      params_ = param_listener_->get_params();
+    }
+    hz_ = params_.freq;
+    timeout_ = params_.cloud_timeout;
+    disable_timeout_ = params_.disable_timeout;
+    vel_[0] = params_.lin_vel;
+    acc_[0] = params_.lin_acc;
+    vel_[1] = params_.ang_vel;
+    acc_[1] = params_.ang_acc;
+    max_values_[0] = params_.max_linear_vel;
+    max_values_[1] = params_.max_angular_vel;
+    z_range_[0] = params_.z_range_min;
+    z_range_[1] = params_.z_range_max;
+    dt_ = params_.dt;
+    d_margin_ = params_.d_margin;
+    d_escape_ = params_.d_escape;
+    yaw_margin_ = params_.yaw_margin;
+    yaw_escape_ = params_.yaw_escape;
+    downsample_grid_ = params_.downsample_grid;
     hold_ = rclcpp::Duration::from_seconds(std::max(this->get_parameter("hold").as_double(), 1.0 / hz_));
     this->get_parameter("allow_empty_cloud", allow_empty_cloud_);
 
@@ -390,7 +375,7 @@ protected:
     }
 
     const bool can_transform = tfbuf_->canTransform(
-        base_frame_id_, cloud_accum_->header.frame_id,
+        params_.base_frame, cloud_accum_->header.frame_id,
         pcl_conversions::fromPCL(cloud_accum_->header.stamp));
     const rclcpp::Time stamp =
         can_transform ? pcl_conversions::fromPCL(cloud_accum_->header.stamp) : rclcpp::Time(0L, RCL_ROS_TIME);
@@ -399,7 +384,7 @@ protected:
     try
     {
       fixed_to_base = tfbuf_->lookupTransform(
-          base_frame_id_, cloud_accum_->header.frame_id, stamp);
+          params_.base_frame, cloud_accum_->header.frame_id, stamp);
     }
     catch (tf2::TransformException& e)
     {
@@ -459,7 +444,7 @@ protected:
     move.setIdentity();
     move_inv.setIdentity();
     sensor_msgs::msg::PointCloud col_points;
-    col_points.header.frame_id = base_frame_id_;
+    col_points.header.frame_id = params_.base_frame;
     col_points.header.stamp = this->now();
 
     float d_col = 0;
@@ -762,7 +747,7 @@ protected:
   void cbCloud(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
   {
     const bool can_transform = tfbuf_->canTransform(
-        fixed_frame_id_, msg->header.frame_id, msg->header.stamp);
+        params_.fixed_frame, msg->header.frame_id, msg->header.stamp);
     const rclcpp::Time stamp =
         can_transform ? rclcpp::Time(msg->header.stamp) : rclcpp::Time(0L, RCL_ROS_TIME);
 
@@ -770,7 +755,7 @@ protected:
     try
     {
       const geometry_msgs::msg::TransformStamped cloud_to_fixed =
-          tfbuf_->lookupTransform(fixed_frame_id_, msg->header.frame_id, stamp);
+          tfbuf_->lookupTransform(params_.fixed_frame, msg->header.frame_id, stamp);
       tf2::doTransform(*msg, cloud_msg_fixed, cloud_to_fixed);
     }
     catch (tf2::TransformException& e)
@@ -780,7 +765,7 @@ protected:
     }
 
     std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_fixed(new pcl::PointCloud<pcl::PointXYZ>());
-    cloud_fixed->header.frame_id = fixed_frame_id_;
+    cloud_fixed->header.frame_id = params_.fixed_frame;
     pcl::fromROSMsg(cloud_msg_fixed, *cloud_fixed);
 
     if (cloud_clear_)
@@ -789,7 +774,7 @@ protected:
       cloud_accum_.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
     *cloud_accum_ += *cloud_fixed;
-    cloud_accum_->header.frame_id = fixed_frame_id_;
+    cloud_accum_->header.frame_id = params_.fixed_frame;
     last_cloud_stamp_ = msg->header.stamp;
     has_cloud_ = true;
   }
