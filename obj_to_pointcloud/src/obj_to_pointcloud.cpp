@@ -84,19 +84,22 @@ std::vector<std::string> split(const std::string& input, char delimiter)
   return result;
 }
 
+namespace obj_to_pointcloud
+{
+
 class ObjToPointcloudNode : public rclcpp::Node
 {
 public:
-  ObjToPointcloudNode() : Node("obj_to_pointcloud")
+  ObjToPointcloudNode(const rclcpp::NodeOptions& options) : Node("obj_to_pointcloud", options)
     , engine_(seed_gen_())
   {
       pub_cloud_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
         "mapcloud",
         rclcpp::QoS(1).transient_local());
 
-    frame_id_ = this->declare_parameter("frame_id", std::string("map"));
-    file_ = this->declare_parameter("objs", std::string(""));
-    if (file_.compare("") == 0)
+    frame_id_ = this->declare_parameter("frame_id", "map");
+    file_ = this->declare_parameter("objs", "");
+    if (file_.empty())
     {
       RCLCPP_ERROR(this->get_logger(), "OBJ file not specified");
       rclcpp::shutdown();
@@ -131,9 +134,9 @@ private:
   sensor_msgs::msg::PointCloud2 convertObj(const std::vector<std::string>& files)
   {
     sensor_msgs::msg::PointCloud2 pc_msg;
-    std::shared_ptr<pcl::PolygonMesh> mesh(new pcl::PolygonMesh());
-    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc(new pcl::PointCloud<pcl::PointXYZ>());
-    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc_rs(new pcl::PointCloud<pcl::PointXYZ>());
+    auto mesh = std::make_shared<pcl::PolygonMesh>();
+    auto pc = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    auto pc_rs = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 
     pcl::PointXYZ offset(static_cast<float>(offset_x_), static_cast<float>(offset_y_), static_cast<float>(offset_z_));
 
@@ -147,8 +150,7 @@ private:
         if (pcl::io::loadPCDFile(file, *pc) == -1)
         {
           RCLCPP_ERROR(this->get_logger(), "Failed to load PCD file");
-          rclcpp::shutdown();
-          return pc_msg;
+          throw std::runtime_error("Failed to load PCD file: " + file);
         }
         for (auto& p : pc->points)
         {
@@ -164,8 +166,7 @@ private:
         if (pcl::io::loadPolygonFileOBJ(file, *mesh) == -1)
         {
           RCLCPP_ERROR(this->get_logger(), "Failed to load OBJ file");
-          rclcpp::shutdown();
-          return pc_msg;
+          throw std::runtime_error("Failed to load OBJ file: " + file);
         }
 
         pcl::fromPCLPointCloud2(mesh->cloud, *pc);
@@ -222,7 +223,7 @@ private:
     pc_rs->is_dense = true;
 
     // Down-sample
-    std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> pc_ds(new pcl::PointCloud<pcl::PointXYZ>);
+    auto pc_ds = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     pcl::VoxelGrid<pcl::PointXYZ> ds;
     ds.setInputCloud(pc_rs);
     ds.setLeafSize(downsample_grid_, downsample_grid_, downsample_grid_);
@@ -231,19 +232,14 @@ private:
     pcl::toROSMsg(*pc_ds, pc_msg);
     pc_msg.header.frame_id = frame_id_;
     pc_msg.header.stamp = this->now();
-    RCLCPP_INFO(this->get_logger(), "pointcloud (%d points) has been generated from %d verticles",
-             (int)pc_ds->size(),
-             (int)pc->size());
+    RCLCPP_INFO(this->get_logger(), "pointcloud (%ld points) has been generated from %ld verticles",
+             pc_ds->size(),
+             pc->size());
     return pc_msg;
   }
 };
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto m2p = std::make_shared<ObjToPointcloudNode>();
-  rclcpp::spin(m2p);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(obj_to_pointcloud::ObjToPointcloudNode)
