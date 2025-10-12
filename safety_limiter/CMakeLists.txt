@@ -6,12 +6,13 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-# Binary installed pcl provided by Linux distro is built with -march=native
-# which causes a lot of compatibility problems.
-# Define PCL_NO_PRECOMPILE to disable using the binary version.
-add_definitions(-DPCL_NO_PRECOMPILE)
+generate_parameter_library(
+  safety_limiter_parameters
+  param/safety_limiter_parameters.yaml
+)
 
 ament_auto_add_executable(safety_limiter src/safety_limiter.cpp)
+target_link_libraries(safety_limiter safety_limiter_parameters)
 
 if(BUILD_TESTING)
   ament_auto_find_test_dependencies()

@@ -10,9 +10,11 @@
   <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  <buildtool_depend>generate_parameter_library</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
+
   <test_depend>nav_msgs</test_depend>
   <test_depend>tf2_geometry_msgs</test_depend>
   <test_depend>ament_lint_auto</test_depend>

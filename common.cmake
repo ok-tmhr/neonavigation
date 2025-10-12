@@ -4,9 +4,19 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 
+if(NOT CMAKE_CXX_EXTENSIONS)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
 endif()
+
+# Binary installed pcl provided by Linux distro is built with -march=native
+# which causes a lot of compatibility problems.
+# Define PCL_NO_PRECOMPILE to disable using the binary version.
+add_definitions(-DPCL_NO_PRECOMPILE)
+
 
 function(rclcpp_components_auto_register_node executable)
 
