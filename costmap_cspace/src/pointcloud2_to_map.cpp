@@ -50,7 +50,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
 
   nav_msgs::msg::OccupancyGrid map_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Time published_;
   rclcpp::Duration publish_interval_;
@@ -109,7 +109,7 @@ public:
     hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 

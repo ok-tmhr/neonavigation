@@ -125,7 +125,7 @@ protected:
   planner_cspace_msgs::action::MoveWithTolerance::Goal::ConstSharedPtr goal_tolerant_;
   std::shared_ptr<rclcpp_action::ServerGoalHandle<nav2_msgs::action::NavigateToPose>> goal_handle_;
   std::shared_ptr<rclcpp_action::ServerGoalHandle<planner_cspace_msgs::action::MoveWithTolerance>> goal_handle_tolerant_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
   rclcpp::ParameterEventCallbackHandle::SharedPtr param_event_callback_handle_;
@@ -1246,7 +1246,7 @@ public:
     pub_path_poses_ = this->create_publisher<geometry_msgs::msg::PoseArray>("~/path_poses", rclcpp::QoS(1).transient_local());
     pub_preserved_path_poses_ = this->create_publisher<nav_msgs::msg::Path>("~/preserved_path_poses", rclcpp::QoS(1).transient_local());
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
     jump_ = std::make_shared<JumpDetector>(*tfbuf_);
     diag_updater_ = std::make_shared<diagnostic_updater::Updater>(this);

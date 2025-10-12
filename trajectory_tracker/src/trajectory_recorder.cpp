@@ -67,7 +67,7 @@ private:
   bool store_time_;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srs_clear_path_;
@@ -88,7 +88,7 @@ RecorderNode::RecorderNode() : Node("trajectory_recorder")
       rclcpp::QoS(10).transient_local());
   srs_clear_path_ = this->create_service<std_srvs::srv::Empty>("~/clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
 
-  tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
   timer_ = this->create_wall_timer(

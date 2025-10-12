@@ -61,7 +61,7 @@ public:
     sub_status_ = node_->create_subscription<planner_cspace_msgs::msg::PlannerStatus>(
         "/planner_3d/status", 10, std::bind(&ActionTestBase::cbStatus, this, std::placeholders::_1));
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp()
@@ -132,7 +132,7 @@ protected:
   rclcpp::Subscription<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr sub_status_;
   ActionClientPtr move_base_;
   planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr planner_status_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   bool map_ready_;
 };

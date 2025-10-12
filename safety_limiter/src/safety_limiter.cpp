@@ -103,7 +103,7 @@ protected:
   rclcpp::Subscription<std_msgs::msg::Empty>::SharedPtr sub_watchdog_;
   rclcpp::TimerBase::SharedPtr predict_timer_;
   rclcpp::TimerBase::SharedPtr watchdog_timer_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
   std::shared_ptr<rclcpp::ParameterEventCallbackHandle> event_callback_handle_;
@@ -241,7 +241,7 @@ public:
     diag_updater_.setHardwareID("none");
     diag_updater_.add("Collision", this, &SafetyLimiterNode::diagnoseCollision);
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
     auto desc = [](const double from_, const double to_){

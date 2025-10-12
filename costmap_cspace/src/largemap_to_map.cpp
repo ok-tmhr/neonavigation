@@ -50,7 +50,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr large_map_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string robot_frame_;
@@ -106,7 +106,7 @@ public:
     hz = this->declare_parameter("hz", 1.0);
     timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 

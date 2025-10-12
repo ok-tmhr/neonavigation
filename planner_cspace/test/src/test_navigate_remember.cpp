@@ -55,7 +55,7 @@ class NavigateWithRememberUpdates : public ::testing::Test
 {
 protected:
   rclcpp::Node::SharedPtr nh_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   planner_cspace_msgs::msg::PlannerStatus::ConstSharedPtr planner_status_;
   costmap_cspace_msgs::msg::CSpace3D::ConstSharedPtr costmap_;
@@ -84,7 +84,7 @@ protected:
         nh_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local());
     pub_patrol_nodes_ = nh_->create_publisher<nav_msgs::msg::Path>("patrol_nodes", rclcpp::QoS(1).transient_local());
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(nh_->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(nh_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 

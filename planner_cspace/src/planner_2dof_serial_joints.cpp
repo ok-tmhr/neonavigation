@@ -67,7 +67,7 @@ private:
   rclcpp::Subscription<trajectory_msgs::msg::JointTrajectory>::SharedPtr sub_trajectory_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_joint_;
 
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   Astar as_;
@@ -512,7 +512,7 @@ public:
     num_threads = this->declare_parameter(group_ + ".num_threads", 1);
     omp_set_num_threads(num_threads);
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 

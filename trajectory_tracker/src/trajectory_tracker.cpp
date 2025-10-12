@@ -122,7 +122,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_vel_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr pub_status_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
@@ -218,7 +218,7 @@ TrackerNode::TrackerNode() : Node("trajectory_tracker")
                                                   );
   }
 
-  tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
   auto desc = [](const double from_, const double to_){
