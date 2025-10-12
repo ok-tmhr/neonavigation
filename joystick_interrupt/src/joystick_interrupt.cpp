@@ -37,6 +37,8 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+namespace joystick_interrupt
+{
 
 class JoystickInterrupt : public rclcpp::Node
 {
@@ -153,7 +155,7 @@ private:
   };
 
 public:
-  JoystickInterrupt() : Node("joystick_interrupt")
+  JoystickInterrupt(const rclcpp::NodeOptions& options) : Node("joystick_interrupt", options)
   , last_joy_msg_(0L, RCL_ROS_TIME)
   {
     using std::placeholders::_1;
@@ -203,13 +205,7 @@ public:
     }
   }
 };
-
-int main(int argc, char* argv[])
-{
-  rclcpp::init(argc, argv);
-
-  auto jy = std::make_shared<JoystickInterrupt>();
-  rclcpp::spin(jy);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(joystick_interrupt::JoystickInterrupt)
