@@ -39,6 +39,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace std::chrono_literals;
+
 class TrackOdometryTest : public ::testing::TestWithParam<const char*>
 {
 protected:
@@ -51,13 +53,13 @@ public:
     nh_ = rclcpp::Node::make_shared("test_track_odometry", ns);
     pub_odom_ = nh_->create_publisher<nav_msgs::msg::Odometry>("odom_raw", 10);
     pub_imu_ = nh_->create_publisher<sensor_msgs::msg::Imu>("imu/data", 10);
-    sub_odom_ = nh_->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackOdometryTest::cbOdom, this, std::placeholders::_1));
+    sub_odom_ = nh_->create_subscription<nav_msgs::msg::Odometry>("odom", 10, [this](const nav_msgs::msg::Odometry::ConstSharedPtr msg){ cbOdom(msg); });
   }
   bool initializeTrackOdometry(
       nav_msgs::msg::Odometry& odom_raw,
       sensor_msgs::msg::Imu& imu)
   {
-    rclcpp::sleep_for(std::chrono::milliseconds(100));
+    rclcpp::sleep_for(100ms);
     rclcpp::Rate rate(100);
     odom_ = nullptr;
     for (int i = 0; i < 1000 && rclcpp::ok(); ++i)
