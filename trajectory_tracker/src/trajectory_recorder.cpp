@@ -116,7 +116,7 @@ void RecorderNode::spin()
   path_.header.frame_id = frame_global_;
 
   {
-    rclcpp::Time now = rclcpp::Time(0, 0, RCL_ROS_TIME);
+    rclcpp::Time now = rclcpp::Time(0L, RCL_ROS_TIME);
     if (store_time_)
       now = this->now();
     tf2::Stamped<tf2::Transform> transform;

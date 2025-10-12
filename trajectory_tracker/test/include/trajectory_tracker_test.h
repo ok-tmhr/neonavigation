@@ -96,7 +96,7 @@ private:
   void cbCmdVel(const geometry_msgs::msg::Twist::ConstSharedPtr msg)
   {
     const rclcpp::Time now = nh_->now();
-    if (cmd_vel_time_ == rclcpp::Time(0, 0, RCL_ROS_TIME))
+    if (cmd_vel_time_ == rclcpp::Time(0L, RCL_ROS_TIME))
       cmd_vel_time_ = now;
     const float dt = std::min((now - cmd_vel_time_).seconds(), 0.1);
     const tf2::Transform pose_diff(tf2::Quaternion(tf2::Vector3(0, 0, 1), msg->angular.z * dt),
@@ -115,9 +115,9 @@ public:
   rclcpp::Duration delay_;
 
   TrajectoryTrackerTest()
-    : cmd_vel_time_(0, 0, RCL_ROS_TIME)
-    , trans_stamp_last_(0, 0, RCL_ROS_TIME)
-    , initial_cmd_vel_time_(0, 0, RCL_ROS_TIME)
+    : cmd_vel_time_(0L, RCL_ROS_TIME)
+    , trans_stamp_last_(0L, RCL_ROS_TIME)
+    , initial_cmd_vel_time_(0L, RCL_ROS_TIME)
     , delay_(0, 0)
   {
     nh_ = rclcpp::Node::make_shared("trajectory_tracker_test");

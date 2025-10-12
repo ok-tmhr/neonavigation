@@ -1156,7 +1156,7 @@ protected:
   {
     geometry_msgs::msg::PoseStamped start;
     start.header.frame_id = robot_frame_;
-    start.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+    start.header.stamp = rclcpp::Time(0L, RCL_ROS_TIME);
     start.pose.orientation.x = 0.0;
     start.pose.orientation.y = 0.0;
     start.pose.orientation.z = 0.0;
@@ -1167,7 +1167,7 @@ protected:
     try
     {
       geometry_msgs::msg::TransformStamped trans =
-          tfbuf_->lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
+          tfbuf_->lookupTransform(map_header_.frame_id, robot_frame_, rclcpp::Time(0L, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
       tf2::doTransform(start, start, trans);
     }
     catch (tf2::TransformException& e)
@@ -1186,7 +1186,7 @@ public:
     , cost_estim_cache_static_(cm_rough_base_, CostmapBBF::SharedPtr(new CostmapBBFNoOp()))
     , arrivable_map_(cm_local_esc_, CostmapBBF::SharedPtr(new CostmapBBFNoOp()))
     , costmap_watchdog_(0, 0)
-    , last_costmap_(0, 0, RCL_ROS_TIME)
+    , last_costmap_(0L, RCL_ROS_TIME)
   {
     using std::placeholders::_1;
     using std::placeholders::_2;

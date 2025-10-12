@@ -68,7 +68,7 @@ private:
 
 public:
   Pointcloud2ToMapNode() : Node("pointcloud2_to_map")
-    , published_(0, 0, RCL_ROS_TIME)
+    , published_(0L, RCL_ROS_TIME)
     , publish_interval_(0, 0)
     , accums_(2)
   {
@@ -143,7 +143,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans_to_robot;
-      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans_to_robot);
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0L, RCL_ROS_TIME)), trans_to_robot);
 
       auto pos = trans_to_robot.getOrigin();
       float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;

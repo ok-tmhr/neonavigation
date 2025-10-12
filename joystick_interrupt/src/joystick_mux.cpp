@@ -110,7 +110,7 @@ private:
 
 public:
   JoystickMux() : Node("joystick_mux")
-  , last_joy_msg_(0, 0, RCL_ROS_TIME)
+  , last_joy_msg_(0L, RCL_ROS_TIME)
   {
     using std::placeholders::_1;
       sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickMux::cbJoy, this, _1));

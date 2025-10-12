@@ -180,7 +180,7 @@ private:
     has_joint_states_ = true;
 
     if ((replan_prev_ + replan_interval_ < this->now() ||
-         replan_prev_ == rclcpp::Time(0, 0, RCL_ROS_TIME)) &&
+         replan_prev_ == rclcpp::Time(0L, RCL_ROS_TIME)) &&
         replan_interval_ > rclcpp::Duration::from_seconds(0))
     {
       replan();
@@ -282,7 +282,7 @@ private:
 
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      out.header.stamp = rclcpp::Time(0L, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -348,7 +348,7 @@ private:
     {
       trajectory_msgs::msg::JointTrajectory out;
       out.header = traj_prev_.header;
-      out.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      out.header.stamp = rclcpp::Time(0L, RCL_ROS_TIME);
       out.joint_names.resize(2);
       out.joint_names[0] = links_[0].name_;
       out.joint_names[1] = links_[1].name_;
@@ -369,7 +369,7 @@ private:
 
 public:
   explicit Planner2dofSerialJointsNode(const std::string group_name) : Node("planner_2dof_serial_joints")
-    , replan_prev_(0, 0, RCL_ROS_TIME)
+    , replan_prev_(0L, RCL_ROS_TIME)
     , replan_interval_(0, 0)
     , has_joint_states_(false)
     , cmd_prev_(rclcpp::Duration(0,0),{})
@@ -395,7 +395,7 @@ public:
     double interval;
     interval = this->declare_parameter("replan_interval", 0.2);
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
-    replan_prev_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+    replan_prev_ = rclcpp::Time(0L, RCL_ROS_TIME);
 
     int queue_size_limit;
     queue_size_limit = this->declare_parameter(group_ + ".queue_size_limit", 0);
@@ -575,7 +575,7 @@ private:
       path.push_back(eg);
       if (s == e)
       {
-        replan_prev_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+        replan_prev_ = rclcpp::Time(0L, RCL_ROS_TIME);
       }
       return true;
     }

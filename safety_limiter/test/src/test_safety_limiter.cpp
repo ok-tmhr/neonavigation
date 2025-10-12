@@ -69,7 +69,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
           if (with_cloud > 1)
             publishSinglePointPointcloud2(1000, 1000, 0, "base_link", nh_->now());
           else
-            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", rclcpp::Time(0, 0, RCL_ROS_TIME));
+            publishSinglePointPointcloud2(1000, 1000, 0, "base_link", rclcpp::Time(0L, RCL_ROS_TIME));
         }
 
         const float vel = 0.1;
@@ -105,7 +105,7 @@ TEST_F(SafetyLimiterTest, Timeouts)
 
       ASSERT_TRUE(hasStatus()) << test_condition;
       EXPECT_EQ(with_cloud > 1, status_->is_cloud_available) << test_condition;
-      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME)) << test_condition;
+      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME)) << test_condition;
 
       if (with_watchdog_reset > 0 && with_cloud > 1)
       {
@@ -222,7 +222,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinear)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -273,7 +273,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearBackward)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -342,7 +342,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitLinearEscape)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_NE(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+    EXPECT_NE(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -393,7 +393,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngular)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -462,7 +462,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitAngularEscape)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_NE(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+    EXPECT_NE(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }
@@ -507,7 +507,7 @@ TEST_F(SafetyLimiterTest, NoCollision)
       EXPECT_EQ(1.0, status_->limit_ratio);
       EXPECT_TRUE(status_->is_cloud_available);
       EXPECT_FALSE(status_->has_watchdog_timed_out);
-      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
     }
   }
 }
@@ -611,7 +611,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitMaxVelocitiesValues)
       EXPECT_EQ(1.0, status_->limit_ratio);
       EXPECT_TRUE(status_->is_cloud_available);
       EXPECT_FALSE(status_->has_watchdog_timed_out);
-      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+      EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
     }
   }
 }
@@ -692,7 +692,7 @@ TEST_F(SafetyLimiterTest, SafetyLimitOmniDirectional)
     ASSERT_TRUE(hasStatus());
     EXPECT_TRUE(status_->is_cloud_available);
     EXPECT_FALSE(status_->has_watchdog_timed_out);
-    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0, 0, RCL_ROS_TIME));
+    EXPECT_EQ(status_->stuck_started_since, rclcpp::Time(0L, RCL_ROS_TIME));
 
     ASSERT_TRUE(received);
   }

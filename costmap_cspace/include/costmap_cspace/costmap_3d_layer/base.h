@@ -115,13 +115,13 @@ public:
     , width_(0)
     , height_(0)
     , angle_(0)
-    , stamp_(0, 0, RCL_ROS_TIME)
+    , stamp_(0L, RCL_ROS_TIME)
   {
   }
   UpdatedRegion(
       const int& x, const int& y, const int& yaw,
       const int& width, const int& height, const int& angle,
-      const rclcpp::Time& stamp = rclcpp::Time(0, 0, RCL_ROS_TIME))
+      const rclcpp::Time& stamp = rclcpp::Time(0L, RCL_ROS_TIME))
     : x_(x)
     , y_(y)
     , yaw_(yaw)

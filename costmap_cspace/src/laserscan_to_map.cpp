@@ -69,7 +69,7 @@ private:
 
 public:
   LaserscanToMapNode() : Node("laserscan_to_map")
-  , published_(0, 0, RCL_ROS_TIME)
+  , published_(0L, RCL_ROS_TIME)
   , publish_interval_(0, 0)
   {
       z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
@@ -134,7 +134,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0L, RCL_ROS_TIME)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;
