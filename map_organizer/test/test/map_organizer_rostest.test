@@ -4,7 +4,7 @@
 
   <node pkg="map_organizer" exec="tie_maps" name="tie_maps" output="screen">
     <param name="map_files"
-      value="$(find-pkg-share map_organizer)/test/data/0.yaml,$(find-pkg-share map_organizer)/test/data/1.yaml" />
+      value="$(find-pkg-share map_organizer)/data/0.yaml,$(find-pkg-share map_organizer)/data/1.yaml" />
     <param name="frame_id" value="map_ground" />
   </node>
 

@@ -1,25 +1,15 @@
-set(LIBRARIES
-  rclcpp::rclcpp
-  ${map_organizer_msgs_TARGETS}
-  ${sensor_msgs_TARGETS}
-)
 
-ament_add_gtest_executable(test_map_organizer
+ament_auto_add_gtest(test_map_organizer SKIP_TEST
   src/test_map_organizer.cpp
 )
-target_link_libraries(test_map_organizer ${LIBRARIES})
 add_launch_test(launch/map_organizer_test.launch.py TIMEOUT 60)
 
-ament_add_gtest_executable(test_pointcloud_to_maps
+ament_auto_add_gtest(test_pointcloud_to_maps SKIP_TEST
   src/test_pointcloud_to_maps.cpp
 )
-target_link_libraries(test_pointcloud_to_maps ${LIBRARIES})
 add_launch_test(launch/pointcloud_to_maps_test.launch.py TIMEOUT 120)
 
-install(DIRECTORY test
+install(DIRECTORY test data
   DESTINATION share/${PROJECT_NAME}
 )
 
-install(DIRECTORY data
-  DESTINATION share/${PROJECT_NAME}/test
-)
