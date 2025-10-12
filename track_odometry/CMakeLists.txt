@@ -6,32 +6,18 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-generate_parameter_library(
-  track_odometry_parameters
-  param/track_odometry_parameters.yaml
-)
-
-ament_auto_add_library(track_odometry_component src/track_odometry.cpp)
-target_link_libraries(track_odometry_component track_odometry_parameters)
-
-rclcpp_components_register_node(
-  track_odometry_component
+rclcpp_components_auto_register_node(
+  track_odometry
   PLUGIN track_odometry::TrackOdometryNode
-  EXECUTABLE track_odometry
+  PARAMETERS param/track_odometry_parameters.yaml
+  src/track_odometry.cpp
 )
 
-generate_parameter_library(
-  tf_projection_parameters
-  param/tf_projection_node_parameters.yaml
-)
-
-ament_auto_add_library(tf_projection_component src/tf_projection_node.cpp src/tf_projection.cpp)
-target_link_libraries(tf_projection_component tf_projection_parameters)
-
-rclcpp_components_register_node(
-  tf_projection_component
+rclcpp_components_auto_register_node(
+  tf_projection
   PLUGIN track_odometry::TfProjectionNode
-  EXECUTABLE tf_projection
+  PARAMETERS param/tf_projection_node_parameters.yaml
+  src/tf_projection_node.cpp src/tf_projection.cpp
 )
 
 if(BUILD_TESTING)
