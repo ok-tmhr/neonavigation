@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TEST_SAFETY_LIMITER_BASE_H
-#define TEST_SAFETY_LIMITER_BASE_H
+#pragma once
 
 #include <string>
 
@@ -118,10 +117,9 @@ public:
     pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_in", 1);
     pub_cloud_ = nh_->create_publisher<sensor_msgs::msg::PointCloud2>("cloud", 1);
     pub_watchdog_ = nh_->create_publisher<std_msgs::msg::Empty>("watchdog_reset", 1);
-    using std::placeholders::_1;
-    sub_diag_ = nh_->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, std::bind(&SafetyLimiterTest::cbDiag, this, _1));
-    sub_status_ = nh_->create_subscription<safety_limiter_msgs::msg::SafetyLimiterStatus>("/safety_limiter/status", 1, std::bind(&SafetyLimiterTest::cbStatus, this, _1));
-    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", rclcpp::QoS(1).transient_local(), std::bind(&SafetyLimiterTest::cbCmdVel, this, _1));
+    sub_diag_ = nh_->create_subscription<diagnostic_msgs::msg::DiagnosticArray>("diagnostics", 1, [this](const diagnostic_msgs::msg::DiagnosticArray::ConstSharedPtr msg){ cbDiag(msg); });
+    sub_status_ = nh_->create_subscription<safety_limiter_msgs::msg::SafetyLimiterStatus>("/safety_limiter/status", 1, [this](const safety_limiter_msgs::msg::SafetyLimiterStatus::ConstSharedPtr msg){ cbStatus(msg); });
+    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", rclcpp::QoS(1).transient_local(), [this](const geometry_msgs::msg::Twist::ConstSharedPtr msg){ cbCmdVel(msg); });
 
     tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(nh_);
 
@@ -207,4 +205,3 @@ public:
   }
 };
 
-#endif  // TEST_SAFETY_LIMITER_BASE_H
