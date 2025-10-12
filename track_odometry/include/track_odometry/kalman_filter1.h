@@ -31,6 +31,7 @@
 #pragma once
 
 #include <limits>
+#include <cmath>
 
 namespace track_odometry
 {
