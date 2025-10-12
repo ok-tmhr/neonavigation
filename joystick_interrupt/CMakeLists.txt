@@ -11,9 +11,12 @@ rclcpp_components_auto_register_node(
   PLUGIN joystick_interrupt::JoystickInterrupt
   src/joystick_interrupt.cpp
 )
-# ament_auto_add_executable(joystick_interrupt src/joystick_interrupt.cpp)
 
-ament_auto_add_executable(joystick_mux src/joystick_mux.cpp)
+rclcpp_components_auto_register_node(
+  joystick_mux
+  PLUGIN joystick_interrupt::JoystickMux
+  src/joystick_mux.cpp
+)
 
 if(BUILD_TESTING)
   ament_auto_find_test_dependencies()

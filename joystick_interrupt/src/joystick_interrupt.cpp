@@ -158,11 +158,10 @@ public:
   JoystickInterrupt(const rclcpp::NodeOptions& options) : Node("joystick_interrupt", options)
   , last_joy_msg_(0L, RCL_ROS_TIME)
   {
-    using std::placeholders::_1;
-      sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickInterrupt::cbJoy, this, _1));
+    sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, [this](const sensor_msgs::msg::Joy::SharedPtr msg){ cbJoy(msg); });
     sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel_input",
-        1, std::bind(&JoystickInterrupt::cbTwist, this, _1));
+        1,[this](const geometry_msgs::msg::Twist::SharedPtr msg){ cbTwist(msg); });
     pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
         2);
@@ -182,8 +181,6 @@ public:
     linear_y_vel_ = this->declare_parameter("linear_y_vel", 0.0);
     linear_y_axis_ = this->declare_parameter("linear_y_axis", -1);
     linear_y_axis2_ = this->declare_parameter("linear_y_axis2", -1);
-
-    last_joy_msg_ = rclcpp::Time(0L, RCL_ROS_TIME);
 
     if (interrupt_button_ < 0)
     {
