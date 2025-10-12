@@ -59,7 +59,7 @@ public:
     pub_cmd_vel_ = nh_->create_publisher<geometry_msgs::msg::Twist>("cmd_vel_input", 1);
     pub_joy_ = nh_->create_publisher<sensor_msgs::msg::Joy>("joy", 1);
     using std::placeholders::_1;
-    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_topic, 1, std::bind(&JoystickInterruptTest::cbCmdVel, this, _1));
+    sub_cmd_vel_ = nh_->create_subscription<geometry_msgs::msg::Twist>(cmd_vel_topic, 1, [this](const geometry_msgs::msg::Twist::ConstSharedPtr msg){ cbCmdVel(msg); });
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -383,7 +383,7 @@ public:
     pub2_ = nh_->create_publisher<std_msgs::msg::Int32>("mux_input1", 1);
     pub_joy_ = nh_->create_publisher<sensor_msgs::msg::Joy>("joy", 1);
     using std::placeholders::_1;
-    sub_ = nh_->create_subscription<std_msgs::msg::Int32>("mux_output", 1, std::bind(&JoystickMuxTest::cbMsg, this, _1));
+    sub_ = nh_->create_subscription<std_msgs::msg::Int32>("mux_output", 1, [this](const std_msgs::msg::Int32::ConstSharedPtr msg){ cbMsg(msg); });
 
     rclcpp::Rate wait(10);
     for (size_t i = 0; i < 100; ++i)
@@ -433,95 +433,6 @@ public:
   }
 };
 
-// ! No support for topic_tools::ShapeShifter in ROS2
-// TEST_F(JoystickMuxTest, Interrupt)
-// {
-//   publish1(0);
-//   publish2(0);
-//   waitPublisher();
-//   for (int btn = 0; btn < 2; ++btn)
-//   {
-//     publishJoy(btn);
-//     rclcpp::sleep_for(std::chrono::seconds(1));
-//     rclcpp::Rate rate(20);
-//     for (int i = 0; i < 15; ++i)
-//     {
-//       publishJoy(btn);
-//       publish1(i);
-//       publish2(-i);
-
-//       rate.sleep();
-//       rclcpp::spin_some(nh_);
-
-//       if (i < 5)
-//         continue;
-
-//       ASSERT_TRUE(static_cast<bool>(msg_)) << "button: " << btn;
-//       if (btn)
-//       {
-//         ASSERT_NEAR(-i, msg_->data, 2) << "button: " << btn;
-//       }
-//       else
-//       {
-//         ASSERT_NEAR(i, msg_->data, 2) << "button:" << btn;
-//       }
-//     }
-//   }
-// }
-/*
-TEST_F(JoystickMuxTest, Timeout)
-{
-  publish1(0);
-  publish2(0);
-  waitPublisher();
-  rclcpp::Rate rate(20);
-  publishJoy(1);
-  for (int i = 0; i < 20; ++i)
-  {
-    publish1(i);
-    publish2(-i);
-
-    rate.sleep();
-    rclcpp::spin_some(nh_);
-
-    if (i < 5)
-      continue;
-
-    ASSERT_TRUE(static_cast<bool>(msg_));
-    if (i < 10)
-    {
-      ASSERT_NEAR(-i, msg_->data, 2);
-    }
-    else if (i > 13)
-    {
-      // after timeout
-      ASSERT_NEAR(i, msg_->data, 2);
-    }
-  }
-}
-
-TEST_F(JoystickMuxTest, ButtonNumberInsufficient)
-{
-  publish1(0);
-  publish2(0);
-  waitPublisher();
-  rclcpp::Rate rate(20);
-  for (int i = 0; i < 20; ++i)
-  {
-    publishEmptyJoy();
-    publish1(i);
-    publish2(-i);
-
-    rate.sleep();
-    rclcpp::spin_some(nh_);
-
-    if (i < 3)
-      continue;
-
-    ASSERT_TRUE(static_cast<bool>(msg_));
-    ASSERT_NEAR(i, msg_->data, 2);
-  }
-}*/
 
 int main(int argc, char** argv)
 {
