@@ -1,0 +1,43 @@
+track_odometry:
+  enable_tcp_no_delay:
+    type: bool
+    default_value: true
+  without_odom:
+    type: bool
+    default_value: false
+  odom_id:
+    type: string
+    default_value: odom
+  sync_window:
+    type: int
+    default_value: 50
+  z_filter_timeconst:
+    type: double
+    default_value: -1.0
+  tf_tolerance:
+    type: double
+    default_value: 0.01
+  use_kf:
+    type: bool
+    default_value: true
+  enable_negative_slip:
+    type: bool
+    default_value: false
+  debug:
+    type: bool
+    default_value: false
+  publish_tf:
+    type: bool
+    default_value: true
+  sigma_odom:
+    type: double
+    default_value: 0.005
+    description: standard deviation of odometry angular vel on straight running [rad/s]
+  sigma_predict:
+    type: double
+    default_value: 0.5
+    description: prediction sigma of Kalman filter [sigma/second]
+  predict_filter_tc:
+    type: double
+    default_value: 1.0
+    description: LPF time-constant to forget estimated slip_ ratio [sec.]
