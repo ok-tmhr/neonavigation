@@ -35,6 +35,8 @@
     <param name="align_all_posture_to_source" value="true" />
   </node>
 
-  <node pkg="tf2_ros" exec="static_transform_publisher" name="test_static_pub" args="1 2 3 0 0 0.7071 0.7071 map base_link" />
-  <node pkg="tf2_ros" exec="static_transform_publisher" name="test_static_pub2" args="1 2 3 0.1830 0.1830 0.6830 0.6830 map base_link_tilt" />
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="test_static_pub"
+    args="--x 1 --y 2 --z 3 --qx 0 --qy 0 --qz 0.7071 --qw 0.7071 --frame-id map --child-frame-id base_link" />
+  <node pkg="tf2_ros" exec="static_transform_publisher" name="test_static_pub2"
+    args="--x 1 --y 2 --z 3 --qx 0.1830 --qy 0.1830 --qz 0.6830 --qw 0.6830 --frame-id map --child-frame-id base_link_tilt" />
 </launch>
