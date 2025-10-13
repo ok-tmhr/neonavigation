@@ -76,7 +76,7 @@ namespace trajectory_tracker
 class TrackerNode : public rclcpp::Node
 {
 public:
-  TrackerNode();
+  TrackerNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~TrackerNode();
 
 private:
@@ -184,7 +184,7 @@ private:
   void cbParameter();
 };
 
-TrackerNode::TrackerNode() : Node("trajectory_tracker")
+TrackerNode::TrackerNode(const rclcpp::NodeOptions& options) : Node("trajectory_tracker", options)
 , is_path_updated_(false)
 , prev_odom_stamp_(0L, RCL_ROS_TIME)
 {
@@ -742,11 +742,5 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
 }
 }  // namespace trajectory_tracker
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-  auto track = std::make_shared<trajectory_tracker::TrackerNode>();
-  rclcpp::spin(track);
-
-  return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(trajectory_tracker::TrackerNode)

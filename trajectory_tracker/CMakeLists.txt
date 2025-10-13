@@ -6,8 +6,12 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-
-ament_auto_add_executable(trajectory_tracker src/trajectory_tracker.cpp)
+rclcpp_components_auto_register_node(
+  trajectory_tracker
+  PLUGIN trajectory_tracker::TrackerNode
+  PARAMETERS param/trajectory_tracker_parameters.yaml
+  src/trajectory_tracker.cpp
+)
 
 rclcpp_components_auto_register_node(
   trajectory_recorder
