@@ -47,11 +47,13 @@
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/path.hpp>
 
+namespace trajectory_tracker
+{
 
 class SaverNode : public rclcpp::Node
 {
 public:
-  SaverNode();
+  SaverNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~SaverNode();
   void save();
 
@@ -64,17 +66,17 @@ private:
   void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg);
 };
 
-SaverNode::SaverNode() : Node("trajectory_saver")
+SaverNode::SaverNode(const rclcpp::NodeOptions& options) : Node("trajectory_saver", options)
   , saved_(false)
 {
   filename_ = this->declare_parameter("file", std::string("a.path"));
 
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
-      rclcpp::QoS(10).transient_local(), std::bind(&SaverNode::cbPath, this, std::placeholders::_1));
+      rclcpp::QoS(10).transient_local(), [this](const nav_msgs::msg::Path::ConstSharedPtr msg){ cbPath(msg); });
   timer_ = this->create_wall_timer(
-    std::chrono::duration<double>(1.0 / 5.0),
-    std::bind(&SaverNode::save, this));
+    std::chrono::milliseconds(200),
+    [this](){ save(); });
 }
 SaverNode::~SaverNode()
 {
@@ -105,7 +107,7 @@ void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
 
 void SaverNode::save()
 {
-  RCLCPP_INFO(this->get_logger(), "Waiting for the path");
+  RCLCPP_INFO_ONCE(this->get_logger(), "Waiting for the path");
 
   if (saved_)
   {
@@ -114,12 +116,13 @@ void SaverNode::save()
   }
 
 }
+}
 
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
 
-  auto rec = std::make_shared<SaverNode>();
+  auto rec = std::make_shared<trajectory_tracker::SaverNode>();
   rclcpp::spin(rec);
 
   return 0;

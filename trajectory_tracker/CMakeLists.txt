@@ -1,89 +1,34 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(trajectory_tracker)
 
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
-endif()
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-set(COLCON_DEPENDS
-  rclcpp
 
-  geometry_msgs
-  interactive_markers
-  nav_msgs
-  std_srvs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros
+ament_auto_add_executable(trajectory_tracker src/trajectory_tracker.cpp)
 
-  trajectory_tracker_msgs
+rclcpp_components_auto_register_node(
+  trajectory_recorder
+  PLUGIN trajectory_tracker::RecorderNode
+  src/trajectory_recorder.cpp
 )
 
-find_package(ament_cmake REQUIRED)
-foreach(COLCON_DEPEND ${COLCON_DEPENDS})
-  find_package(${COLCON_DEPEND} REQUIRED)
-endforeach()
-find_package(Eigen3 REQUIRED)
+ament_auto_add_executable(trajectory_saver src/trajectory_saver.cpp)
 
-
-include_directories(include)
-
-
-add_executable(trajectory_tracker src/trajectory_tracker.cpp)
-target_include_directories(trajectory_tracker PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-ament_target_dependencies(trajectory_tracker Eigen3 ${COLCON_DEPENDS})
-
-add_executable(trajectory_recorder src/trajectory_recorder.cpp)
-target_include_directories(trajectory_recorder PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-ament_target_dependencies(trajectory_recorder ${COLCON_DEPENDS})
-
-add_executable(trajectory_saver src/trajectory_saver.cpp)
-target_include_directories(trajectory_saver PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-ament_target_dependencies(trajectory_saver ${COLCON_DEPENDS})
-
-add_executable(trajectory_server src/trajectory_server.cpp)
-target_include_directories(trajectory_server PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-ament_target_dependencies(trajectory_server ${COLCON_DEPENDS})
+rclcpp_components_auto_register_node(
+  trajectory_server
+  PLUGIN trajectory_tracker::ServerNode
+  src/trajectory_server.cpp
+)
 
 
 if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  find_package(launch_testing_ament_cmake REQUIRED)
+  ament_auto_find_test_dependencies()
   add_subdirectory(test)
-
-  find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
 endif()
 
 
-install(TARGETS
-    trajectory_recorder
-    trajectory_saver
-    trajectory_server
-    trajectory_tracker
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY include/${PROJECT_NAME}
-  DESTINATION include
-)
-
-ament_export_include_directories(include)
-
-ament_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
 
