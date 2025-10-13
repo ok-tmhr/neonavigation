@@ -168,13 +168,13 @@ TrackerNode::TrackerNode(const rclcpp::NodeOptions& options) : Node("trajectory_
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(2).transient_local(),
-      std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
+      [this](const nav_msgs::msg::Path::ConstSharedPtr msg){ cbPath<nav_msgs::msg::Path>(msg); });
   sub_path_velocity_ = this->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
       "path_velocity", rclcpp::QoS(2).transient_local(),
-      std::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
+      [this](const trajectory_tracker_msgs::msg::PathWithVelocity::ConstSharedPtr msg){ cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>(msg); });
   sub_vel_ = this->create_subscription<std_msgs::msg::Float32>(
       "speed",
-      20, std::bind(&TrackerNode::cbSpeed, this, _1));
+      20, [this](const std_msgs::msg::Float32::ConstSharedPtr msg){ cbSpeed(msg); });
   pub_vel_ = this->create_publisher<geometry_msgs::msg::Twist>(
       "cmd_vel",
       10);
@@ -182,8 +182,7 @@ TrackerNode::TrackerNode(const rclcpp::NodeOptions& options) : Node("trajectory_
   pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", rclcpp::QoS(10).transient_local());
   if (params_.use_odom)
   {
-    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackerNode::cbOdometry, this, _1)
-                                                  );
+    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", 10, [this](const nav_msgs::msg::Odometry::ConstSharedPtr odom){ cbOdometry(odom); });
   }
 
   tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -194,7 +193,7 @@ TrackerNode::TrackerNode(const rclcpp::NodeOptions& options) : Node("trajectory_
 
   if (!params_.use_odom)
   {
-    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / params_.hz), std::bind(&TrackerNode::cbTimer, this));
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / params_.hz), [this](){ cbTimer(); });
   }
 
 }
@@ -263,7 +262,7 @@ void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
   if (params_.odom_timeout_sec != 0.0)
   {
     odom_timeout_timer_ =
-        this->create_wall_timer(std::chrono::duration<double>(params_.odom_timeout_sec), std::bind(&TrackerNode::cbOdomTimeout, this));
+        this->create_wall_timer(std::chrono::duration<double>(params_.odom_timeout_sec), [this](){ cbOdomTimeout(); });
   }
 
   if (prev_odom_stamp_ != rclcpp::Time(0L, RCL_ROS_TIME))
@@ -301,7 +300,7 @@ void TrackerNode::cbTimer()
   {
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
-        tfbuf_->lookupTransform(params_.frame_odom, params_.frame_robot, rclcpp::Time(0L, RCL_ROS_TIME)), transform);
+        tfbuf_->lookupTransform(params_.frame_odom, params_.frame_robot, tf2::TimePointZero), transform);
     control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / params_.hz);
   }
   catch (tf2::TransformException& e)
