@@ -6,11 +6,6 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-# Binary installed pcl provided by Linux distro is built with -march=native
-# which causes a lot of compatibility problems.
-# Define PCL_NO_PRECOMPILE to disable using the binary version.
-add_definitions(-DPCL_NO_PRECOMPILE)
-
 generate_parameter_library(
   pointcloud_to_maps_parameters
   param/pointcloud_to_maps_parameters.yaml
@@ -56,5 +51,5 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
 
