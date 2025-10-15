@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
+#pragma once
 
 #include <cassert>
 #include <memory>
@@ -165,4 +164,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H

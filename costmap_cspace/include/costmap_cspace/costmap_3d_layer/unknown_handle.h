@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
+#pragma once
 
 #include <memory>
 
@@ -101,4 +100,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H

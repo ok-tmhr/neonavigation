@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -453,4 +452,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
