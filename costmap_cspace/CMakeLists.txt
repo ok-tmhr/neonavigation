@@ -8,15 +8,30 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
 
-ament_auto_add_executable(costmap_3d src/costmap_3d.cpp)
-target_link_libraries(costmap_3d costmap_3d_layers)
+rclcpp_components_auto_register_node(
+  costmap_3d
+  PLUGIN costmap_cspace::Costmap3DOFNode
+  src/costmap_3d.cpp
+)
+target_link_libraries(costmap_3d_component costmap_3d_layers)
 
-ament_auto_add_executable(laserscan_to_map src/laserscan_to_map.cpp)
+rclcpp_components_auto_register_node(
+  laserscan_to_map
+  PLUGIN costmap_cspace::LaserscanToMapNode
+  src/laserscan_to_map.cpp
+)
 
-ament_auto_add_executable(pointcloud2_to_map src/pointcloud2_to_map.cpp)
+rclcpp_components_auto_register_node(
+  pointcloud2_to_map
+  PLUGIN costmap_cspace::Pointcloud2ToMapNode
+  src/pointcloud2_to_map.cpp
+)
 
-ament_auto_add_executable(largemap_to_map src/largemap_to_map.cpp)
-
+rclcpp_components_auto_register_node(
+  largemap_to_map
+  PLUGIN costmap_cspace::LargeMapToMapNode
+  src/largemap_to_map.cpp
+)
 
 if(BUILD_TESTING)
   ament_auto_find_test_dependencies()

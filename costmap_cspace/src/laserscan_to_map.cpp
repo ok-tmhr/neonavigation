@@ -43,6 +43,8 @@
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 
+namespace costmap_cspace
+{
 class LaserscanToMapNode : public rclcpp::Node
 {
 private:
@@ -68,7 +70,7 @@ private:
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
-  LaserscanToMapNode() : Node("laserscan_to_map")
+  LaserscanToMapNode(const rclcpp::NodeOptions& options) : Node("laserscan_to_map", options)
   , published_(0L, RCL_ROS_TIME)
   , publish_interval_(0, 0)
   {
@@ -177,13 +179,7 @@ private:
     pub_map_->publish(map);
   }
 };
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto conv = std::make_shared<LaserscanToMapNode>();
-  rclcpp::spin(conv);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::LaserscanToMapNode)

@@ -42,6 +42,8 @@
 
 #include <costmap_cspace/costmap_3d.h>
 
+namespace costmap_cspace
+{
 class Costmap3DOFNode : public rclcpp::Node
 {
 protected:
@@ -175,7 +177,7 @@ protected:
   };
 
 public:
-  Costmap3DOFNode() : Node("costmap_3d")
+  Costmap3DOFNode(const rclcpp::NodeOptions& options) : Node("costmap_3d", options)
   {
       pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
         "costmap",
@@ -345,13 +347,4 @@ public:
         [=](){cbPublishFootprint(footprint_msg);});
   }
 };
-
-int main(int argc, char* argv[])
-{
-  rclcpp::init(argc, argv);
-
-  auto cm = std::make_shared<Costmap3DOFNode>();
-  rclcpp::spin(cm);
-
-  return 0;
 }

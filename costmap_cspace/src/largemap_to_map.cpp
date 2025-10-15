@@ -41,6 +41,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+namespace costmap_cspace
+{
 
 class LargeMapToMapNode : public rclcpp::Node
 {
@@ -62,7 +64,7 @@ private:
   std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
-  LargeMapToMapNode() : Node("largemap_to_map")
+  LargeMapToMapNode(const rclcpp::NodeOptions& options) : Node("largemap_to_map", options)
   {
       robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
@@ -203,13 +205,7 @@ private:
     pub_map_->publish(map);
   }
 };
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto conv = std::make_shared<LargeMapToMapNode>();
-  rclcpp::spin(conv);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::LargeMapToMapNode)

@@ -42,6 +42,9 @@
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 
+namespace costmap_cspace
+{
+
 class Pointcloud2ToMapNode : public rclcpp::Node
 {
 private:
@@ -67,7 +70,7 @@ private:
   std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>> accums_;
 
 public:
-  Pointcloud2ToMapNode() : Node("pointcloud2_to_map")
+  Pointcloud2ToMapNode(const rclcpp::NodeOptions& options) : Node("pointcloud2_to_map", options)
     , published_(0L, RCL_ROS_TIME)
     , publish_interval_(0, 0)
     , accums_(2)
@@ -189,13 +192,7 @@ private:
     pub_map_->publish(map_);
   }
 };
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto conv = std::make_shared<Pointcloud2ToMapNode>();
-  rclcpp::spin(conv);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::Pointcloud2ToMapNode)
