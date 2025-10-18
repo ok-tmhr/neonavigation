@@ -40,6 +40,7 @@
 #include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/costmap_3d_layer/footprint.h>
 
+#include <costmap_cspace/plain_parameters.hpp>
 namespace costmap_cspace
 {
 class Costmap3dLayerPlain : public Costmap3dLayerFootprint
@@ -59,24 +60,13 @@ public:
   }
   void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    if (config.name.empty())
-    {
-    const int linear_spread_min_cost =
-    config.linear_spread_min_cost;
+    auto param_listener = std::make_shared<plain::ParamListener>(node.get_node_parameters_interface(), config.name);
+    auto params = param_listener->get_params();
     setExpansion(
-      config.linear_expand,
-      config.linear_spread,
-      linear_spread_min_cost);
-    }
-    else
-    {
-    const int linear_spread_min_cost =
-        node.declare_parameter(config.name + ".linear_spread_min_cost", 0);
-    setExpansion(
-        node.declare_parameter<float>(config.name + ".linear_expand", 0.2f),
-        node.declare_parameter<float>(config.name + ".linear_spread", 0.5f),
-        linear_spread_min_cost);
-    }
+      static_cast<float>(params.linear_expand),
+      static_cast<float>(params.linear_spread),
+      static_cast<int>(params.linear_spread_min_cost)
+    );
   }
 };
 }  // namespace costmap_cspace

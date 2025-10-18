@@ -6,10 +6,8 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
-
 generate_parameter_library(
-  plan_parameters
+  plain_parameters
   param/costmap_3d_layer/plain_parameters.yaml
 )
 
@@ -18,9 +16,18 @@ generate_parameter_library(
   param/costmap_3d_layer/unknown_handle_parameters.yaml
 )
 
+generate_parameter_library(
+  footprint_parameters
+  param/costmap_3d_layer/footprint_parameters.yaml
+)
+
+ament_auto_add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
+target_link_libraries(costmap_3d_layers plain_parameters unknown_handle_parameters footprint_parameters)
+
 rclcpp_components_auto_register_node(
   costmap_3d
   PLUGIN costmap_cspace::Costmap3DOFNode
+  PARAMETERS param/costmap_3d_parameters.yaml
   src/costmap_3d.cpp
 )
 target_link_libraries(costmap_3d_component costmap_3d_layers)

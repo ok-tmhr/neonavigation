@@ -39,6 +39,7 @@
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 
+#include <costmap_cspace/unknown_handle_parameters.hpp>
 namespace costmap_cspace
 {
 class Costmap3dLayerUnknownHandle : public Costmap3dLayerBase
@@ -56,7 +57,8 @@ public:
   }
   void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    unknown_cost_ = node.declare_parameter(config.name + ".unknown_cost", unknown_cost_);
+    auto param_listener = std::make_shared<unknown_handle::ParamListener>(node.get_node_parameters_interface(), config.name);
+    unknown_cost_ = param_listener->get_params().unknown_cost;
   }
   void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& /*info*/)
   {

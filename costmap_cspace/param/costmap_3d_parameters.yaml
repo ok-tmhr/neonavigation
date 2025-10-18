@@ -13,27 +13,31 @@ costmap_3d:
   linear_spread_min_cost:
     type: int
     default_value: 0
+  overlay_mode:
+    type: string
+    default_value: max
+    validation:
+      one_of<>: [[max, overwrite]]
   static_layers:
     type: string_array
     default_value: []
     validation:
-      subset<>: [[]]
-  __map_static_layers:
-    overlay_mode:
-      type: string
-      default_value: max
-      validation:
-        one_of<>: [max]
-    type:
-      type: string
-      validation:
-        one_of<>: []
-    footprint:
-      type: string
-      default_value: ""
+      unique<>: null
   layers:
     type: string_array
     validation:
-      subset<>: []
-  __map_layers:
+      unique<>: null
+  __map_static_layers: &layer
     overlay_mode:
+      type: string
+      default_value: ""
+      validation:
+        one_of<>: [[max, overwrite, ""]]
+    type:
+      type: string
+      validation:
+        one_of<>: [[Costmap3dLayerFootprint, Costmap3dLayerPlain, Costmap3dLayerStopPropagation, Costmap3dLayerUnknownHandle]]
+    footprint:
+      type: string
+      default_value: ""
+  __map_layers: *layer

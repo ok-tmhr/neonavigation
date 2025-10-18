@@ -42,6 +42,8 @@
 
 #include <costmap_cspace/costmap_3d.h>
 
+#include <costmap_cspace/costmap_3d_parameters.hpp>
+
 namespace costmap_cspace
 {
 class Costmap3DOFNode : public rclcpp::Node
@@ -61,14 +63,17 @@ protected:
                 costmap_cspace::Costmap3dLayerBase::SharedPtr>>
       map_buffer_;
 
+  std::shared_ptr<costmap_3d::ParamListener> param_listener_;
+  costmap_3d::Params params_;
+
   void cbMap(
       const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
       const costmap_cspace::Costmap3dLayerBase::SharedPtr map)
   {
     if (map->getAngularGrid() <= 0)
     {
-      RCLCPP_ERROR(this->get_logger(), "ang_resolution is not set.");
-      std::runtime_error("ang_resolution is not set.");
+      RCLCPP_ERROR(this->get_logger(), "params_.ang_resolution is not set.");
+      std::runtime_error("params_.ang_resolution is not set.");
     }
     RCLCPP_INFO(this->get_logger(), "2D costmap received");
 
@@ -179,7 +184,7 @@ protected:
 public:
   Costmap3DOFNode(const rclcpp::NodeOptions& options) : Node("costmap_3d", options)
   {
-      pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
+    pub_costmap_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3D>(
         "costmap",
         rclcpp::QoS(1).transient_local());
     pub_costmap_update_ = this->create_publisher<costmap_cspace_msgs::msg::CSpace3DUpdate>(
@@ -188,19 +193,13 @@ public:
     pub_footprint_ = this->create_publisher<geometry_msgs::msg::PolygonStamped>("~/footprint", rclcpp::QoS(2).transient_local());
     pub_debug_ = this->create_publisher<sensor_msgs::msg::PointCloud>("~/debug", rclcpp::QoS(1).transient_local());
 
-    int ang_resolution;
-    ang_resolution = this->declare_parameter("ang_resolution", 16);
+    param_listener_ = std::make_shared<costmap_3d::ParamListener>(get_node_parameters_interface());
+    params_ = param_listener_->get_params();
 
-    auto footprint_xml = this->declare_parameter("footprint", "");
-    if (footprint_xml.empty())
-    {
-      RCLCPP_FATAL(this->get_logger(), "Footprint doesn't specified");
-      throw std::runtime_error("Footprint doesn't specified.");
-    }
     costmap_cspace::Polygon footprint;
     try
     {
-      footprint = costmap_cspace::Polygon(footprint_xml);
+      footprint = costmap_cspace::Polygon(params_.footprint);
     }
     catch (const std::exception& e)
     {
@@ -208,50 +207,35 @@ public:
       throw e;
     }
 
-    costmap_.reset(new costmap_cspace::Costmap3d(ang_resolution));
+    costmap_.reset(new costmap_cspace::Costmap3d(params_.ang_resolution));
 
     auto root_layer = costmap_->addRootLayer<costmap_cspace::Costmap3dLayerFootprint>();
-    float linear_expand;
-    float linear_spread;
-    linear_expand = this->declare_parameter("linear_expand", 0.2f);
-    linear_spread = this->declare_parameter("linear_spread", 0.5f);
-    int linear_spread_min_cost;
-    linear_spread_min_cost = this->declare_parameter("linear_spread_min_cost", 0);
-    root_layer->setExpansion(linear_expand, linear_spread, linear_spread_min_cost);
+    root_layer->setExpansion(params_.linear_expand, params_.linear_spread, params_.linear_spread_min_cost);
     root_layer->setFootprint(footprint);
 
-    std::vector<std::string> static_layers;
-    static_layers = this->declare_parameter("static_layers", static_layers);
     {
-      for (size_t i = 0; i < static_layers.size(); ++i)
+      for (const auto& [name, static_layer] : params_.static_layers_map)
       {
         costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml;
-        layer_xml.name = static_layers[i];
+        layer_xml.name = name;
         RCLCPP_INFO(this->get_logger(), "New static layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
-        layer_xml.overlay_mode = this->declare_parameter(layer_xml.name + ".overlay_mode", "");
+        layer_xml.overlay_mode = static_layer.overlay_mode;
         if (!layer_xml.overlay_mode.empty())
           overlay_mode = getMapOverlayModeFromString(
               layer_xml.overlay_mode);
         else
           RCLCPP_WARN(this->get_logger(), "overlay_mode of the static layer is not specified. Using MAX mode.");
 
-        std::string type = this->declare_parameter(layer_xml.name + ".type", "");
-        if (!type.empty())
-          layer_xml.type = type;
-        else
-        {
-          RCLCPP_FATAL(this->get_logger(), "Layer type is not specified.");
-          throw std::runtime_error("Layer type is not specified.");
-        }
+        layer_xml.type = static_layer.type;
 
-        layer_xml.footprint = this->declare_parameter(layer_xml.name + ".footprint", "");
+        layer_xml.footprint = static_layer.footprint;
         if (layer_xml.footprint.empty())
-          layer_xml.footprint = footprint_xml;
+          layer_xml.footprint = params_.footprint;
 
         costmap_cspace::Costmap3dLayerBase::SharedPtr layer =
-            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+            costmap_cspace::Costmap3dLayerClassLoader::loadClass(static_layer.type);
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml, *this);
 
@@ -268,39 +252,30 @@ public:
         "map", rclcpp::QoS(1).transient_local(),
         [this, root_layer](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg){return cbMap(msg, root_layer);});
 
-    std::vector<std::string> layers;
-    layers = this->declare_parameter("layers", layers);
-    if (layers.size() > 0)
+    if (params_.layers.size() > 0)
     {
-      for (size_t i = 0; i < layers.size(); ++i)
+      for (const auto& [name, dynamic_layer] : params_.layers_map)
       {
         auto layer_xml = costmap_cspace::Costmap3dLayerBase::LayerConfig();
-        layer_xml.name = layers[i];
+        layer_xml.name = name;
         RCLCPP_INFO(this->get_logger(), "New layer: %s", layer_xml.name.c_str());
 
         costmap_cspace::MapOverlayMode overlay_mode(costmap_cspace::MapOverlayMode::MAX);
-        layer_xml.overlay_mode = this->declare_parameter(layer_xml.name + ".overlay_mode", "");
+        layer_xml.overlay_mode = dynamic_layer.overlay_mode;
         if (!layer_xml.overlay_mode.empty())
           overlay_mode = getMapOverlayModeFromString(
               layer_xml.overlay_mode);
         else
           RCLCPP_WARN(this->get_logger(), "overlay_mode of the layer is not specified. Using MAX mode.");
 
-        std::string type = this->declare_parameter(layer_xml.name + ".type", "");
-        if (!type.empty())
-          layer_xml.type = type;
-        else
-        {
-          RCLCPP_FATAL(this->get_logger(), "Layer type is not specified.");
-          throw std::runtime_error("Layer type is not specified.");
-        }
+        layer_xml.type = dynamic_layer.type;
 
-        layer_xml.footprint = this->declare_parameter(layer_xml.name + ".footprint", "");
+        layer_xml.footprint = dynamic_layer.footprint;
         if (layer_xml.footprint.empty())
-          layer_xml.footprint = footprint_xml;
+          layer_xml.footprint = params_.footprint;
 
         costmap_cspace::Costmap3dLayerBase::SharedPtr layer =
-            costmap_cspace::Costmap3dLayerClassLoader::loadClass(type);
+            costmap_cspace::Costmap3dLayerClassLoader::loadClass(layer_xml.type);
         costmap_->addLayer(layer, overlay_mode);
         layer->loadConfig(layer_xml, *this);
 
@@ -314,7 +289,7 @@ public:
       // Single layer mode for backward-compatibility
       costmap_cspace::MapOverlayMode overlay_mode;
       std::string overlay_mode_str;
-      overlay_mode_str = this->declare_parameter("overlay_mode", std::string("max"));
+      overlay_mode_str = params_.overlay_mode;
       if (overlay_mode_str.compare("overwrite") == 0)
         overlay_mode = costmap_cspace::MapOverlayMode::OVERWRITE;
       else if (overlay_mode_str.compare("max") == 0)
@@ -327,9 +302,9 @@ public:
       RCLCPP_INFO(this->get_logger(), "costmap_3d: %s mode", overlay_mode_str.c_str());
 
       costmap_cspace::Costmap3dLayerBase::LayerConfig layer_xml;
-      layer_xml.footprint = footprint_xml;
-      layer_xml.linear_expand = linear_expand;
-      layer_xml.linear_spread = linear_spread;
+      layer_xml.footprint = params_.footprint;
+      layer_xml.linear_expand = params_.linear_expand;
+      layer_xml.linear_spread = params_.linear_spread;
 
       auto layer = costmap_->addLayer<costmap_cspace::Costmap3dLayerFootprint>(overlay_mode);
       layer->loadConfig(layer_xml, *this);
@@ -348,3 +323,6 @@ public:
   }
 };
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::Costmap3DOFNode)
