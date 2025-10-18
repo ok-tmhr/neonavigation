@@ -101,6 +101,12 @@ public:
 
     return costmap_overlay;
   }
+  std::shared_ptr<Costmap3dLayerBase> addLayer(
+      std::shared_ptr<Costmap3dLayerBase> costmap_overlay,
+      const std::string& overlay_mode)
+  {
+    return addLayer(costmap_overlay, mapOverlayMode(overlay_mode));
+  }
   std::shared_ptr<Costmap3dLayerBase> getRootLayer()
   {
     return costmaps_.front();

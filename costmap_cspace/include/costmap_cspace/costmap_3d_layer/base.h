@@ -94,10 +94,23 @@ public:
   }
 };
 
-enum MapOverlayMode
+enum class MapOverlayMode
 {
   OVERWRITE,
   MAX
+};
+
+MapOverlayMode mapOverlayMode(const std::string& mode)
+{
+  if (mode == "overwrite")
+  {
+    return MapOverlayMode::OVERWRITE;
+  }
+  else if (mode == "max")
+  {
+    return MapOverlayMode::MAX;
+  }
+  throw std::runtime_error("Unkown overlay_mode specified: '" + mode + "'");
 };
 
 class UpdatedRegion
@@ -256,14 +269,7 @@ public:
   using SharedPtr = std::shared_ptr<Costmap3dLayerBase>;
   struct LayerConfig {
     std::string name;
-    std::string type;
-    std::string overlay_mode;
     std::string footprint;
-    double linear_expand;
-    double linear_spread;
-    int linear_spread_min_cost = 0;
-    bool keep_unknown = false;
-    int8_t unknown_cost = -1;
   };
 
 protected:

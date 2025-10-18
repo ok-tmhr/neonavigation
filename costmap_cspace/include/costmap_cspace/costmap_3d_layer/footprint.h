@@ -225,7 +225,7 @@ protected:
       CSpace3DMsg::SharedPtr map,
       const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
-    if (overlay_mode_ != OVERWRITE || root_)
+    if (overlay_mode_ != MapOverlayMode::OVERWRITE || root_)
     {
       return;
     }
