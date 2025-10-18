@@ -30,9 +30,9 @@ costmap_3d:
   __map_static_layers: &layer
     overlay_mode:
       type: string
-      default_value: ""
+      default_value: max
       validation:
-        one_of<>: [[max, overwrite, ""]]
+        one_of<>: [[max, overwrite]]
     type:
       type: string
       validation:
