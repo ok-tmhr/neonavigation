@@ -4,15 +4,6 @@ costmap_3d:
     default_value: 16
   footprint:
     type: string
-  linear_expand:
-    type: double
-    default_value: 0.2
-  linear_spread:
-    type: double
-    default_value: 0.5
-  linear_spread_min_cost:
-    type: int
-    default_value: 0
   overlay_mode:
     type: string
     default_value: max
