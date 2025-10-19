@@ -11,7 +11,7 @@
     <remap from="move_base_simple/goal" to="/goal" />
   </node>
   <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
-    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/data/global_map.yaml" />
   </node>
   <node pkg="tf2_ros" exec="static_transform_publisher" name="stf1"
         args="0 0 0 0 0 0 map odom" />

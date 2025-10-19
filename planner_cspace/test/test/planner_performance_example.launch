@@ -27,7 +27,7 @@
   </node>
 
   <executable name="goal"
-      launch-prefix="$(find-pkg-share planner_cspace)/test/script/delayed_launch.sh 3"
+      launch-prefix="$(find-pkg-share planner_cspace)/script/delayed_launch.sh 3"
       cmd="ros2 topic pub -1 /move_base_simple/goal geometry_msgs/msg/PoseStamped
         '{header: {frame_id: map}, pose: {position: {x: 1.5}, orientation: {z: 0.707, w: 0.707}}}'
         --qos-durability transient_local --keep-alive 3 -n goal" />

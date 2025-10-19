@@ -30,7 +30,7 @@
   </node>
 
   <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
-    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/data/global_map.yaml" />
   </node>
   <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
     <remap from="map_local" to="overlay" />
