@@ -1,0 +1,94 @@
+planner_2dof_serial_joints:
+  debug_aa:
+    type: bool
+    default_value: false
+  replan_interval:
+    type: double
+    default_value: 0.2
+  group_names:
+    type: string_array
+    default_value: [group0]
+  __map_group_names:
+    resolution:
+      type: int
+      default_value: 128
+    queue_size_limit:
+      type: int
+      default_value: 0
+    link0_name:
+      type: string
+      default_value: link0
+    link0_joint_radius:
+      type: double
+      default_value: 0.07
+    link0_end_radius:
+      type: double
+      default_value: 0.07
+    link0_length:
+      type: double
+      default_value: 0.135
+    link0_x:
+      type: double
+      default_value: 0.22
+    link0_y:
+      type: double
+      default_value: 0.0
+    link0_th:
+      type: double
+      default_value: 0.0
+    link0_gain_th:
+      type: double
+      default_value: -1.0
+    link0_vmax:
+      type: double
+      default_value: 0.5
+    link1_name:
+      type: string
+      default_value: link1
+    link1_joint_radius:
+      type: double
+      default_value: 0.07
+    link1_end_radius:
+      type: double
+      default_value: 0.07
+    link1_length:
+      type: double
+      default_value: 0.27
+    link1_x:
+      type: double
+      default_value: -0.22
+    link1_y:
+      type: double
+      default_value: 0.0
+    link1_th:
+      type: double
+      default_value: 0.0
+    link1_gain_th:
+      type: double
+      default_value: 1.0
+    link1_vmax:
+      type: double
+      default_value: 0.5
+    link0_coef:
+      type: double
+      default_value: 1.0
+    link1_coef:
+      type: double
+      default_value: 1.5
+    weight_cost:
+      type: double
+      default_value: 4.0
+    expand:
+      type: double
+      default_value: 0.1
+    point_vel_mode:
+      type: string
+      default_value: prev
+      validation:
+        one_of<>: [[prev, next, avg]]
+    range:
+      type: int
+      default_value: 8
+    num_threads:
+      type: int
+      default_value: 1

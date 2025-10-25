@@ -10,6 +10,11 @@ find_package(OpenMP REQUIRED)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
 
+generate_parameter_library(
+  planner_2dof_serial_joints_parameters
+  param/planner_2dof_serial_joints_parameters.yaml
+)
+
 ament_auto_add_executable(planner_3d
   src/costmap_bbf.cpp
   src/grid_astar_model_3dof.cpp
@@ -35,7 +40,7 @@ ament_auto_add_executable(planner_2dof_serial_joints
   src/planner_2dof_serial_joints.cpp
   src/grid_astar_model_2dof_joints.cpp
 )
-target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS})
+target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS} planner_2dof_serial_joints_parameters)
 
 ament_auto_add_executable(dummy_robot src/dummy_robot.cpp)
 

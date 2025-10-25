@@ -49,7 +49,7 @@
 
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_2dof_serial_joints/grid_astar_model.h>
-
+#include <planner_cspace/planner_2dof_serial_joints_parameters.hpp>
 
 namespace planner_cspace
 {
@@ -368,7 +368,7 @@ private:
   }
 
 public:
-  explicit Planner2dofSerialJointsNode(const std::string group_name) : Node("planner_2dof_serial_joints")
+  explicit Planner2dofSerialJointsNode(const std::string& group_name, const ::planner_2dof_serial_joints::Params& params) : Node(group_name, "planner_2dof_serial_joints")
     , replan_prev_(0L, RCL_ROS_TIME)
     , replan_interval_(0, 0)
     , has_joint_states_(false)
@@ -378,27 +378,28 @@ public:
 
     using std::placeholders::_1;
     pub_trajectory_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
-        "joint_trajectory",
+        "/joint_trajectory",
         rclcpp::QoS(1).transient_local());
     sub_trajectory_ = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
-        "trajectory_in",
+        "/trajectory_in",
         1, std::bind(&Planner2dofSerialJointsNode::cbTrajectory, this, _1));
     sub_joint_ = this->create_subscription<sensor_msgs::msg::JointState>(
-        "joint_states",
+        "/joint_states",
         1, std::bind(&Planner2dofSerialJointsNode::cbJoint, this, _1));
 
-    pub_status_ = this->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + group_ + "/status", rclcpp::QoS(1).transient_local());
+    pub_status_ = this->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/status", rclcpp::QoS(1).transient_local());
 
-    resolution_ = this->declare_parameter("~/" + group_ + "/resolution", 128);
-    debug_aa_ = this->declare_parameter("debug_aa", false);
+    const auto& link_group = params.group_names_map.at(group_);
+    resolution_ = link_group.resolution;
+    debug_aa_ = params.debug_aa;
 
     double interval;
-    interval = this->declare_parameter("replan_interval", 0.2);
+    interval = params.replan_interval;
     replan_interval_ = rclcpp::Duration::from_seconds(interval);
     replan_prev_ = rclcpp::Time(0L, RCL_ROS_TIME);
 
     int queue_size_limit;
-    queue_size_limit = this->declare_parameter(group_ + ".queue_size_limit", 0);
+    queue_size_limit = link_group.queue_size_limit;
     as_.setQueueSizeLimit(queue_size_limit);
 
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
@@ -407,24 +408,24 @@ public:
     as_.reset(Astar::Vec(resolution_ * 2, resolution_ * 2));
     cm_.clear(0);
 
-    links_[0].name_ = this->declare_parameter(group_ + ".link0_name", std::string("link0"));
-    links_[0].radius_[0] = this->declare_parameter(group_ + ".link0_joint_radius", 0.07f);
-    links_[0].radius_[1] = this->declare_parameter(group_ + ".link0_end_radius", 0.07f);
-    links_[0].length_ = this->declare_parameter(group_ + ".link0_length", 0.135f);
-    links_[0].origin_.x_ = this->declare_parameter(group_ + ".link0_x", 0.22f);
-    links_[0].origin_.y_ = this->declare_parameter(group_ + ".link0_y", 0.0f);
-    links_[0].origin_.th_ = this->declare_parameter(group_ + ".link0_th", 0.0f);
-    links_[0].gain_.th_ = this->declare_parameter(group_ + ".link0_gain_th", -1.0f);
-    links_[0].vmax_ = this->declare_parameter(group_ + ".link0_vmax", 0.5f);
-    links_[1].name_ = this->declare_parameter(group_ + ".link1_name", std::string("link1"));
-    links_[1].radius_[0] = this->declare_parameter(group_ + ".link1_joint_radius", 0.07f);
-    links_[1].radius_[1] = this->declare_parameter(group_ + ".link1_end_radius", 0.07f);
-    links_[1].length_ = this->declare_parameter(group_ + ".link1_length", 0.27f);
-    links_[1].origin_.x_ = this->declare_parameter(group_ + ".link1_x", -0.22f);
-    links_[1].origin_.y_ = this->declare_parameter(group_ + ".link1_y", 0.0f);
-    links_[1].origin_.th_ = this->declare_parameter(group_ + ".link1_th", 0.0f);
-    links_[1].gain_.th_ = this->declare_parameter(group_ + ".link1_gain_th", 1.0f);
-    links_[1].vmax_ = this->declare_parameter(group_ + ".link1_vmax", 0.5f);
+    links_[0].name_ = link_group.link0_name;
+    links_[0].radius_[0] = link_group.link0_joint_radius;
+    links_[0].radius_[1] = link_group.link0_end_radius;
+    links_[0].length_ = link_group.link0_length;
+    links_[0].origin_.x_ = link_group.link0_x;
+    links_[0].origin_.y_ = link_group.link0_y;
+    links_[0].origin_.th_ = link_group.link0_th;
+    links_[0].gain_.th_ = link_group.link0_gain_th;
+    links_[0].vmax_ = link_group.link0_vmax;
+    links_[1].name_ = link_group.link1_name;
+    links_[1].radius_[0] = link_group.link1_joint_radius;
+    links_[1].radius_[1] = link_group.link1_end_radius;
+    links_[1].length_ = link_group.link1_length;
+    links_[1].origin_.x_ = link_group.link1_x;
+    links_[1].origin_.y_ = link_group.link1_y;
+    links_[1].origin_.th_ = link_group.link1_th;
+    links_[1].gain_.th_ = link_group.link1_gain_th;
+    links_[1].vmax_ = link_group.link1_vmax;
 
     links_[0].current_th_ = 0.0;
     links_[1].current_th_ = 0.0;
@@ -436,15 +437,15 @@ public:
     RCLCPP_INFO(this->get_logger(), " - link1: %s", links_[1].name_.c_str());
 
     Astar::Vecf euclid_cost_coef;
-    euclid_cost_coef[0] = this->declare_parameter(group_ + ".link0_coef", 1.0f);
-    euclid_cost_coef[1] = this->declare_parameter(group_ + ".link1_coef", 1.5f);
+    euclid_cost_coef[0] = link_group.link0_coef;
+    euclid_cost_coef[1] = link_group.link1_coef;
 
     CostCoeff cc;
-    cc.weight_cost_ = this->declare_parameter(group_ + ".weight_cost", 4.0f);
-    cc.expand_ = this->declare_parameter(group_ + ".expand", 0.1f);
+    cc.weight_cost_ = link_group.weight_cost;
+    cc.expand_ = link_group.expand;
 
     std::string point_vel_mode;
-    point_vel_mode = this->declare_parameter(group_ + ".point_vel_mode", std::string("prev"));
+    point_vel_mode = link_group.point_vel_mode;
     std::transform(point_vel_mode.begin(), point_vel_mode.end(), point_vel_mode.begin(), ::tolower);
     if (point_vel_mode.compare("prev") == 0)
       point_vel_ = VEL_PREV;
@@ -499,7 +500,7 @@ public:
     }
 
     int range;
-    range = this->declare_parameter(group_ + ".range", 8);
+    range = link_group.range;
 
     model_.reset(new GridAstarModel2DoFSerialJoint(
         euclid_cost_coef,
@@ -509,7 +510,7 @@ public:
         range));
 
     int num_threads;
-    num_threads = this->declare_parameter(group_ + ".num_threads", 1);
+    num_threads = link_group.num_threads;
     omp_set_num_threads(num_threads);
 
     tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -672,17 +673,15 @@ int main(int argc, char* argv[])
   rclcpp::executors::SingleThreadedExecutor executor;
   rclcpp::Node::SharedPtr pnh = rclcpp::Node::make_shared("planner_2dof_serial_joints");
 
-  std::vector<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::SharedPtr> jys;
-  int n;
-  n = pnh->declare_parameter("num_groups", 1);
-  for (int i = 0; i < n; i++)
-  {
-    std::string name;
-    name = pnh->declare_parameter("group" + std::to_string(i) + "_name",
-              std::string("group") + std::to_string(i));
-    planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode::SharedPtr jy;
+  auto param_listener = std::make_shared<planner_2dof_serial_joints::ParamListener>(pnh);
+  auto params = param_listener->get_params();
 
-    jy.reset(new planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode(name));
+  using Planner2dofSerialJointsNode = planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode;
+
+  std::vector<Planner2dofSerialJointsNode::SharedPtr> jys;
+  for (const auto& name : params.group_names)
+  {
+    auto jy = std::make_shared<Planner2dofSerialJointsNode>(name, params);
     jys.push_back(jy);
     executor.add_node(jy);
   }
