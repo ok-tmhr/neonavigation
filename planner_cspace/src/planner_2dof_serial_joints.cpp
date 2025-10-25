@@ -369,13 +369,12 @@ private:
   }
 
 public:
-  explicit Planner2dofSerialJoints(rclcpp::Node::SharedPtr node, const ::planner_2dof_serial_joints::Params& params)
-    : replan_prev_(0L, RCL_ROS_TIME)
+  explicit Planner2dofSerialJoints(rclcpp::Node::SharedPtr node, const ::planner_2dof_serial_joints::Params& params) : node_(node)
+    , replan_prev_(0L, RCL_ROS_TIME)
     , replan_interval_(0, 0)
     , has_joint_states_(false)
     , cmd_prev_(rclcpp::Duration(0,0),{})
   {
-    node_ = node;
     group_ = node_->get_sub_namespace();
 
     pub_trajectory_ = node_->create_publisher<trajectory_msgs::msg::JointTrajectory>(
@@ -388,7 +387,7 @@ public:
         "/joint_states",
         1, [this](sensor_msgs::msg::JointState::ConstSharedPtr msg){ cbJoint(msg); });
 
-    pub_status_ = node_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + node_->get_sub_namespace() + "/status", rclcpp::QoS(1).transient_local());
+    pub_status_ = node_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + group_ + "/status", rclcpp::QoS(1).transient_local());
 
     const auto& link_group = params.group_names_map.at(group_);
     resolution_ = link_group.resolution;
@@ -667,8 +666,7 @@ class Planner2dofSerialJointsNode : public rclcpp::Node
 
     for (const auto& name : params_.group_names)
     {
-      auto node = create_sub_node(name);
-      auto jy = std::make_shared<Planner2dofSerialJoints>(node, params_);
+      auto jy = std::make_shared<Planner2dofSerialJoints>(create_sub_node(name), params_);
       jys.push_back(jy);
     }
 
