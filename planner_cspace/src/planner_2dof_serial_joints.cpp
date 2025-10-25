@@ -55,7 +55,7 @@ namespace planner_cspace
 {
 namespace planner_2dof_serial_joints
 {
-class Planner2dofSerialJointsNode : public rclcpp::Node
+class Planner2dofSerialJointsNode
 {
 public:
   using Astar = GridAstar<2, 0>;
@@ -173,14 +173,14 @@ private:
     }
     if (id[0] == -1 || id[1] == -1)
     {
-      RCLCPP_ERROR(this->get_logger(), "joint_state does not contain link group %s.", group_.c_str());
+      RCLCPP_ERROR(node_->get_logger(), "joint_state does not contain link group %s.", group_.c_str());
       return;
     }
     links_[0].current_th_ = msg->position[id[0]];
     links_[1].current_th_ = msg->position[id[1]];
     has_joint_states_ = true;
 
-    if ((replan_prev_ + replan_interval_ < this->now() ||
+    if ((replan_prev_ + replan_interval_ < node_->now() ||
          replan_prev_ == rclcpp::Time(0L, RCL_ROS_TIME)) &&
         replan_interval_ > rclcpp::Duration::from_seconds(0))
     {
@@ -203,12 +203,12 @@ private:
     }
     if (id_[0] == -1 || id_[1] == -1)
     {
-      RCLCPP_ERROR(this->get_logger(), "joint_trajectory does not contains link group %s.", group_.c_str());
+      RCLCPP_ERROR(node_->get_logger(), "joint_trajectory does not contains link group %s.", group_.c_str());
       return;
     }
     if (msg->points.size() != 1)
     {
-      RCLCPP_ERROR(this->get_logger(), "single trajectory point required.");
+      RCLCPP_ERROR(node_->get_logger(), "single trajectory point required.");
     }
     decltype(cmd_prev_) cmd{rclcpp::Duration(0,0),{}};
     cmd.first = msg->points[0].time_from_start;
@@ -227,7 +227,7 @@ private:
     if (!has_joint_states_)
       return;
 
-    replan_prev_ = this->now();
+    replan_prev_ = node_->now();
     if (id_[0] == -1 || id_[1] == -1)
       return;
 
@@ -238,18 +238,18 @@ private:
         static_cast<float>(traj_prev_.points[0].positions[id_[0]]),
         static_cast<float>(traj_prev_.points[0].positions[id_[1]]));
 
-    RCLCPP_INFO(this->get_logger(), "link %s: %0.3f, %0.3f", group_.c_str(),
+    RCLCPP_INFO(node_->get_logger(), "link %s: %0.3f, %0.3f", group_.c_str(),
              traj_prev_.points[0].positions[id_[0]],
              traj_prev_.points[0].positions[id_[1]]);
 
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DOING;
     status_.error = planner_cspace_msgs::msg::PlannerStatus::GOING_WELL;
 
-    RCLCPP_INFO(this->get_logger(), "Start searching");
+    RCLCPP_INFO(node_->get_logger(), "Start searching");
     std::list<Astar::Vecf> path;
     if (makePlan(start, end, path))
     {
-      RCLCPP_INFO(this->get_logger(), "Trajectory found");
+      RCLCPP_INFO(node_->get_logger(), "Trajectory found");
 
       if (avg_vel_ < 0)
       {
@@ -361,35 +361,35 @@ private:
       out.points.push_back(p);
       pub_trajectory_->publish(out);
 
-      RCLCPP_WARN(this->get_logger(), "Trajectory not found");
+      RCLCPP_WARN(node_->get_logger(), "Trajectory not found");
     }
 
-    status_.header.stamp = this->now();
+    status_.header.stamp = node_->now();
     pub_status_->publish(status_);
   }
 
 public:
-  explicit Planner2dofSerialJointsNode(const std::string& group_name, const std::string& node_namespace, const ::planner_2dof_serial_joints::Params& params) : Node(group_name, node_namespace)
-    , replan_prev_(0L, RCL_ROS_TIME)
+  explicit Planner2dofSerialJointsNode(rclcpp::Node::SharedPtr node, const ::planner_2dof_serial_joints::Params& params)
+    : replan_prev_(0L, RCL_ROS_TIME)
     , replan_interval_(0, 0)
     , has_joint_states_(false)
     , cmd_prev_(rclcpp::Duration(0,0),{})
   {
-    node_ = this->create_sub_node(group_name);
-    group_ = group_name;
+    node_ = node;
+    group_ = node_->get_sub_namespace();
 
     using std::placeholders::_1;
-    pub_trajectory_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
+    pub_trajectory_ = node_->create_publisher<trajectory_msgs::msg::JointTrajectory>(
         "/joint_trajectory",
         rclcpp::QoS(1).transient_local());
-    sub_trajectory_ = this->create_subscription<trajectory_msgs::msg::JointTrajectory>(
+    sub_trajectory_ = node_->create_subscription<trajectory_msgs::msg::JointTrajectory>(
         "/trajectory_in",
         1, std::bind(&Planner2dofSerialJointsNode::cbTrajectory, this, _1));
-    sub_joint_ = this->create_subscription<sensor_msgs::msg::JointState>(
+    sub_joint_ = node_->create_subscription<sensor_msgs::msg::JointState>(
         "/joint_states",
         1, std::bind(&Planner2dofSerialJointsNode::cbJoint, this, _1));
 
-    pub_status_ = node_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("status", rclcpp::QoS(1).transient_local());
+    pub_status_ = node_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + node_->get_sub_namespace() + "/status", rclcpp::QoS(1).transient_local());
 
     const auto& link_group = params.group_names_map.at(group_);
     resolution_ = link_group.resolution;
@@ -434,9 +434,9 @@ public:
     id_[0] = -1;
     id_[1] = -1;
 
-    RCLCPP_INFO(this->get_logger(), "link group: %s", group_.c_str());
-    RCLCPP_INFO(this->get_logger(), " - link0: %s", links_[0].name_.c_str());
-    RCLCPP_INFO(this->get_logger(), " - link1: %s", links_[1].name_.c_str());
+    RCLCPP_INFO(node_->get_logger(), "link group: %s", group_.c_str());
+    RCLCPP_INFO(node_->get_logger(), " - link0: %s", links_[0].name_.c_str());
+    RCLCPP_INFO(node_->get_logger(), " - link1: %s", links_[1].name_.c_str());
 
     Astar::Vecf euclid_cost_coef;
     euclid_cost_coef[0] = link_group.link0_coef;
@@ -456,9 +456,9 @@ public:
     else if (point_vel_mode.compare("avg") == 0)
       point_vel_ = VEL_AVG;
     else
-      RCLCPP_ERROR(this->get_logger(), "point_vel_mode must be prev/next/avg");
+      RCLCPP_ERROR(node_->get_logger(), "point_vel_mode must be prev/next/avg");
 
-    RCLCPP_INFO(this->get_logger(), "Resolution: %d", resolution_);
+    RCLCPP_INFO(node_->get_logger(), "Resolution: %d", resolution_);
     Astar::Vec p;
     for (p[0] = 0; p[0] < resolution_ * 2; p[0]++)
     {
@@ -515,7 +515,7 @@ public:
     num_threads = link_group.num_threads;
     omp_set_num_threads(num_threads);
 
-    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
@@ -551,18 +551,18 @@ private:
     Astar::Vec s, e;
     metric2Grid(s, sg);
     metric2Grid(e, eg);
-    RCLCPP_INFO(this->get_logger(), "Planning from (%d, %d) to (%d, %d)",
+    RCLCPP_INFO(node_->get_logger(), "Planning from (%d, %d) to (%d, %d)",
              s[0], s[1], e[0], e[1]);
 
     if (cm_[s] == 100)
     {
-      RCLCPP_WARN(this->get_logger(), "Path plan failed (current status is in collision)");
+      RCLCPP_WARN(node_->get_logger(), "Path plan failed (current status is in collision)");
       status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     if (cm_[e] == 100)
     {
-      RCLCPP_WARN(this->get_logger(), "Path plan failed (goal status is in collision)");
+      RCLCPP_WARN(node_->get_logger(), "Path plan failed (goal status is in collision)");
       status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
@@ -592,12 +592,12 @@ private:
             std::bind(&Planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1, std::placeholders::_2),
             0, cancel, true))
     {
-      RCLCPP_WARN(this->get_logger(), "Path plan failed (goal unreachable)");
+      RCLCPP_WARN(node_->get_logger(), "Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
     // const auto tnow = std::chrono::high_resolution_clock::now();
-    // RCLCPP_INFO(this->get_logger(), "Path found (%0.3f sec.)",
+    // RCLCPP_INFO(node_->get_logger(), "Path found (%0.3f sec.)",
     //   std::chrono::duration<float>(tnow - ts).count());
 
     bool first = false;
@@ -612,7 +612,7 @@ private:
         continue;
       }
       if (i == 0)
-        RCLCPP_INFO(this->get_logger(), "  next: %d, %d", n[0], n[1]);
+        RCLCPP_INFO(node_->get_logger(), "  next: %d, %d", n[0], n[1]);
       Astar::Vec n_diff = n - n_prev;
       n_diff.cycle(resolution_, resolution_);
       Astar::Vec n2 = n_prev + n_diff;
@@ -681,11 +681,12 @@ int main(int argc, char* argv[])
   using Planner2dofSerialJointsNode = planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode;
 
   std::vector<Planner2dofSerialJointsNode::SharedPtr> jys;
+  std::vector<rclcpp::Node::SharedPtr> sub_nodes;
   for (const auto& name : params.group_names)
   {
-    auto jy = std::make_shared<Planner2dofSerialJointsNode>(name, pnh->get_name(), params);
+    auto node = pnh->create_sub_node(name);
+    auto jy = std::make_shared<Planner2dofSerialJointsNode>(node, params);
     jys.push_back(jy);
-    executor.add_node(jy);
   }
 
   executor.add_node(pnh);
