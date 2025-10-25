@@ -378,16 +378,15 @@ public:
     node_ = node;
     group_ = node_->get_sub_namespace();
 
-    using std::placeholders::_1;
     pub_trajectory_ = node_->create_publisher<trajectory_msgs::msg::JointTrajectory>(
         "/joint_trajectory",
         rclcpp::QoS(1).transient_local());
     sub_trajectory_ = node_->create_subscription<trajectory_msgs::msg::JointTrajectory>(
         "/trajectory_in",
-        1, std::bind(&Planner2dofSerialJoints::cbTrajectory, this, _1));
+        1, [this](trajectory_msgs::msg::JointTrajectory::ConstSharedPtr msg){ cbTrajectory(msg); });
     sub_joint_ = node_->create_subscription<sensor_msgs::msg::JointState>(
         "/joint_states",
-        1, std::bind(&Planner2dofSerialJoints::cbJoint, this, _1));
+        1, [this](sensor_msgs::msg::JointState::ConstSharedPtr msg){ cbJoint(msg); });
 
     pub_status_ = node_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + node_->get_sub_namespace() + "/status", rclcpp::QoS(1).transient_local());
 
@@ -395,14 +394,10 @@ public:
     resolution_ = link_group.resolution;
     debug_aa_ = params.debug_aa;
 
-    double interval;
-    interval = params.replan_interval;
-    replan_interval_ = rclcpp::Duration::from_seconds(interval);
+    replan_interval_ = rclcpp::Duration::from_seconds(params.replan_interval);
     replan_prev_ = rclcpp::Time(0L, RCL_ROS_TIME);
 
-    int queue_size_limit;
-    queue_size_limit = link_group.queue_size_limit;
-    as_.setQueueSizeLimit(queue_size_limit);
+    as_.setQueueSizeLimit(link_group.queue_size_limit);
 
     status_.status = planner_cspace_msgs::msg::PlannerStatus::DONE;
 
@@ -449,11 +444,11 @@ public:
     std::string point_vel_mode;
     point_vel_mode = link_group.point_vel_mode;
     std::transform(point_vel_mode.begin(), point_vel_mode.end(), point_vel_mode.begin(), ::tolower);
-    if (point_vel_mode.compare("prev") == 0)
+    if (point_vel_mode == "prev")
       point_vel_ = VEL_PREV;
-    else if (point_vel_mode.compare("next") == 0)
+    else if (point_vel_mode == "next")
       point_vel_ = VEL_NEXT;
-    else if (point_vel_mode.compare("avg") == 0)
+    else if (point_vel_mode == "avg")
       point_vel_ = VEL_AVG;
     else
       RCLCPP_ERROR(node_->get_logger(), "point_vel_mode must be prev/next/avg");
@@ -469,8 +464,6 @@ public:
 
         if (links_[0].isCollide(links_[1], pf[0], pf[1]))
           cm_[p] = 100;
-        // else if(pf[0] > M_PI || pf[1] > M_PI)
-        //   cm_[p] = 50;
         else
           cm_[p] = 0;
       }
@@ -501,19 +494,14 @@ public:
       }
     }
 
-    int range;
-    range = link_group.range;
-
-    model_.reset(new GridAstarModel2DoFSerialJoint(
+    model_ = std::make_shared<GridAstarModel2DoFSerialJoint>(
         euclid_cost_coef,
         resolution_,
         cm_,
         cc,
-        range));
+        link_group.range);
 
-    int num_threads;
-    num_threads = link_group.num_threads;
-    omp_set_num_threads(num_threads);
+    omp_set_num_threads(link_group.num_threads);
 
     tfbuf_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
@@ -589,16 +577,13 @@ private:
       cancel = replan_interval_.seconds();
     if (!as_.search(
             starts, e, path_grid, model_,
-            std::bind(&Planner2dofSerialJoints::cbProgress, this, std::placeholders::_1, std::placeholders::_2),
+            [this](const std::list<Astar::Vec>& path_grid, const SearchStats& stats){ return cbProgress(path_grid, stats); },
             0, cancel, true))
     {
       RCLCPP_WARN(node_->get_logger(), "Path plan failed (goal unreachable)");
       status_.error = planner_cspace_msgs::msg::PlannerStatus::PATH_NOT_FOUND;
       return false;
     }
-    // const auto tnow = std::chrono::high_resolution_clock::now();
-    // RCLCPP_INFO(node_->get_logger(), "Path found (%0.3f sec.)",
-    //   std::chrono::duration<float>(tnow - ts).count());
 
     bool first = false;
     Astar::Vec n_prev = s;
