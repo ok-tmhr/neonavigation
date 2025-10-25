@@ -55,11 +55,11 @@ namespace planner_cspace
 {
 namespace planner_2dof_serial_joints
 {
-class Planner2dofSerialJointsNode
+class Planner2dofSerialJoints
 {
 public:
   using Astar = GridAstar<2, 0>;
-  using SharedPtr = std::shared_ptr<Planner2dofSerialJointsNode>;
+  using SharedPtr = std::shared_ptr<Planner2dofSerialJoints>;
 
 private:
   rclcpp::Publisher<planner_cspace_msgs::msg::PlannerStatus>::SharedPtr pub_status_;
@@ -369,7 +369,7 @@ private:
   }
 
 public:
-  explicit Planner2dofSerialJointsNode(rclcpp::Node::SharedPtr node, const ::planner_2dof_serial_joints::Params& params)
+  explicit Planner2dofSerialJoints(rclcpp::Node::SharedPtr node, const ::planner_2dof_serial_joints::Params& params)
     : replan_prev_(0L, RCL_ROS_TIME)
     , replan_interval_(0, 0)
     , has_joint_states_(false)
@@ -384,10 +384,10 @@ public:
         rclcpp::QoS(1).transient_local());
     sub_trajectory_ = node_->create_subscription<trajectory_msgs::msg::JointTrajectory>(
         "/trajectory_in",
-        1, std::bind(&Planner2dofSerialJointsNode::cbTrajectory, this, _1));
+        1, std::bind(&Planner2dofSerialJoints::cbTrajectory, this, _1));
     sub_joint_ = node_->create_subscription<sensor_msgs::msg::JointState>(
         "/joint_states",
-        1, std::bind(&Planner2dofSerialJointsNode::cbJoint, this, _1));
+        1, std::bind(&Planner2dofSerialJoints::cbJoint, this, _1));
 
     pub_status_ = node_->create_publisher<planner_cspace_msgs::msg::PlannerStatus>("~/" + node_->get_sub_namespace() + "/status", rclcpp::QoS(1).transient_local());
 
@@ -589,7 +589,7 @@ private:
       cancel = replan_interval_.seconds();
     if (!as_.search(
             starts, e, path_grid, model_,
-            std::bind(&Planner2dofSerialJointsNode::cbProgress, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&Planner2dofSerialJoints::cbProgress, this, std::placeholders::_1, std::placeholders::_2),
             0, cancel, true))
     {
       RCLCPP_WARN(node_->get_logger(), "Path plan failed (goal unreachable)");
@@ -666,31 +666,37 @@ private:
     return false;
   }
 };
+
+class Planner2dofSerialJointsNode : public rclcpp::Node
+{
+  std::shared_ptr<::planner_2dof_serial_joints::ParamListener> param_listener_;
+  ::planner_2dof_serial_joints::Params params_;
+  std::vector<Planner2dofSerialJoints::SharedPtr> jys;
+  std::vector<rclcpp::Node::SharedPtr> sub_nodes;
+
+  public:
+  Planner2dofSerialJointsNode(const rclcpp::NodeOptions& options) : Node("planner_2dof_serial_joints", options)
+  {
+    param_listener_ = std::make_shared<::planner_2dof_serial_joints::ParamListener>(get_node_parameters_interface());
+    params_ = param_listener_->get_params();
+
+    for (const auto& name : params_.group_names)
+    {
+      auto node = create_sub_node(name);
+      auto jy = std::make_shared<Planner2dofSerialJoints>(node, params_);
+      jys.push_back(jy);
+    }
+
+  }
+};
+
 }  // namespace planner_2dof_serial_joints
 }  // namespace planner_cspace
 
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor executor;
-  rclcpp::Node::SharedPtr pnh = rclcpp::Node::make_shared("planner_2dof_serial_joints");
-
-  auto param_listener = std::make_shared<planner_2dof_serial_joints::ParamListener>(pnh);
-  auto params = param_listener->get_params();
-
-  using Planner2dofSerialJointsNode = planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode;
-
-  std::vector<Planner2dofSerialJointsNode::SharedPtr> jys;
-  std::vector<rclcpp::Node::SharedPtr> sub_nodes;
-  for (const auto& name : params.group_names)
-  {
-    auto node = pnh->create_sub_node(name);
-    auto jy = std::make_shared<Planner2dofSerialJointsNode>(node, params);
-    jys.push_back(jy);
-  }
-
-  executor.add_node(pnh);
-  executor.spin();
+  rclcpp::spin(std::make_shared<planner_cspace::planner_2dof_serial_joints::Planner2dofSerialJointsNode>(rclcpp::NodeOptions()));
 
   return 0;
 }
