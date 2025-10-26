@@ -607,9 +607,9 @@ private:
     float prec = 2.0 * M_PI / static_cast<float>(resolution_);
     Astar::Vecf egp = eg;
     if (egp[0] < 0)
-      egp[0] += std::ceil(-egp[0] / M_PI * 2.0) * M_PI * 2.0;
+      egp[0] += std::ceil(-egp[0] * M_2_PI) * M_PI * 2.0;
     if (egp[1] < 0)
-      egp[1] += std::ceil(-egp[1] / M_PI * 2.0) * M_PI * 2.0;
+      egp[1] += std::ceil(-egp[1] * M_2_PI) * M_PI * 2.0;
     path.back()[0] += fmod(egp[0] + prec / 2.0, prec) - prec / 2.0;
     path.back()[1] += fmod(egp[1] + prec / 2.0, prec) - prec / 2.0;
 
