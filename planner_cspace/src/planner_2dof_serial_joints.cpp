@@ -79,7 +79,7 @@ private:
   float freq_min_;
   int resolution_;
   float avg_vel_;
-  enum PointVelMode
+  enum class PointVelMode
   {
     VEL_PREV,
     VEL_NEXT,
@@ -166,9 +166,9 @@ private:
     int id[2] = {-1, -1};
     for (size_t i = 0; i < msg->name.size(); i++)
     {
-      if (msg->name[i].compare(links_[0].name_) == 0)
+      if (msg->name[i] == links_[0].name_)
         id[0] = i;
-      else if (msg->name[i].compare(links_[1].name_) == 0)
+      else if (msg->name[i] == links_[1].name_)
         id[1] = i;
     }
     if (id[0] == -1 || id[1] == -1)
@@ -196,9 +196,9 @@ private:
     id_[1] = -1;
     for (size_t i = 0; i < msg->joint_names.size(); i++)
     {
-      if (msg->joint_names[i].compare(links_[0].name_) == 0)
+      if (msg->joint_names[i] == links_[0].name_)
         id_[0] = i;
-      else if (msg->joint_names[i].compare(links_[1].name_) == 0)
+      else if (msg->joint_names[i] == links_[1].name_)
         id_[1] = i;
     }
     if (id_[0] == -1 || id_[1] == -1)
@@ -319,15 +319,15 @@ private:
           switch (point_vel_)
           {
             default:
-            case VEL_PREV:
+            case PointVelMode::VEL_PREV:
               dir[0] = ((*it)[0] - (*it_prev)[0]);
               dir[1] = ((*it)[1] - (*it_prev)[1]);
               break;
-            case VEL_NEXT:
+            case PointVelMode::VEL_NEXT:
               dir[0] = ((*it_next)[0] - (*it)[0]);
               dir[1] = ((*it_next)[1] - (*it)[1]);
               break;
-            case VEL_AVG:
+            case PointVelMode::VEL_AVG:
               dir[0] = ((*it_next)[0] - (*it_prev)[0]);
               dir[1] = ((*it_next)[1] - (*it_prev)[1]);
               break;
@@ -394,7 +394,6 @@ public:
     debug_aa_ = params.debug_aa;
 
     replan_interval_ = rclcpp::Duration::from_seconds(params.replan_interval);
-    replan_prev_ = rclcpp::Time(0L, RCL_ROS_TIME);
 
     as_.setQueueSizeLimit(link_group.queue_size_limit);
 
@@ -440,15 +439,13 @@ public:
     cc.weight_cost_ = link_group.weight_cost;
     cc.expand_ = link_group.expand;
 
-    std::string point_vel_mode;
-    point_vel_mode = link_group.point_vel_mode;
-    std::transform(point_vel_mode.begin(), point_vel_mode.end(), point_vel_mode.begin(), ::tolower);
+    const auto& point_vel_mode = link_group.point_vel_mode;
     if (point_vel_mode == "prev")
-      point_vel_ = VEL_PREV;
+      point_vel_ = PointVelMode::VEL_PREV;
     else if (point_vel_mode == "next")
-      point_vel_ = VEL_NEXT;
+      point_vel_ = PointVelMode::VEL_NEXT;
     else if (point_vel_mode == "avg")
-      point_vel_ = VEL_AVG;
+      point_vel_ = PointVelMode::VEL_AVG;
     else
       RCLCPP_ERROR(node_->get_logger(), "point_vel_mode must be prev/next/avg");
 
@@ -572,7 +569,7 @@ private:
     std::list<Astar::Vec> path_grid;
     // const auto ts = std::chrono::high_resolution_clock::now();
     float cancel = std::numeric_limits<float>::max();
-    if (replan_interval_ >= rclcpp::Duration::from_seconds(0))
+    if (replan_interval_ >= rclcpp::Duration(0, 0))
       cancel = replan_interval_.seconds();
     if (!as_.search(
             starts, e, path_grid, model_,
