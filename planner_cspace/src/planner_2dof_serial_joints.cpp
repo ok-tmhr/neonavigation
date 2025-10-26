@@ -105,6 +105,14 @@ private:
       {
         return std::hypot(b.x_ - x_, b.y_ - y_);
       }
+
+      explicit Vec3dof() {};
+      explicit Vec3dof(const float x, const float y, const float th)
+      : x_(x)
+      , y_(y)
+      , th_(th)
+      {}
+
     };
 
   public:
@@ -117,10 +125,8 @@ private:
     float current_th_;
 
     LinkBody()
+    : gain_(1.f, 1.f, 1.f)
     {
-      gain_.x_ = 1.0;
-      gain_.y_ = 1.0;
-      gain_.th_ = 1.0;
     }
     Vec3dof end(const float th) const
     {
