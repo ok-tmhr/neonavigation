@@ -211,3 +211,18 @@ endif()
 install(DIRECTORY test data script
   DESTINATION share/${PROJECT_NAME}
 )
+
+install(TARGETS
+    test_debug_outputs
+    test_navigate
+    test_navigate_remember
+    test_navigate_boundary
+    test_abort
+    test_preempt
+    test_costmap_watchdog
+    test_planner_2dof_serial_joints
+    test_planner_3d_map_size
+    test_tolerant_action
+    test_dynamic_parameter_change
+  DESTINATION lib/${PROJECT_NAME}
+)
