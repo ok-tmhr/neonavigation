@@ -579,7 +579,7 @@ private:
       cancel = replan_interval_.seconds();
     if (!as_.search(
             starts, e, path_grid, model_,
-            [this](const std::list<Astar::Vec>& path_grid, const SearchStats& stats){ return cbProgress(path_grid, stats); },
+            [this](const std::list<Astar::Vec>& path_grid_arg, const SearchStats& stats){ return cbProgress(path_grid_arg, stats); },
             0, cancel, true))
     {
       RCLCPP_WARN(node_->get_logger(), "Path plan failed (goal unreachable)");
