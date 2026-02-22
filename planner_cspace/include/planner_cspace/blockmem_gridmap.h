@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
-#define PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
+#pragma once
 
 #include <bitset>
 #include <cassert>
@@ -300,4 +299,3 @@ public:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H

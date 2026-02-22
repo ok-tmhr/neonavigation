@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_JUMP_DETECTOR_H
-#define PLANNER_CSPACE_JUMP_DETECTOR_H
+#pragma once
 
 #include <cmath>
 #include <string>
@@ -124,4 +123,3 @@ public:
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_JUMP_DETECTOR_H

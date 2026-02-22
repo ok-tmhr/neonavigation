@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_CYCLIC_VEC_H
-#define PLANNER_CSPACE_CYCLIC_VEC_H
+#pragma once
 
 #define _USE_MATH_DEFINES
 #include <cassert>
@@ -340,4 +339,3 @@ using CyclicVecFloat = CyclicVecBase<DIM, NONCYCLIC, float>;
 
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_CYCLIC_VEC_H

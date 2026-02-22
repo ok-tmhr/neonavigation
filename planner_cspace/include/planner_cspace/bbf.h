@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_BBF_H
-#define PLANNER_CSPACE_BBF_H
+#pragma once
 
 namespace planner_cspace
 {
@@ -86,4 +85,3 @@ public:
 };  // namespace bbf
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_BBF_H
