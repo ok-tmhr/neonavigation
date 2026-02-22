@@ -75,14 +75,14 @@ private:
   static_assert(isPowOf2(BLOCK_WIDTH), "BLOCK_WIDTH must be power of 2");
   static_assert(BLOCK_WIDTH > 0, "BLOCK_WIDTH must be >0");
 
-  static constexpr size_t log2Recursive(const size_t v, const size_t depth = 0)
+  static constexpr size_t log2Recursive(const size_t v, const size_t depth = 0UL)
   {
-    return v == 1 ? depth : log2Recursive(v >> 1, depth + 1);
+    return v == 1UL ? depth : log2Recursive(v >> 1, depth + 1UL);
   }
 
 protected:
   constexpr static size_t block_bit_ = log2Recursive(BLOCK_WIDTH);
-  constexpr static size_t block_bit_mask_ = (1 << block_bit_) - 1;
+  constexpr static size_t block_bit_mask_ = (1 << block_bit_) - 1UL;
 
   std::unique_ptr<T[]> c_;
   CyclicVecInt<DIM, NONCYCLIC> size_;
@@ -96,8 +96,8 @@ protected:
   inline void block_addr(
       const CyclicVecInt<DIM, NONCYCLIC>& pos, size_t& baddr, size_t& addr) const
   {
-    addr = 0;
-    baddr = 0;
+    addr = 0UL;
+    baddr = 0UL;
     for (int i = 0; i < NONCYCLIC; i++)
     {
       addr = (addr << block_bit_) + (pos[i] & block_bit_mask_);

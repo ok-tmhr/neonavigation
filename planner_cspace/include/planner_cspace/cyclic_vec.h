@@ -48,25 +48,21 @@ namespace planner_cspace
 namespace cyclic_vec_type_conversion_rule
 {
 template <typename T>
-void convert(const T val, float& ret)
+inline void convert(const T val, float& ret)
 {
-  ret = val;
-}
-inline void convert(const int val, float& ret)
-{
-  ret = val;
+  ret = static_cast<float>(val);
 }
 inline void convert(const float val, int& ret)
 {
-  ret = std::lround(val);
+  ret = static_cast<int>(std::lround(val));
 }
 
 inline void normalizeFloatAngle(float& val)
 {
-  if (val > M_PI)
-    val -= 2 * M_PI;
-  else if (val < -M_PI)
-    val += 2 * M_PI;
+  if (val > M_PIf)
+    val -= 2.f * M_PIf;
+  else if (val < -M_PIf)
+    val += 2.f * M_PIf;
 }
 inline void normalizeFloatAngle(int&)
 {
