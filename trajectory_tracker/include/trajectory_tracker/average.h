@@ -29,8 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_AVERAGE_H
-#define TRAJECTORY_TRACKER_AVERAGE_H
+#pragma once
 
 namespace trajectory_tracker
 {
@@ -61,4 +60,3 @@ private:
 };
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_AVERAGE_H

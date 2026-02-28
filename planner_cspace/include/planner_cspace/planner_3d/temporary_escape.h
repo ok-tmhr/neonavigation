@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
-#define PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
+#pragma once
 
 #include <planner_cspace_msgs/msg/planner_status.hpp>
 
@@ -70,6 +69,3 @@ TemporaryEscapeStatus operator|(const TemporaryEscapeStatus& a, const TemporaryE
 }
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_TEMPORARY_ESCAPE_H
-

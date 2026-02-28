@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_TEST_H
-#define TRAJECTORY_TRACKER_TEST_H
+#pragma once
 
 #include <algorithm>
 #include <iostream>
@@ -330,4 +329,3 @@ std::ostream& operator<<(std::ostream& os, const TrajectoryTrackerStatus::ConstS
 }
 }  // namespace trajectory_tracker_msgs
 
-#endif  // TRAJECTORY_TRACKER_TEST_H

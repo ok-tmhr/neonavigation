@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
-#define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
+#pragma once
 
 #include <memory>
 #include <list>
@@ -122,5 +121,3 @@ protected:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

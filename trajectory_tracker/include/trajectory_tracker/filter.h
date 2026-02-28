@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_FILTER_H
-#define TRAJECTORY_TRACKER_FILTER_H
+#pragma once
 
 #include <cassert>
 #include <cmath>
@@ -105,4 +104,3 @@ public:
 };
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_FILTER_H

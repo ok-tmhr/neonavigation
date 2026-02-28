@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_PATH2D_H
-#define TRAJECTORY_TRACKER_PATH2D_H
+#pragma once
 
 #include <limits>
 #include <utility>
@@ -411,4 +410,3 @@ public:
 };
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_PATH2D_H

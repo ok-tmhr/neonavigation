@@ -28,9 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
-#define PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H
-
+#pragma once
 namespace planner_cspace
 {
 namespace planner_3d
@@ -51,5 +49,3 @@ enum class StartPoseStatus
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_POSE_STATUS_H

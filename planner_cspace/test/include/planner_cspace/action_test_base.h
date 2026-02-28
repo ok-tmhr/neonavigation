@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_ACTION_TEST_BASE_H
-#define PLANNER_CSPACE_ACTION_TEST_BASE_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -136,5 +135,3 @@ protected:
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   bool map_ready_;
 };
-
-#endif  // PLANNER_CSPACE_ACTION_TEST_BASE_H

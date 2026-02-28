@@ -29,8 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_EIGEN_LINE_H
-#define TRAJECTORY_TRACKER_EIGEN_LINE_H
+#pragma once
 
 #include <cmath>
 
@@ -97,4 +96,3 @@ inline Eigen::Vector2d projection2d(
 }
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_EIGEN_LINE_H

@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
-#define PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
+#pragma once
 
 #include <cassert>
 #include <cmath>
@@ -105,5 +104,3 @@ void appendGridPath2MetricPath(
 }  // namespace grid_metric_converter
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
