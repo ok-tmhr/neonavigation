@@ -85,10 +85,10 @@ private:
   void processFeedback(
       const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback);
   void updateIM();
-  enum
+  enum class Menu
   {
-    MENU_DELETE = 1,
-    MENU_ADD = 2
+    DELETE = 1,
+    ADD = 2
   };
   int update_num_;
   int max_markers_;
@@ -151,12 +151,12 @@ void ServerNode::processFeedback(
       pub_path_->publish(path_);
       break;
     case visualization_msgs::msg::InteractiveMarkerFeedback::MENU_SELECT:
-      switch (feedback->menu_entry_id)
+      switch (static_cast<Menu>(feedback->menu_entry_id))
       {
-        case MENU_DELETE:
+        case Menu::DELETE:
           path_.poses.erase(path_.poses.begin() + id);
           break;
-        case MENU_ADD:
+        case Menu::ADD:
           path_.poses.insert(path_.poses.begin() + id, path_.poses[id]);
           break;
       }
@@ -218,12 +218,12 @@ void ServerNode::updateIM()
     ctl.markers[0] = marker;
     mark.controls.push_back(ctl);
 
-    menu.id = MENU_DELETE;
+    menu.id = static_cast<uint32_t>(Menu::DELETE);
     menu.parent_id = 0;
     menu.title = "Delete";
     menu.command_type = menu.FEEDBACK;
     mark.menu_entries.push_back(menu);
-    menu.id = MENU_ADD;
+    menu.id = static_cast<uint32_t>(Menu::ADD);
     menu.parent_id = 0;
     menu.title = "Add";
 
@@ -252,9 +252,9 @@ void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request:
     {
       std::cout << filter_step_ << std::endl;
       lpf_[0] = new trajectory_tracker::Filter(
-          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
+          trajectory_tracker::Filter::Type::LPF, filter_step_, path_.poses[0].pose.position.x);
       lpf_[1] = new trajectory_tracker::Filter(
-          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
+          trajectory_tracker::Filter::Type::LPF, filter_step_, path_.poses[0].pose.position.y);
 
       for (size_t i = 0; i < path_.poses.size(); i++)
       {
