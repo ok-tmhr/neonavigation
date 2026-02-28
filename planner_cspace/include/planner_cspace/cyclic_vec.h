@@ -85,7 +85,7 @@ protected:
     cyclic_vec_type_conversion_rule::convert(first, e_[i]);
     setElements(i + 1, rest...);
   }
-  void setElements(const int i) noexcept
+  void setElements([[maybe_unused]] const int i) noexcept
   {
     assert(i == DIM);
   }
@@ -108,7 +108,7 @@ protected:
     else if (e_[i] >= res / 2)
       e_[i] -= res;
   }
-  void cycleElements(const int i)
+  void cycleElements([[maybe_unused]] const int i)
   {
     assert(i == DIM);
   }
@@ -128,7 +128,7 @@ protected:
     if (e_[i] < 0)
       e_[i] += res;
   }
-  void cycleUnsignedElements(const int i)
+  void cycleUnsignedElements([[maybe_unused]] const int i)
   {
     assert(i == DIM);
   }
@@ -198,32 +198,6 @@ public:
     }
     return out;
   }
-  float cross2d(const CyclicVecBase<DIM, NONCYCLIC, T>& a) const
-  {
-    return (*this)[0] * a[1] - (*this)[1] * a[0];
-  }
-  float dot2d(const CyclicVecBase<DIM, NONCYCLIC, T>& a) const
-  {
-    return (*this)[0] * a[0] + (*this)[1] * a[1];
-  }
-  float distLine2d(
-      const CyclicVecBase<DIM, NONCYCLIC, T>& a,
-      const CyclicVecBase<DIM, NONCYCLIC, T>& b) const
-  {
-    return (b - a).cross2d((*this) - a) / (b - a).len();
-  }
-  float distLinestrip2d(
-      const CyclicVecBase<DIM, NONCYCLIC, T>& a,
-      const CyclicVecBase<DIM, NONCYCLIC, T>& b) const
-  {
-    const auto to_a = (*this) - a;
-    if ((b - a).dot2d(to_a) <= 0)
-      return to_a.len();
-    const auto to_b = (*this) - b;
-    if ((a - b).dot2d(to_b) <= 0)
-      return to_b.len();
-    return std::abs(distLine2d(a, b));
-  }
   T& operator[](const int& x)
   {
     return e_[x];
@@ -258,18 +232,6 @@ public:
       out += std::pow(e_[i], 2);
     }
     return std::sqrt(out);
-  }
-
-  void rotate(const float ang)
-  {
-    const auto tmp = *this;
-    const float cos_v = cosf(ang);
-    const float sin_v = sinf(ang);
-
-    cyclic_vec_type_conversion_rule::convert(cos_v * tmp[0] - sin_v * tmp[1], e_[0]);
-    cyclic_vec_type_conversion_rule::convert(sin_v * tmp[0] + cos_v * tmp[1], e_[1]);
-    this->e_[2] = tmp[2] + ang;
-    cyclic_vec_type_conversion_rule::normalizeFloatAngle(this->e_[2]);
   }
 
   // Cyclic operations
@@ -316,6 +278,512 @@ public:
   }
 
   bool isExceeded(const CyclicVecBase<DIM, NONCYCLIC, int>& v) const
+  {
+    static_assert(
+        std::is_same<int, T>(), "isExceeded is provided only for T=int");
+    for (int i = 0; i < NONCYCLIC; ++i)
+    {
+      if (static_cast<unsigned int>((*this)[i]) >= static_cast<unsigned int>(v[i]))
+        return true;
+    }
+    return false;
+  }
+};
+
+template <int NONCYCLIC, typename T>
+class CyclicVecBase<3, NONCYCLIC, T>
+{
+protected:
+  static_assert(
+      std::is_same<float, T>() || std::is_same<int, T>(), "T must be float or int");
+  T e_[3];
+
+  template <typename T2, typename... ArgList>
+  void setElements(const int i, const T2& first, const ArgList&... rest) noexcept
+  {
+    assert(i < 3);
+
+    cyclic_vec_type_conversion_rule::convert(first, e_[i]);
+    setElements(i + 1, rest...);
+  }
+  void setElements([[maybe_unused]] const int i) noexcept
+  {
+    assert(i == 3);
+  }
+
+  template <typename... ArgList>
+  void cycleElements(
+      const int i,
+      const int res, const ArgList&... rest)
+  {
+    cycleElement(i, res);
+    cycleElements(i + 1, rest...);
+  }
+  void cycleElement(const int i, const int res)
+  {
+    assert(i < 3);
+
+    e_[i] = e_[i] % res;
+    if (e_[i] < res / 2 - res)
+      e_[i] += res;
+    else if (e_[i] >= res / 2)
+      e_[i] -= res;
+  }
+  void cycleElements([[maybe_unused]] const int i)
+  {
+    assert(i == 3);
+  }
+  template <typename... ArgList>
+  void cycleUnsignedElements(
+      const int i,
+      const int res, const ArgList&... rest)
+  {
+    cycleUnsignedElement(i, res);
+    cycleUnsignedElements(i + 1, rest...);
+  }
+  void cycleUnsignedElement(const int i, const int res)
+  {
+    assert(i < 3);
+
+    e_[i] = e_[i] % res;
+    if (e_[i] < 0)
+      e_[i] += res;
+  }
+  void cycleUnsignedElements([[maybe_unused]] const int i)
+  {
+    assert(i == 3);
+  }
+
+public:
+  template <typename T2>
+  explicit CyclicVecBase(const CyclicVecBase<3, NONCYCLIC, T2>& c) noexcept
+  {
+    for (int i = 0; i < 3; i++)
+      cyclic_vec_type_conversion_rule::convert(c[i], e_[i]);
+  }
+  template <typename... ArgList>
+  explicit CyclicVecBase(const float& v, const ArgList&... args) noexcept
+  {
+    setElements(0, v, args...);
+  }
+  template <typename... ArgList>
+  explicit CyclicVecBase(const int& v, const ArgList&... args) noexcept
+  {
+    setElements(0, v, args...);
+  }
+  CyclicVecBase() noexcept
+  {
+    for (int i = 0; i < 3; i++)
+      e_[i] = 0;
+  }
+  template <typename T2>
+  bool operator==(const CyclicVecBase<3, NONCYCLIC, T2>& v) const
+  {
+    for (int i = 0; i < 3; i++)
+      if (v.e_[i] != e_[i])
+        return false;
+    return true;
+  }
+  template <typename T2>
+  bool operator!=(const CyclicVecBase<3, NONCYCLIC, T2>& v) const
+  {
+    return !(*this == v);
+  }
+  template <typename T2>
+  CyclicVecBase<3, NONCYCLIC, T2> operator+(const CyclicVecBase<3, NONCYCLIC, T2>& v) const
+  {
+    CyclicVecBase<3, NONCYCLIC, T2> out(*this);
+    for (int i = 0; i < 3; i++)
+    {
+      out[i] += v[i];
+    }
+    return out;
+  }
+  template <typename T2>
+  CyclicVecBase<3, NONCYCLIC, T2> operator-(const CyclicVecBase<3, NONCYCLIC, T2>& v) const
+  {
+    CyclicVecBase<3, NONCYCLIC, T2> out(*this);
+    for (int i = 0; i < 3; i++)
+    {
+      out[i] -= v[i];
+    }
+    return out;
+  }
+  template <typename T2>
+  CyclicVecBase<3, NONCYCLIC, T2> operator*(const CyclicVecBase<3, NONCYCLIC, T2>& v) const
+  {
+    CyclicVecBase<3, NONCYCLIC, T2> out;
+    for (int i = 0; i < 3; i++)
+    {
+      out[i] = e_[i] * v[i];
+    }
+    return out;
+  }
+  float cross2d(const CyclicVecBase<3, NONCYCLIC, T>& a) const
+  {
+    return (*this)[0] * a[1] - (*this)[1] * a[0];
+  }
+  float dot2d(const CyclicVecBase<3, NONCYCLIC, T>& a) const
+  {
+    return (*this)[0] * a[0] + (*this)[1] * a[1];
+  }
+  float distLine2d(
+      const CyclicVecBase<3, NONCYCLIC, T>& a,
+      const CyclicVecBase<3, NONCYCLIC, T>& b) const
+  {
+    return (b - a).cross2d((*this) - a) / (b - a).len();
+  }
+  float distLinestrip2d(
+      const CyclicVecBase<3, NONCYCLIC, T>& a,
+      const CyclicVecBase<3, NONCYCLIC, T>& b) const
+  {
+    const auto to_a = (*this) - a;
+    if ((b - a).dot2d(to_a) <= 0)
+      return to_a.len();
+    const auto to_b = (*this) - b;
+    if ((a - b).dot2d(to_b) <= 0)
+      return to_b.len();
+    return std::abs(distLine2d(a, b));
+  }
+  T& operator[](const int& x)
+  {
+    return e_[x];
+  }
+  const T& operator[](const int& x) const
+  {
+    return e_[x];
+  }
+  T sqlen() const
+  {
+    T out = 0;
+    for (int i = 0; i < NONCYCLIC; i++)
+    {
+      out += e_[i] * e_[i];
+    }
+    return out;
+  }
+  float len() const
+  {
+    return std::sqrt(sqlen());
+  }
+  float gridToLenFactor() const
+  {
+    const auto l = len();
+    return l / static_cast<int>(l);
+  }
+  float norm() const
+  {
+    float out = 0;
+    for (int i = 0; i < 3; i++)
+    {
+      out += std::pow(e_[i], 2);
+    }
+    return std::sqrt(out);
+  }
+
+  void rotate(const float ang)
+  {
+    const auto tmp = *this;
+    const float cos_v = cosf(ang);
+    const float sin_v = sinf(ang);
+
+    cyclic_vec_type_conversion_rule::convert(cos_v * tmp[0] - sin_v * tmp[1], e_[0]);
+    cyclic_vec_type_conversion_rule::convert(sin_v * tmp[0] + cos_v * tmp[1], e_[1]);
+    this->e_[2] = tmp[2] + ang;
+    cyclic_vec_type_conversion_rule::normalizeFloatAngle(this->e_[2]);
+  }
+
+  // Cyclic operations
+  template <typename... ArgList>
+  void cycle(const int res, const ArgList&... rest)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    cycleElements(NONCYCLIC, res, rest...);
+  }
+  template <typename... ArgList>
+  void cycleUnsigned(const int res, const ArgList&... rest)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    cycleUnsignedElements(NONCYCLIC, res, rest...);
+  }
+  void cycle(const CyclicVecBase<3, NONCYCLIC, T>& res)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    for (int i = NONCYCLIC; i < 3; ++i)
+      cycleElement(i, res[i]);
+  }
+  void cycleUnsigned(const CyclicVecBase<3, NONCYCLIC, T>& res)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    for (int i = NONCYCLIC; i < 3; ++i)
+      cycleUnsignedElement(i, res[i]);
+  }
+
+  // Hash
+  size_t operator()(const CyclicVecBase& key) const
+  {
+    size_t hash = static_cast<size_t>(key.e_[0]);
+    for (int i = 1; i < 3; i++)
+    {
+      const size_t n = 8 * sizeof(std::size_t) * i / 3;
+      const size_t x = static_cast<size_t>(key.e_[i]);
+      hash ^= (x << n) | (x >> ((8 * sizeof(size_t)) - n));
+    }
+    return hash;
+  }
+
+  bool isExceeded(const CyclicVecBase<3, NONCYCLIC, int>& v) const
+  {
+    static_assert(
+        std::is_same<int, T>(), "isExceeded is provided only for T=int");
+    for (int i = 0; i < NONCYCLIC; ++i)
+    {
+      if (static_cast<unsigned int>((*this)[i]) >= static_cast<unsigned int>(v[i]))
+        return true;
+    }
+    return false;
+  }
+};
+
+template <int NONCYCLIC, typename T>
+class CyclicVecBase<2, NONCYCLIC, T>
+{
+protected:
+  static_assert(
+      std::is_same<float, T>() || std::is_same<int, T>(), "T must be float or int");
+  T e_[2];
+
+  template <typename T2, typename... ArgList>
+  void setElements(const int i, const T2& first, const ArgList&... rest) noexcept
+  {
+    assert(i < 2);
+
+    cyclic_vec_type_conversion_rule::convert(first, e_[i]);
+    setElements(i + 1, rest...);
+  }
+  void setElements([[maybe_unused]] const int i) noexcept
+  {
+    assert(i == 2);
+  }
+
+  template <typename... ArgList>
+  void cycleElements(
+      const int i,
+      const int res, const ArgList&... rest)
+  {
+    cycleElement(i, res);
+    cycleElements(i + 1, rest...);
+  }
+  void cycleElement(const int i, const int res)
+  {
+    assert(i < 2);
+
+    e_[i] = e_[i] % res;
+    if (e_[i] < res / 2 - res)
+      e_[i] += res;
+    else if (e_[i] >= res / 2)
+      e_[i] -= res;
+  }
+  void cycleElements([[maybe_unused]] const int i)
+  {
+    assert(i == 2);
+  }
+  template <typename... ArgList>
+  void cycleUnsignedElements(
+      const int i,
+      const int res, const ArgList&... rest)
+  {
+    cycleUnsignedElement(i, res);
+    cycleUnsignedElements(i + 1, rest...);
+  }
+  void cycleUnsignedElement(const int i, const int res)
+  {
+    assert(i < 2);
+
+    e_[i] = e_[i] % res;
+    if (e_[i] < 0)
+      e_[i] += res;
+  }
+  void cycleUnsignedElements([[maybe_unused]] const int i)
+  {
+    assert(i == 2);
+  }
+
+public:
+  template <typename T2>
+  explicit CyclicVecBase(const CyclicVecBase<2, NONCYCLIC, T2>& c) noexcept
+  {
+    for (int i = 0; i < 2; i++)
+      cyclic_vec_type_conversion_rule::convert(c[i], e_[i]);
+  }
+  template <typename... ArgList>
+  explicit CyclicVecBase(const float& v, const ArgList&... args) noexcept
+  {
+    setElements(0, v, args...);
+  }
+  template <typename... ArgList>
+  explicit CyclicVecBase(const int& v, const ArgList&... args) noexcept
+  {
+    setElements(0, v, args...);
+  }
+  CyclicVecBase() noexcept
+  {
+    for (int i = 0; i < 2; i++)
+      e_[i] = 0;
+  }
+  template <typename T2>
+  bool operator==(const CyclicVecBase<2, NONCYCLIC, T2>& v) const
+  {
+    for (int i = 0; i < 2; i++)
+      if (v.e_[i] != e_[i])
+        return false;
+    return true;
+  }
+  template <typename T2>
+  bool operator!=(const CyclicVecBase<2, NONCYCLIC, T2>& v) const
+  {
+    return !(*this == v);
+  }
+  template <typename T2>
+  CyclicVecBase<2, NONCYCLIC, T2> operator+(const CyclicVecBase<2, NONCYCLIC, T2>& v) const
+  {
+    CyclicVecBase<2, NONCYCLIC, T2> out(*this);
+    for (int i = 0; i < 2; i++)
+    {
+      out[i] += v[i];
+    }
+    return out;
+  }
+  template <typename T2>
+  CyclicVecBase<2, NONCYCLIC, T2> operator-(const CyclicVecBase<2, NONCYCLIC, T2>& v) const
+  {
+    CyclicVecBase<2, NONCYCLIC, T2> out(*this);
+    for (int i = 0; i < 2; i++)
+    {
+      out[i] -= v[i];
+    }
+    return out;
+  }
+  template <typename T2>
+  CyclicVecBase<2, NONCYCLIC, T2> operator*(const CyclicVecBase<2, NONCYCLIC, T2>& v) const
+  {
+    CyclicVecBase<2, NONCYCLIC, T2> out;
+    for (int i = 0; i < 2; i++)
+    {
+      out[i] = e_[i] * v[i];
+    }
+    return out;
+  }
+  float cross2d(const CyclicVecBase<2, NONCYCLIC, T>& a) const
+  {
+    return (*this)[0] * a[1] - (*this)[1] * a[0];
+  }
+  float dot2d(const CyclicVecBase<2, NONCYCLIC, T>& a) const
+  {
+    return (*this)[0] * a[0] + (*this)[1] * a[1];
+  }
+  float distLine2d(
+      const CyclicVecBase<2, NONCYCLIC, T>& a,
+      const CyclicVecBase<2, NONCYCLIC, T>& b) const
+  {
+    return (b - a).cross2d((*this) - a) / (b - a).len();
+  }
+  float distLinestrip2d(
+      const CyclicVecBase<2, NONCYCLIC, T>& a,
+      const CyclicVecBase<2, NONCYCLIC, T>& b) const
+  {
+    const auto to_a = (*this) - a;
+    if ((b - a).dot2d(to_a) <= 0)
+      return to_a.len();
+    const auto to_b = (*this) - b;
+    if ((a - b).dot2d(to_b) <= 0)
+      return to_b.len();
+    return std::abs(distLine2d(a, b));
+  }
+  T& operator[](const int& x)
+  {
+    return e_[x];
+  }
+  const T& operator[](const int& x) const
+  {
+    return e_[x];
+  }
+  T sqlen() const
+  {
+    T out = 0;
+    for (int i = 0; i < NONCYCLIC; i++)
+    {
+      out += e_[i] * e_[i];
+    }
+    return out;
+  }
+  float len() const
+  {
+    return std::sqrt(sqlen());
+  }
+  float gridToLenFactor() const
+  {
+    const auto l = len();
+    return l / static_cast<int>(l);
+  }
+  float norm() const
+  {
+    float out = 0;
+    for (int i = 0; i < 2; i++)
+    {
+      out += std::pow(e_[i], 2);
+    }
+    return std::sqrt(out);
+  }
+
+  // Cyclic operations
+  template <typename... ArgList>
+  void cycle(const int res, const ArgList&... rest)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    cycleElements(NONCYCLIC, res, rest...);
+  }
+  template <typename... ArgList>
+  void cycleUnsigned(const int res, const ArgList&... rest)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    cycleUnsignedElements(NONCYCLIC, res, rest...);
+  }
+  void cycle(const CyclicVecBase<2, NONCYCLIC, T>& res)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    for (int i = NONCYCLIC; i < 2; ++i)
+      cycleElement(i, res[i]);
+  }
+  void cycleUnsigned(const CyclicVecBase<2, NONCYCLIC, T>& res)
+  {
+    static_assert(
+        std::is_same<int, T>(), "cycle is provided only for int");
+    for (int i = NONCYCLIC; i < 2; ++i)
+      cycleUnsignedElement(i, res[i]);
+  }
+
+  // Hash
+  size_t operator()(const CyclicVecBase& key) const
+  {
+    size_t hash = static_cast<size_t>(key.e_[0]);
+    for (int i = 1; i < 2; i++)
+    {
+      const size_t n = 8 * sizeof(std::size_t) * i / 2;
+      const size_t x = static_cast<size_t>(key.e_[i]);
+      hash ^= (x << n) | (x >> ((8 * sizeof(size_t)) - n));
+    }
+    return hash;
+  }
+
+  bool isExceeded(const CyclicVecBase<2, NONCYCLIC, int>& v) const
   {
     static_assert(
         std::is_same<int, T>(), "isExceeded is provided only for T=int");
