@@ -1,0 +1,5 @@
+macro(neonavigation_find_test_dependencies)
+  foreach(_dep IN LISTS ${PROJECT_NAME}_TEST_DEPENDS)
+    find_package(${_dep} REQUIRED)
+  endforeach()
+endmacro()
