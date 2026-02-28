@@ -51,6 +51,5 @@ install(TARGETS
   RUNTIME DESTINATION bin
 )
 
-message(=========== ${${PROJECT_NAME}_LIBRARIES} ==========)
 ament_package()
 
