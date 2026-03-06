@@ -61,7 +61,6 @@ def generate_test_description():
         ],
     )
 
-    global watch
     return LaunchDescription(
         [
             *args,

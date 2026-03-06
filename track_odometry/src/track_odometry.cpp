@@ -54,6 +54,7 @@
 
 #include <track_odometry/kalman_filter1.h>
 
+#include <track_odometry/track_odometry_parameters.hpp>
 
 Eigen::Vector3d toEigen(const geometry_msgs::msg::Vector3& a)
 {
@@ -84,6 +85,9 @@ geometry_msgs::msg::Vector3 toVector3(const Eigen::Vector3d& a)
   return b;
 }
 
+namespace track_odometry
+{
+
 class TrackOdometryNode : public rclcpp::Node
 {
 private:
@@ -98,41 +102,33 @@ private:
   rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr sub_reset_z_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::TimerBase::SharedPtr timer_;
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+  std::shared_ptr<track_odometry::ParamListener> param_listener_;
   nav_msgs::msg::Odometry odom_prev_;
   nav_msgs::msg::Odometry odomraw_prev_;
 
+  track_odometry::Params params_;
+
   std::string base_link_id_;
   std::string base_link_id_overwrite_;
-  std::string odom_id_;
 
   sensor_msgs::msg::Imu imu_;
   double gyro_zero_[3];
-  double z_filter_timeconst_;
-  double tf_tolerance_;
 
-  bool debug_;
-  bool use_kf_;
-  bool negative_slip_;
-  double sigma_predict_;
-  double sigma_odom_;
-  double predict_filter_tc_;
   double dist_;
-  bool without_odom_;
 
   track_odometry::KalmanFilter1 slip_;
 
   bool has_imu_;
   bool has_odom_;
-  bool publish_tf_;
 
   void cbResetZ(const std_msgs::msg::Float32::SharedPtr msg)
   {
     odom_prev_.pose.pose.position.z = msg->data;
   }
-  void cbOdomImu(const nav_msgs::msg::Odometry::ConstSharedPtr odom_msg, const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg)
+  void cbOdomImu(const nav_msgs::msg::Odometry::ConstSharedPtr& odom_msg, const sensor_msgs::msg::Imu::ConstSharedPtr& imu_msg)
   {
     RCLCPP_DEBUG(this->get_logger(),
         "Synchronized timestamp: odom %0.3f, imu %0.3f",
@@ -143,7 +139,7 @@ private:
   }
   void cbImu(const sensor_msgs::msg::Imu::ConstSharedPtr msg)
   {
-    if (base_link_id_.size() == 0)
+    if (base_link_id_.empty())
     {
       RCLCPP_ERROR(this->get_logger(), "base_link id is not specified.");
       return;
@@ -152,18 +148,18 @@ private:
     imu_.header = msg->header;
     try
     {
-      geometry_msgs::msg::TransformStamped trans = tf_buffer_->lookupTransform(
-          base_link_id_, msg->header.frame_id, rclcpp::Time(0, 0, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
+      auto trans = tf_buffer_->lookupTransform(
+          base_link_id_, msg->header.frame_id, tf2::TimePointZero, tf2::durationFromSec(0.1));
 
       geometry_msgs::msg::Vector3Stamped vin, vout;
       vin.header = imu_.header;
-      vin.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      vin.header.stamp = rclcpp::Time();
       vin.vector = msg->linear_acceleration;
       tf2::doTransform(vin, vout, trans);
       imu_.linear_acceleration = vout.vector;
 
       vin.header = imu_.header;
-      vin.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      vin.header.stamp = rclcpp::Time();
       vin.vector = msg->angular_velocity;
       tf2::doTransform(vin, vout, trans);
       imu_.angular_velocity = vout.vector;
@@ -179,7 +175,7 @@ private:
       geometry_msgs::msg::Vector3Stamped axis2;
       geometry_msgs::msg::Vector3Stamped axis1;
       axis1.vector = tf2::toMsg(axis);
-      axis1.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      axis1.header.stamp = rclcpp::Time();
       axis1.header.frame_id = qin.frame_id_;
       tf2::doTransform(axis1, axis2, trans);
 
@@ -190,9 +186,6 @@ private:
 
       qmout = tf2::toMsg(qout);
       imu_.orientation = qmout.quaternion;
-      // RCLCPP_INFO(this->get_logger(), "%0.3f %s -> %0.3f %s",
-      //   tf2::getYaw(qmin.quaternion), qmin.header.frame_id.c_str(),
-      //   tf2::getYaw(qmout.quaternion), qmout.header.frame_id.c_str());
 
       has_imu_ = true;
     }
@@ -209,7 +202,7 @@ private:
     if (has_odom_)
     {
       const double dt = tf2_ros::timeToSec(odom.header.stamp) - tf2_ros::timeToSec(odomraw_prev_.header.stamp);
-      if (base_link_id_overwrite_.size() == 0)
+      if (base_link_id_overwrite_.empty())
       {
         base_link_id_ = odom.child_frame_id;
       }
@@ -221,18 +214,18 @@ private:
       }
 
       double slip_ratio = 1.0;
-      odom.header.stamp = rclcpp::Duration::from_seconds(tf_tolerance_) + odom.header.stamp;
+      odom.header.stamp = rclcpp::Duration::from_seconds(params_.tf_tolerance) + odom.header.stamp;
       odom.twist.twist.angular = imu_.angular_velocity;
       odom.pose.pose.orientation = imu_.orientation;
 
       double w_imu = imu_.angular_velocity.z;
       const double w_odom = msg->twist.twist.angular.z;
 
-      if (w_imu * w_odom < 0 && !negative_slip_)
+      if (w_imu * w_odom < 0 && !params_.enable_negative_slip)
         w_imu = w_odom;
 
-      slip_.predict(-slip_.x_ * dt * predict_filter_tc_, dt * sigma_predict_);
-      if (std::abs(w_odom) > sigma_odom_ * 3)
+      slip_.predict(-slip_.x_ * dt * params_.predict_filter_tc, dt * params_.sigma_predict);
+      if (std::abs(w_odom) > params_.sigma_odom * 3)
       {
         // non-kf mode: calculate slip_ratio if angular vel < 3*sigma
         slip_ratio = w_imu / w_odom;
@@ -241,18 +234,15 @@ private:
       const double slip_ratio_per_angvel =
           (w_odom - w_imu) / (w_odom * std::abs(w_odom));
       double slip_ratio_per_angvel_sigma =
-          sigma_odom_ * std::abs(2.0 * w_odom * sigma_odom_ / std::pow(w_odom * w_odom - sigma_odom_ * sigma_odom_, 2));
-      if (std::abs(w_odom) < sigma_odom_)
+          params_.sigma_odom * std::abs(2.0 * w_odom * params_.sigma_odom / std::pow(w_odom * w_odom - params_.sigma_odom * params_.sigma_odom, 2));
+      if (std::abs(w_odom) < params_.sigma_odom)
         slip_ratio_per_angvel_sigma = std::numeric_limits<double>::infinity();
 
       slip_.measure(slip_ratio_per_angvel, slip_ratio_per_angvel_sigma);
-      // printf("%0.5f %0.5f %0.5f   %0.5f %0.5f  %0.5f\n",
-      //   slip_ratio_per_angvel, slip_ratio_sigma, slip_ratio_per_angvel_sigma,
-      //   slip_.x_, slip_.sigma_, msg->twist.twist.angular.z);
 
-      if (debug_)
+      if (params_.debug)
       {
-        printf("%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f  %0.3f\n",
+        RCLCPP_DEBUG(this->get_logger(), "%0.3f %0.3f  %0.3f  %0.3f %0.3f  %0.3f  %0.3f\n",
                imu_.angular_velocity.z,
                msg->twist.twist.angular.z,
                slip_ratio,
@@ -264,14 +254,14 @@ private:
       const Eigen::Vector3d diff = toEigen(msg->pose.pose.position) - toEigen(odomraw_prev_.pose.pose.position);
       Eigen::Vector3d v =
           toEigen(odom.pose.pose.orientation) * toEigen(msg->pose.pose.orientation).inverse() * diff;
-      if (use_kf_)
+      if (params_.use_kf)
         v *= 1.0 - slip_.x_;
       else
         v *= slip_ratio;
 
       odom.pose.pose.position = toPoint(toEigen(odom_prev_.pose.pose.position) + v);
-      if (z_filter_timeconst_ > 0)
-        odom.pose.pose.position.z *= 1.0 - (dt / z_filter_timeconst_);
+      if (params_.z_filter_timeconst > 0)
+        odom.pose.pose.position.z *= 1.0 - (dt / params_.z_filter_timeconst);
 
       odom.child_frame_id = base_link_id_;
       pub_odom_->publish(odom);
@@ -282,7 +272,7 @@ private:
       odom_trans.child_frame_id = base_link_id_;
       odom_trans.transform.translation = toVector3(toEigen(odom.pose.pose.position));
       odom_trans.transform.rotation = odom.pose.pose.orientation;
-      if (publish_tf_)
+      if (params_.publish_tf)
         tf_broadcaster_->sendTransform(odom_trans);
     }
     odomraw_prev_ = *msg;
@@ -291,65 +281,44 @@ private:
   }
 
 public:
-  TrackOdometryNode() : Node("track_odometry")
+  TrackOdometryNode(const rclcpp::NodeOptions& options) : Node("track_odometry", options)
   {
+    param_listener_ = std::make_shared<track_odometry::ParamListener>(get_node_parameters_interface());
+    params_ = param_listener_->get_params();
 
-    bool enable_tcp_no_delay;
-    enable_tcp_no_delay = this->declare_parameter("enable_tcp_no_delay", true);
     const rclcpp::QoS transport_hints =
-        enable_tcp_no_delay ? rclcpp::QoS(50) : rclcpp::QoS(50).best_effort();
+        params_.enable_tcp_no_delay ? rclcpp::QoS(50) : rclcpp::QoS(50).best_effort();
 
-    using std::placeholders::_1;
-    using std::placeholders::_2;
-    without_odom_ = this->declare_parameter("without_odom", false);
-    if (without_odom_)
+    if (params_.without_odom)
     {
       sub_imu_raw_ = this->create_subscription<sensor_msgs::msg::Imu>(
           "imu/data",
-          64, std::bind(&TrackOdometryNode::cbImu, this, _1));
-      base_link_id_ = this->declare_parameter("base_link_id", std::string("base_link"));
-      odom_id_ = this->declare_parameter("odom_id", std::string("odom"));
+          64, [this](const sensor_msgs::msg::Imu::ConstSharedPtr msg){ cbImu(msg); });
+      base_link_id_ = this->declare_parameter("base_link_id", "base_link");
     }
     else
     {
       sub_odom_.subscribe(this, "odom_raw", transport_hints.get_rmw_qos_profile());
       sub_imu_.subscribe(this, "imu/data", transport_hints.get_rmw_qos_profile());
 
-      int sync_window;
-      sync_window = this->declare_parameter("sync_window", 50);
-      sync_.reset(
-          new message_filters::Synchronizer<SyncPolicy>(
-              SyncPolicy(sync_window), sub_odom_, sub_imu_));
+      sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
+              SyncPolicy(params_.sync_window), sub_odom_, sub_imu_);
+      using std::placeholders::_1;
+      using std::placeholders::_2;
       sync_->registerCallback(std::bind(&TrackOdometryNode::cbOdomImu, this, _1, _2));
 
-      base_link_id_overwrite_ = this->declare_parameter("base_link_id", std::string(""));
+      base_link_id_overwrite_ = this->declare_parameter("base_link_id", "");
     }
 
     sub_reset_z_ = this->create_subscription<std_msgs::msg::Float32>(
         "reset_odometry_z",
-        1, std::bind(&TrackOdometryNode::cbResetZ, this, _1));
+        1, [this](const std_msgs::msg::Float32::SharedPtr msg){ cbResetZ(msg); });
     pub_odom_ = this->create_publisher<nav_msgs::msg::Odometry>("odom", 8);
 
-    {
-      z_filter_timeconst_ = this->declare_parameter("z_filter_timeconst", -1.0);
-    }
-    tf_tolerance_ = this->declare_parameter("tf_tolerance", 0.01);
-    use_kf_ = this->declare_parameter("use_kf", true);
-    negative_slip_ = this->declare_parameter("enable_negative_slip", false);
-    debug_ = this->declare_parameter("debug", false);
-    publish_tf_ = this->declare_parameter("publish_tf", true);
-
-    if (base_link_id_overwrite_.size() > 0)
+    if (!base_link_id_overwrite_.empty())
     {
       base_link_id_ = base_link_id_overwrite_;
     }
-
-    // sigma_odom_ [rad/s]: standard deviation of odometry angular vel on straight running
-    sigma_odom_ = this->declare_parameter("sigma_odom", 0.005);
-    // sigma_predict_ [sigma/second]: prediction sigma of kalman filter
-    sigma_predict_ = this->declare_parameter("sigma_predict", 0.5);
-    // predict_filter_tc_ [sec.]: LPF time-constant to forget estimated slip_ ratio
-    predict_filter_tc_ = this->declare_parameter("predict_filter_tc", 1.0);
 
     has_imu_ = false;
     has_odom_ = false;
@@ -357,34 +326,27 @@ public:
     dist_ = 0;
     slip_.set(0.0, 0.1);
 
-    tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
-    if (without_odom_)
+    if (params_.without_odom)
     {
       timer_ = this->create_wall_timer(
-          std::chrono::duration<double>(1.0 / 50.0), std::bind(&TrackOdometryNode::cbTimer, this));
+          std::chrono::milliseconds(20), [this](){ cbTimer(); });
     }
   }
   void cbTimer()
   {
-    nav_msgs::msg::Odometry::SharedPtr odom(new nav_msgs::msg::Odometry);
+    auto odom = std::make_shared<nav_msgs::msg::Odometry>();
     odom->header.stamp = this->now();
-    odom->header.frame_id = odom_id_;
+    odom->header.frame_id = params_.odom_id;
     odom->child_frame_id = base_link_id_;
     odom->pose.pose.orientation.w = 1.0;
     cbOdom(odom);
   }
 };
-
-int main(int argc, char* argv[])
-{
-  rclcpp::init(argc, argv);
-
-  auto odom = std::make_shared<TrackOdometryNode>();
-
-  rclcpp::spin(odom);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(track_odometry::TrackOdometryNode)

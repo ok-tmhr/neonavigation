@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
-#define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
+#pragma once
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -118,4 +117,3 @@ using PointcloudAccumurator
     [[deprecated("Use costmap_cspace::PointcloudAccumulator instead.")]] = PointcloudAccumulator<T>;
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H

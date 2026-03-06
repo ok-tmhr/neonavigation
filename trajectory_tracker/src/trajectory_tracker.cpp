@@ -71,49 +71,24 @@
 #include <trajectory_tracker/eigen_line.h>
 #include <trajectory_tracker/path2d.h>
 
+#include <trajectory_tracker/trajectory_tracker_parameters.hpp>
+
 namespace trajectory_tracker
 {
 class TrackerNode : public rclcpp::Node
 {
 public:
-  TrackerNode();
+  TrackerNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~TrackerNode();
 
 private:
-  std::string frame_robot_;
-  std::string frame_odom_;
-  double hz_;
-  double look_forward_;
-  double curv_forward_;
   double k_[3];
-  double gain_at_vel_;
-  double d_lim_;
-  double d_stop_;
   double vel_[2];
   double acc_[2];
   double acc_toc_[2];
   trajectory_tracker::VelAccLimitter v_lim_;
   trajectory_tracker::VelAccLimitter w_lim_;
-  double rotate_ang_;
-  double goal_tolerance_dist_;
-  double goal_tolerance_ang_;
-  double stop_tolerance_dist_;
-  double stop_tolerance_ang_;
-  double no_pos_cntl_dist_;
-  double min_track_path_;
-  int path_step_;
   int path_step_done_;
-  bool allow_backward_;
-  bool limit_vel_by_avel_;
-  bool check_old_path_;
-  double epsilon_;
-  double max_dt_;
-  bool use_time_optimal_control_;
-  double time_optimal_control_future_gain_;
-  double k_ang_rotation_;
-  double k_avel_rotation_;
-  double goal_tolerance_lin_vel_;
-  double goal_tolerance_ang_vel_;
 
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
   rclcpp::Subscription<trajectory_tracker_msgs::msg::PathWithVelocity>::SharedPtr sub_path_velocity_;
@@ -122,20 +97,18 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_vel_;
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>::SharedPtr pub_status_;
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_tracking_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::TimerBase::SharedPtr odom_timeout_timer_;
-  std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
-  std::shared_ptr<rclcpp::ParameterEventCallbackHandle> callback_handle_;
-  double odom_timeout_sec_;
+
+  std::shared_ptr<ParamListener> param_listener_;
+  Params params_;
 
   trajectory_tracker::Path2D path_;
   std_msgs::msg::Header path_header_;
   bool is_path_updated_;
 
-  bool use_odom_;
-  bool predict_odom_;
   rclcpp::Time prev_odom_stamp_;
 
   struct TrackingResult
@@ -181,144 +154,65 @@ private:
   void control(const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double, const double);
   TrackingResult getTrackingResult(
       const tf2::Stamped<tf2::Transform>&, const Eigen::Vector3d&, const double, const double);
-  void cbParameter();
+  void cbParameter(const Params& params);
 };
 
-TrackerNode::TrackerNode() : Node("trajectory_tracker")
+TrackerNode::TrackerNode(const rclcpp::NodeOptions& options) : Node("trajectory_tracker", options)
 , is_path_updated_(false)
-, prev_odom_stamp_(0, 0, RCL_ROS_TIME)
+, prev_odom_stamp_(0L, RCL_ROS_TIME)
 {
-  frame_robot_ = this->declare_parameter("frame_robot", std::string("base_link"));
-  frame_odom_ = this->declare_parameter("frame_odom", std::string("odom"));
-  hz_ = this->declare_parameter("hz", 50.0);
-  use_odom_ = this->declare_parameter("use_odom", false);
-  predict_odom_ = this->declare_parameter("predict_odom", true);
-  max_dt_ = this->declare_parameter("max_dt", 0.1);
-  odom_timeout_sec_ = this->declare_parameter("odom_timeout_sec", 0.1);
+  param_listener_ = std::make_shared<ParamListener>(get_node_parameters_interface());
+  params_ = param_listener_->get_params();
 
   using std::placeholders::_1;
   sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(2).transient_local(),
-      std::bind(&TrackerNode::cbPath<nav_msgs::msg::Path>, this, _1));
+      [this](const nav_msgs::msg::Path::ConstSharedPtr msg){ cbPath<nav_msgs::msg::Path>(msg); });
   sub_path_velocity_ = this->create_subscription<trajectory_tracker_msgs::msg::PathWithVelocity>(
       "path_velocity", rclcpp::QoS(2).transient_local(),
-      std::bind(&TrackerNode::cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>, this, _1));
+      [this](const trajectory_tracker_msgs::msg::PathWithVelocity::ConstSharedPtr msg){ cbPath<trajectory_tracker_msgs::msg::PathWithVelocity>(msg); });
   sub_vel_ = this->create_subscription<std_msgs::msg::Float32>(
       "speed",
-      20, std::bind(&TrackerNode::cbSpeed, this, _1));
+      20, [this](const std_msgs::msg::Float32::ConstSharedPtr msg){ cbSpeed(msg); });
   pub_vel_ = this->create_publisher<geometry_msgs::msg::Twist>(
       "cmd_vel",
       10);
   pub_status_ = this->create_publisher<trajectory_tracker_msgs::msg::TrajectoryTrackerStatus>("~/status", rclcpp::QoS(10).transient_local());
   pub_tracking_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("~/tracking", rclcpp::QoS(10).transient_local());
-  if (use_odom_)
+  if (params_.use_odom)
   {
-    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", 10, std::bind(&TrackerNode::cbOdometry, this, _1)
-                                                  );
+    sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>("odom", 10, [this](const nav_msgs::msg::Odometry::ConstSharedPtr odom){ cbOdometry(odom); });
   }
 
-  tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
-  auto desc = [](const double from_, const double to_){
-    rcl_interfaces::msg::ParameterDescriptor d;
-    d.floating_point_range.resize(1);
-    d.floating_point_range[0].from_value = from_;
-    d.floating_point_range[0].to_value = to_;
-    return d;
-  };
+  cbParameter(params_);
+  param_listener_->setUserCallback([this](const Params& params){ cbParameter(params); });
 
-  rcl_interfaces::msg::ParameterDescriptor path_step_desc;
-  path_step_desc.integer_range.resize(1);
-  path_step_desc.integer_range[0].from_value = 1;
-  path_step_desc.integer_range[0].to_value = 100;
-
-  this->declare_parameter("look_forward", 0.5, desc(0., 100.));
-  this->declare_parameter("curv_forward", 0.5, desc(0., 100.));
-  this->declare_parameter("k_dist", 1.0, desc(0., 100.));
-  this->declare_parameter("k_ang", 1.0, desc(0., 100.));
-  this->declare_parameter("k_avel", 1.0, desc(0., 100.));
-  this->declare_parameter("gain_at_vel", 0.0, desc(0., 100.));
-  this->declare_parameter("dist_lim", 0.5, desc(0., 100.));
-  this->declare_parameter("dist_stop", 2.0, desc(0., 100.));
-  this->declare_parameter("rotate_ang", 0.78539816339, desc(0., 3.1415));
-  this->declare_parameter("max_vel", 0.5, desc(0., 100.));
-  this->declare_parameter("max_angvel", 1.0, desc(0., 100.));
-  this->declare_parameter("max_acc", 1.0, desc(0., 100.));
-  this->declare_parameter("max_angacc", 2.0, desc(0., 100.));
-  this->declare_parameter("acc_toc_factor", 0.9, desc(0., 1.));
-  this->declare_parameter("angacc_toc_factor", 0.9, desc(0., 1.));
-  this->declare_parameter("path_step", 1, path_step_desc);
-  this->declare_parameter("goal_tolerance_dist", 0.2, desc(0., 100.));
-  this->declare_parameter("goal_tolerance_ang", 0.1, desc(0., 100.));
-  this->declare_parameter("stop_tolerance_dist", 0.1, desc(0., 100.));
-  this->declare_parameter("stop_tolerance_ang", 0.05, desc(0., 100.));
-  this->declare_parameter("no_position_control_dist", 0.0, desc(0., 100.));
-  this->declare_parameter("min_tracking_path", 0.0, desc(0., 100.));
-  this->declare_parameter("allow_backward", true);
-  this->declare_parameter("limit_vel_by_avel", false);
-  this->declare_parameter("check_old_path", false);
-  this->declare_parameter("epsilon", 0.001, desc(0., 10.));
-  this->declare_parameter("use_time_optimal_control", true);
-  this->declare_parameter("time_optimal_control_future_gain", 1.5, desc(0., 100.));
-  this->declare_parameter("k_ang_rotation", 1.0, desc(0., 100.));
-  this->declare_parameter("k_avel_rotation", 1.0, desc(0., 100.));
-  this->declare_parameter("goal_tolerance_lin_vel", 0.0, desc(0., 100.));
-  this->declare_parameter("goal_tolerance_ang_vel", 0.0, desc(0., 100.));
-
-  cbParameter();
-
-  param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
-  callback_handle_ = param_event_handler_->add_parameter_event_callback(
-    [this](const rcl_interfaces::msg::ParameterEvent& e){
-      if (e.node == get_fully_qualified_name()){
-        cbParameter();
-      }
-    }
-  );
-
-  if (!use_odom_)
+  if (!params_.use_odom)
   {
-    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz_), std::bind(&TrackerNode::cbTimer, this));
+    timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / params_.hz), [this](){ cbTimer(); });
   }
 
 }
 
-void TrackerNode::cbParameter()
+void TrackerNode::cbParameter(const Params& params)
 {
-  this->get_parameter("look_forward", look_forward_);
-  this->get_parameter("curv_forward", curv_forward_);
-  this->get_parameter("k_dist", k_[0]);
-  this->get_parameter("k_ang", k_[1]);
-  this->get_parameter("k_avel", k_[2]);
-  this->get_parameter("gain_at_vel", gain_at_vel_);
-  this->get_parameter("dist_lim", d_lim_);
-  this->get_parameter("dist_stop", d_stop_);
-  this->get_parameter("rotate_ang", rotate_ang_);
-  this->get_parameter("max_vel", vel_[0]);
-  this->get_parameter("max_angvel", vel_[1]);
-  this->get_parameter("max_acc", acc_[0]);
-  this->get_parameter("max_angacc", acc_[1]);
-  acc_toc_[0] = acc_[0] * this->get_parameter("acc_toc_factor").as_double();
-  acc_toc_[1] = acc_[1] * this->get_parameter("angacc_toc_factor").as_double();
-  this->get_parameter("path_step", path_step_);
-  this->get_parameter("goal_tolerance_dist", goal_tolerance_dist_);
-  this->get_parameter("goal_tolerance_ang", goal_tolerance_ang_);
-  this->get_parameter("stop_tolerance_dist", stop_tolerance_dist_);
-  this->get_parameter("stop_tolerance_ang", stop_tolerance_ang_);
-  this->get_parameter("no_position_control_dist", no_pos_cntl_dist_);
-  this->get_parameter("min_tracking_path", min_track_path_);
-  this->get_parameter("allow_backward", allow_backward_);
-  this->get_parameter("limit_vel_by_avel", limit_vel_by_avel_);
-  this->get_parameter("check_old_path", check_old_path_);
-  this->get_parameter("epsilon", epsilon_);
-  this->get_parameter("use_time_optimal_control", use_time_optimal_control_);
-  this->get_parameter("time_optimal_control_future_gain", time_optimal_control_future_gain_);
-  this->get_parameter("k_ang_rotation", k_ang_rotation_);
-  this->get_parameter("k_avel_rotation", k_avel_rotation_);
-  this->get_parameter("goal_tolerance_lin_vel", goal_tolerance_lin_vel_);
-  this->get_parameter("goal_tolerance_ang_vel", goal_tolerance_ang_vel_);
+  if (param_listener_->is_old(params_))
+  {
+    params_ = params;
+  }
+  k_[0] = params_.k_dist;
+  k_[1] = params_.k_ang;
+  k_[2] = params_.k_avel;
+  vel_[0] = params_.max_vel;
+  vel_[1] = params_.max_angvel;
+  acc_[0] = params_.max_acc;
+  acc_[1] = params_.max_angacc;
+  acc_toc_[0] = acc_[0] * params_.acc_toc_factor;
+  acc_toc_[1] = acc_[1] * params_.angacc_toc_factor;
 }
 
 TrackerNode::~TrackerNode()
@@ -340,7 +234,7 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstSharedPtr msg)
   path_header_ = msg->header;
   is_path_updated_ = true;
   path_step_done_ = 0;
-  path_.fromMsg(*msg, epsilon_);
+  path_.fromMsg(*msg, params_.epsilon);
   for (const auto& path_pose : path_)
   {
     if (std::isfinite(path_pose.velocity_) && path_pose.velocity_ < -0.0)
@@ -354,31 +248,31 @@ void TrackerNode::cbPath(const typename MSG_TYPE::ConstSharedPtr msg)
 
 void TrackerNode::cbOdometry(const nav_msgs::msg::Odometry::ConstSharedPtr odom)
 {
-  if (odom->header.frame_id != frame_odom_)
+  if (odom->header.frame_id != params_.frame_odom)
   {
-    RCLCPP_WARN(this->get_logger(), "frame_odom is invalid. Update from \"%s\" to \"%s\"", frame_odom_.c_str(), odom->header.frame_id.c_str());
-    frame_odom_ = odom->header.frame_id;
+    RCLCPP_WARN(this->get_logger(), "frame_odom is invalid. Update from \"%s\" to \"%s\"", params_.frame_odom.c_str(), odom->header.frame_id.c_str());
+    params_.frame_odom = odom->header.frame_id;
   }
-  if (odom->child_frame_id != frame_robot_)
+  if (odom->child_frame_id != params_.frame_robot)
   {
     RCLCPP_WARN(this->get_logger(), "frame_robot is invalid. Update from \"%s\" to \"%s\"",
-             frame_robot_.c_str(), odom->child_frame_id.c_str());
-    frame_robot_ = odom->child_frame_id;
+             params_.frame_robot.c_str(), odom->child_frame_id.c_str());
+    params_.frame_robot = odom->child_frame_id;
   }
-  if (odom_timeout_sec_ != 0.0)
+  if (params_.odom_timeout_sec != 0.0)
   {
     odom_timeout_timer_ =
-        this->create_wall_timer(std::chrono::duration<double>(odom_timeout_sec_), std::bind(&TrackerNode::cbOdomTimeout, this));
+        this->create_wall_timer(std::chrono::duration<double>(params_.odom_timeout_sec), [this](){ cbOdomTimeout(); });
   }
 
-  if (prev_odom_stamp_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
+  if (prev_odom_stamp_ != rclcpp::Time(0L, RCL_ROS_TIME))
   {
-    const double dt = std::min(max_dt_, (rclcpp::Time(odom->header.stamp) - prev_odom_stamp_).seconds());
+    const double dt = std::min(params_.max_dt, (rclcpp::Time(odom->header.stamp) - prev_odom_stamp_).seconds());
     nav_msgs::msg::Odometry odom_compensated = *odom;
     Eigen::Vector3d prediction_offset(0, 0, 0);
-    if (predict_odom_)
+    if (params_.predict_odom)
     {
-      const double predict_dt = std::max(0.0, std::min(max_dt_, (this->now() - odom->header.stamp).seconds()));
+      const double predict_dt = std::max(0.0, std::min(params_.max_dt, (this->now() - odom->header.stamp).seconds()));
       tf2::Transform trans;
       const tf2::Quaternion rotation(tf2::Vector3(0, 0, 1), odom->twist.twist.angular.z * predict_dt);
       const tf2::Vector3 translation(odom->twist.twist.linear.x * predict_dt, 0, 0);
@@ -406,8 +300,8 @@ void TrackerNode::cbTimer()
   {
     tf2::Stamped<tf2::Transform> transform;
     tf2::fromMsg(
-        tfbuf_->lookupTransform(frame_odom_, frame_robot_, rclcpp::Time(0, 0, RCL_ROS_TIME)), transform);
-    control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / hz_);
+        tfbuf_->lookupTransform(params_.frame_odom, params_.frame_robot, tf2::TimePointZero), transform);
+    control(transform, Eigen::Vector3d(0, 0, 0), 0, 0, 1.0 / params_.hz);
   }
   catch (tf2::TransformException& e)
   {
@@ -482,16 +376,16 @@ void TrackerNode::control(
       {
         v_lim_.set(0.0, tracking_result.target_linear_vel, acc_[0], dt);
 
-        if (use_time_optimal_control_)
+        if (params_.use_time_optimal_control)
         {
           const double expected_angle_remains =
-              tracking_result.angle_remains + w_lim_.get() * dt * time_optimal_control_future_gain_;
+              tracking_result.angle_remains + w_lim_.get() * dt * params_.time_optimal_control_future_gain;
           w_lim_.set(trajectory_tracker::timeOptimalControl(expected_angle_remains, acc_toc_[1]), vel_[1], acc_[1], dt);
         }
         else
         {
           const double wvel_increment =
-              (-tracking_result.angle_remains * k_ang_rotation_ - w_lim_.get() * k_avel_rotation_) * dt;
+              (-tracking_result.angle_remains * params_.k_ang_rotation - w_lim_.get() * params_.k_avel_rotation) * dt;
           w_lim_.increment(wvel_increment, vel_[1], acc_[1], dt);
         }
         RCLCPP_DEBUG(this->get_logger(),
@@ -506,7 +400,7 @@ void TrackerNode::control(
 
         float wref = std::abs(v_lim_.get()) * tracking_result.tracking_point_curv;
 
-        if (limit_vel_by_avel_ && std::abs(wref) > vel_[1])
+        if (params_.limit_vel_by_avel && std::abs(wref) > vel_[1])
         {
           v_lim_.set(
               std::copysign(1.0, v_lim_.get()) * std::abs(vel_[1] / tracking_result.tracking_point_curv),
@@ -515,7 +409,7 @@ void TrackerNode::control(
         }
 
         const double k_ang =
-            (gain_at_vel_ == 0.0) ? (k_[1]) : (k_[1] * tracking_result.target_linear_vel / gain_at_vel_);
+            (params_.gain_at_vel == 0.0) ? (k_[1]) : (k_[1] * tracking_result.target_linear_vel / params_.gain_at_vel);
         const double dist_diff = tracking_result.distance_from_target;
         const double angle_diff = tracking_result.angle_remains;
         const double wvel_diff = w_lim_.get() - wref;
@@ -526,10 +420,10 @@ void TrackerNode::control(
             ", v_lim %0.3f, w_lim %0.3f signed_local_distance %0.3f, k_ang %0.3f",
             dist_diff, angle_diff, wvel_diff, v_lim_.get(), w_lim_.get(), tracking_result.signed_local_distance, k_ang);
       }
-      if (std::abs(tracking_result.distance_remains) < stop_tolerance_dist_ &&
-          std::abs(tracking_result.angle_remains) < stop_tolerance_ang_ &&
-          std::abs(tracking_result.distance_remains_raw) < stop_tolerance_dist_ &&
-          std::abs(tracking_result.angle_remains_raw) < stop_tolerance_ang_)
+      if (std::abs(tracking_result.distance_remains) < params_.stop_tolerance_dist &&
+          std::abs(tracking_result.angle_remains) < params_.stop_tolerance_ang &&
+          std::abs(tracking_result.distance_remains_raw) < params_.stop_tolerance_dist &&
+          std::abs(tracking_result.angle_remains_raw) < params_.stop_tolerance_ang)
       {
         v_lim_.clear();
         w_lim_.clear();
@@ -563,10 +457,10 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   {
     tf2::Stamped<tf2::Transform> path_to_odom;
     tf2::fromMsg(
-        tfbuf_->lookupTransform(path_header_.frame_id, frame_odom_, rclcpp::Time(0, 0, RCL_ROS_TIME)), path_to_odom);
+        tfbuf_->lookupTransform(path_header_.frame_id, params_.frame_odom, rclcpp::Time(0L, RCL_ROS_TIME)), path_to_odom);
     const tf2::Transform path_to_robot = path_to_odom * odom_to_robot;
     transform_delay = this->now().seconds() - tf2::timeToSec(path_to_odom.stamp_);
-    if (std::abs(transform_delay) > 0.1 && check_old_path_)
+    if (std::abs(transform_delay) > 0.1 && params_.check_old_path)
     {
       RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(),
           1000, "Timestamp of the transform is too old %f %f",
@@ -579,7 +473,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
         Eigen::Rotation2Dd(robot_yaw);
     const auto robot_to_path_2d = path_to_robot_2d.inverse();
 
-    for (size_t i = 0; i < path_.size(); i += path_step_)
+    for (size_t i = 0; i < path_.size(); i += params_.path_step)
       lpath.push_back(
           trajectory_tracker::Pose2D(
               robot_to_path_2d * path_[i].pos_, -robot_yaw + path_[i].yaw_, path_[i].velocity_));
@@ -593,20 +487,20 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   const Eigen::Vector2d origin_raw = prediction_offset.head<2>();
   const float yaw_raw = prediction_offset[2];
 
-  const float yaw_predicted = w_lim_.get() * look_forward_ / 2;
+  const float yaw_predicted = w_lim_.get() * params_.look_forward / 2;
   const Eigen::Vector2d origin =
-      Eigen::Vector2d(std::cos(yaw_predicted), std::sin(yaw_predicted)) * v_lim_.get() * look_forward_;
+      Eigen::Vector2d(std::cos(yaw_predicted), std::sin(yaw_predicted)) * v_lim_.get() * params_.look_forward;
 
   const double path_length = lpath.length();
 
   // Find nearest line strip
   const trajectory_tracker::Path2D::ConstIterator it_local_goal =
-      lpath.findLocalGoal(lpath.cbegin() + path_step_done_, lpath.cend(), allow_backward_);
+      lpath.findLocalGoal(lpath.cbegin() + path_step_done_, lpath.cend(), params_.allow_backward);
 
   const float max_search_range = (path_step_done_ > 0) ? 1.0 : 0.0;
   const trajectory_tracker::Path2D::ConstIterator it_nearest =
       lpath.findNearest(lpath.cbegin() + path_step_done_, it_local_goal, origin,
-                        max_search_range, epsilon_);
+                        max_search_range, params_.epsilon);
 
   if (it_nearest == lpath.end())
   {
@@ -630,7 +524,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   // Remained distance to the final goal
   float distance_remains = lpath.remainedDistance(lpath.cbegin(), it_nearest, lpath.cend(), pos_on_line);
   float distance_remains_raw = lpath.remainedDistance(lpath.cbegin(), it_nearest, lpath.cend(), pos_on_line_raw);
-  if (path_length < no_pos_cntl_dist_)
+  if (path_length < params_.no_position_control_dist)
     distance_remains = distance_remains_raw = remain_local = 0;
 
   // Signed distance error
@@ -640,7 +534,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   // Angular error
   const Eigen::Vector2d vec = lpath[i_nearest].pos_ - lpath[i_nearest_prev].pos_;
   float angle_remains = -atan2(vec[1], vec[0]);
-  const float angle_pose = allow_backward_ ? lpath[i_nearest].yaw_ : -angle_remains;
+  const float angle_pose = params_.allow_backward ? lpath[i_nearest].yaw_ : -angle_remains;
   float sign_vel = 1.0;
   if (std::cos(-angle_remains) * std::cos(angle_pose) + std::sin(-angle_remains) * std::sin(angle_pose) < 0)
   {
@@ -650,7 +544,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   angle_remains = trajectory_tracker::angleNormalized(angle_remains);
 
   // Curvature
-  const float curv = lpath.getCurvature(it_nearest, it_local_goal, pos_on_line, curv_forward_);
+  const float curv = lpath.getCurvature(it_nearest, it_local_goal, pos_on_line, params_.curv_forward);
 
   RCLCPP_DEBUG(this->get_logger(),
       "trajectory_tracker: nearest: %d, local goal: %d, done: %d, goal: %lu, remain: %0.3f, remain_local: %0.3f",
@@ -662,10 +556,10 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
   TrackingResult result(trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::FOLLOWING);
 
   // Stop and rotate
-  const bool large_angle_error = std::abs(rotate_ang_) < M_PI && std::cos(rotate_ang_) > std::cos(angle_remains);
+  const bool large_angle_error = std::abs(params_.rotate_ang) < M_PI && std::cos(params_.rotate_ang) > std::cos(angle_remains);
   if (large_angle_error ||
-      std::abs(remain_local) < stop_tolerance_dist_ ||
-      path_length < min_track_path_ ||
+      std::abs(remain_local) < params_.stop_tolerance_dist ||
+      path_length < params_.min_tracking_path ||
       in_place_turning)
   {
     if (large_angle_error)
@@ -673,15 +567,15 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Stop and rotate due to large angular error: %0.3f", angle_remains);
     }
 
-    if (path_length < min_track_path_ ||
-        std::abs(remain_local) < stop_tolerance_dist_ ||
+    if (path_length < params_.min_tracking_path ||
+        std::abs(remain_local) < params_.stop_tolerance_dist ||
         in_place_turning)
     {
       angle_remains = trajectory_tracker::angleNormalized(-(it_local_goal - 1)->yaw_);
       if (it_local_goal != lpath.end())
         arrive_local_goal = true;
     }
-    if (path_length < stop_tolerance_dist_ || in_place_turning)
+    if (path_length < params_.stop_tolerance_dist || in_place_turning)
       distance_remains = distance_remains_raw = 0.0;
 
     result.turning_in_place = true;
@@ -698,7 +592,7 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
       dist_from_path = -(lpath[i_nearest].pos_ - origin).norm();
     else if (i_nearest + 1 >= static_cast<int>(path_.size()))
       dist_from_path = -(lpath[i_nearest].pos_ - origin).norm();
-    if (std::abs(dist_from_path) > d_stop_)
+    if (std::abs(dist_from_path) > params_.dist_stop)
     {
       result.distance_remains = distance_remains;
       result.distance_remains_raw = distance_remains_raw;
@@ -715,19 +609,19 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
     result.distance_remains_raw = distance_remains_raw;
     result.angle_remains = angle_remains;
     result.angle_remains_raw = angle_remains + yaw_raw;
-    result.distance_from_target = trajectory_tracker::clip(dist_err, d_lim_);
+    result.distance_from_target = trajectory_tracker::clip(dist_err, params_.dist_lim);
     result.signed_local_distance = -remain_local * sign_vel;
     result.tracking_point_curv = curv;
     result.tracking_point_x = pos_on_line[0];
     result.tracking_point_y = pos_on_line[1];
   }
 
-  if (std::abs(result.distance_remains) < goal_tolerance_dist_ &&
-      std::abs(result.angle_remains) < goal_tolerance_ang_ &&
-      std::abs(result.distance_remains_raw) < goal_tolerance_dist_ &&
-      std::abs(result.angle_remains_raw) < goal_tolerance_ang_ &&
-      (goal_tolerance_lin_vel_ == 0.0 || std::abs(odom_linear_vel) < goal_tolerance_lin_vel_) &&
-      (goal_tolerance_ang_vel_ == 0.0 || std::abs(odom_angular_vel) < goal_tolerance_ang_vel_) &&
+  if (std::abs(result.distance_remains) < params_.goal_tolerance_dist &&
+      std::abs(result.angle_remains) < params_.goal_tolerance_ang &&
+      std::abs(result.distance_remains_raw) < params_.goal_tolerance_dist &&
+      std::abs(result.angle_remains_raw) < params_.goal_tolerance_ang &&
+      (params_.goal_tolerance_lin_vel == 0.0 || std::abs(odom_linear_vel) < params_.goal_tolerance_lin_vel) &&
+      (params_.goal_tolerance_ang_vel == 0.0 || std::abs(odom_angular_vel) < params_.goal_tolerance_ang_vel) &&
       it_local_goal == lpath.end())
   {
     result.status = trajectory_tracker_msgs::msg::TrajectoryTrackerStatus::GOAL;
@@ -742,11 +636,5 @@ TrackerNode::TrackingResult TrackerNode::getTrackingResult(
 }
 }  // namespace trajectory_tracker
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-  auto track = std::make_shared<trajectory_tracker::TrackerNode>();
-  rclcpp::spin(track);
-
-  return 0;
-}
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(trajectory_tracker::TrackerNode)

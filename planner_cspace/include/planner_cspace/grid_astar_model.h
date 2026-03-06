@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_GRID_ASTAR_MODEL_H
-#define PLANNER_CSPACE_GRID_ASTAR_MODEL_H
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -67,4 +66,3 @@ public:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_GRID_ASTAR_MODEL_H

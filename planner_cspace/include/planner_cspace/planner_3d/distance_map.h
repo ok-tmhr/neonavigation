@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
-#define PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
+#pragma once
 
 #include <cmath>
 #include <limits>
@@ -144,5 +143,3 @@ protected:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H

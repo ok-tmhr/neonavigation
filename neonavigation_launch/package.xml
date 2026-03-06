@@ -20,7 +20,9 @@
   <exec_depend>safety_limiter</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>trajectory_tracker</exec_depend>
-  <!-- <exec_depend>trajectory_tracker_rviz_plugins</exec_depend> -->
+  <exec_depend>trajectory_tracker_rviz_plugins</exec_depend>
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <exec_depend>rviz2</exec_depend>
   <export>
     <build_type>ament_cmake</build_type>
   </export>

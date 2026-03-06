@@ -43,6 +43,8 @@
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 
+namespace costmap_cspace
+{
 class LaserscanToMapNode : public rclcpp::Node
 {
 private:
@@ -50,7 +52,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr sub_scan_;
 
   nav_msgs::msg::OccupancyGrid map;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   laser_geometry::LaserProjection projector_;
   rclcpp::Time published_;
@@ -68,8 +70,8 @@ private:
   costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2> accum_;
 
 public:
-  LaserscanToMapNode() : Node("laserscan_to_map")
-  , published_(0, 0, RCL_ROS_TIME)
+  LaserscanToMapNode(const rclcpp::NodeOptions& options) : Node("laserscan_to_map", options)
+  , published_(0L, RCL_ROS_TIME)
   , publish_interval_(0, 0)
   {
       z_min_ = this->declare_parameter("z_min", std::numeric_limits<double>::lowest());
@@ -102,7 +104,7 @@ public:
     hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
@@ -134,7 +136,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans;
-      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0L, RCL_ROS_TIME)), trans);
 
       auto pos = trans.getOrigin();
       float x = static_cast<int>(pos.x() / map.info.resolution) * map.info.resolution;
@@ -177,13 +179,7 @@ private:
     pub_map_->publish(map);
   }
 };
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto conv = std::make_shared<LaserscanToMapNode>();
-  rclcpp::spin(conv);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::LaserscanToMapNode)

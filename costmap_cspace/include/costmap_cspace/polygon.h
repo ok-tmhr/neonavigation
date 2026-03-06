@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_POLYGON_H
-#define COSTMAP_CSPACE_POLYGON_H
+#pragma once
 
 #include <cassert>
 #include <cmath>
@@ -198,4 +197,3 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_POLYGON_H

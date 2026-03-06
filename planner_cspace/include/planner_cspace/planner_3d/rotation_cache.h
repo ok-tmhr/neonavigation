@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
-#define PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
+#pragma once
 
 #include <cmath>
 #include <list>
@@ -107,4 +106,3 @@ public:
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H

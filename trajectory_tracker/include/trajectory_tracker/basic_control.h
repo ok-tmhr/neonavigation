@@ -29,8 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_BASIC_CONTROL_H
-#define TRAJECTORY_TRACKER_BASIC_CONTROL_H
+#pragma once
 
 #include <cmath>
 
@@ -102,4 +101,3 @@ public:
 };
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_BASIC_CONTROL_H

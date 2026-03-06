@@ -41,6 +41,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+namespace costmap_cspace
+{
 
 class LargeMapToMapNode : public rclcpp::Node
 {
@@ -50,7 +52,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr large_map_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string robot_frame_;
@@ -62,7 +64,7 @@ private:
   std::map<size_t, std::vector<size_t>> occlusion_table_;
 
 public:
-  LargeMapToMapNode() : Node("largemap_to_map")
+  LargeMapToMapNode(const rclcpp::NodeOptions& options) : Node("largemap_to_map", options)
   {
       robot_frame_ = this->declare_parameter("robot_frame", std::string("base_link"));
 
@@ -106,7 +108,7 @@ public:
     hz = this->declare_parameter("hz", 1.0);
     timer_ = this->create_wall_timer(std::chrono::duration<double>(1.0 / hz), std::bind(&LargeMapToMapNode::cbTimer, this));
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
@@ -126,7 +128,7 @@ private:
     tf2::Stamped<tf2::Transform> trans;
     try
     {
-      tf2::fromMsg(tfbuf_->lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans);
+      tf2::fromMsg(tfbuf_->lookupTransform(large_map_->header.frame_id, robot_frame_, rclcpp::Time(0L, RCL_ROS_TIME)), trans);
     }
     catch (tf2::TransformException& e)
     {
@@ -203,13 +205,7 @@ private:
     pub_map_->publish(map);
   }
 };
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto conv = std::make_shared<LargeMapToMapNode>();
-  rclcpp::spin(conv);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::LargeMapToMapNode)

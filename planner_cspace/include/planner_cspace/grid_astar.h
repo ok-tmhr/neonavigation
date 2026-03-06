@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_GRID_ASTAR_H
-#define PLANNER_CSPACE_GRID_ASTAR_H
+#pragma once
 
 #define _USE_MATH_DEFINES
 #include <cfloat>
@@ -420,4 +419,3 @@ protected:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_GRID_ASTAR_H

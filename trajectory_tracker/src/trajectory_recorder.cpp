@@ -48,11 +48,13 @@
 #include <tf2_ros/transform_listener.h>
 #include <std_srvs/srv/empty.hpp>
 
+namespace trajectory_tracker
+{
 
 class RecorderNode : public rclcpp::Node
 {
 public:
-  RecorderNode();
+  RecorderNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~RecorderNode();
   void spin();
 
@@ -67,7 +69,7 @@ private:
   bool store_time_;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr srs_clear_path_;
@@ -75,7 +77,7 @@ private:
   nav_msgs::msg::Path path_;
 };
 
-RecorderNode::RecorderNode() : Node("trajectory_recorder")
+RecorderNode::RecorderNode(const rclcpp::NodeOptions& options) : Node("trajectory_recorder", options)
 {
   frame_robot_ = this->declare_parameter("frame_robot", std::string("base_link"));
   frame_global_ = this->declare_parameter("frame_global", std::string("map"));
@@ -86,14 +88,15 @@ RecorderNode::RecorderNode() : Node("trajectory_recorder")
   pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
       "path",
       rclcpp::QoS(10).transient_local());
-  srs_clear_path_ = this->create_service<std_srvs::srv::Empty>("~/clear_path", std::bind(&RecorderNode::clearPath, this, std::placeholders::_1, std::placeholders::_2));
+  srs_clear_path_ = this->create_service<std_srvs::srv::Empty>("~/clear_path",
+    [this](const std_srvs::srv::Empty::Request::SharedPtr req, std_srvs::srv::Empty::Response::SharedPtr res){ clearPath(req, res); });
 
-  tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+  tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
 
   timer_ = this->create_wall_timer(
     std::chrono::duration<double>(1.0 / 50.0),
-    std::bind(&RecorderNode::spin, this));
+    [this](){ spin(); });
 }
 
 RecorderNode::~RecorderNode()
@@ -116,7 +119,7 @@ void RecorderNode::spin()
   path_.header.frame_id = frame_global_;
 
   {
-    rclcpp::Time now = rclcpp::Time(0, 0, RCL_ROS_TIME);
+    rclcpp::Time now = rclcpp::Time(0L, RCL_ROS_TIME);
     if (store_time_)
       now = this->now();
     tf2::Stamped<tf2::Transform> transform;
@@ -155,13 +158,7 @@ void RecorderNode::spin()
     }
   }
 }
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto rec = std::make_shared<RecorderNode>();
-  rclcpp::spin(rec);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(trajectory_tracker::RecorderNode)

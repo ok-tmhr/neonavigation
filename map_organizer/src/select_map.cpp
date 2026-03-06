@@ -37,7 +37,8 @@
 
 #include <vector>
 
-
+namespace map_organizer
+{
 class SelectMap : public rclcpp::Node
 {
   rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr subMaps_;
@@ -53,7 +54,7 @@ class SelectMap : public rclcpp::Node
 
   void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg)
   {
-    RCLCPP_INFO(rclcpp::get_logger("select_map"), "Map array received");
+    RCLCPP_INFO(this->get_logger(), "Map array received");
     maps_ = *msg;
     orig_mapinfos_.clear();
     for (auto& map : maps_.maps)
@@ -66,7 +67,7 @@ class SelectMap : public rclcpp::Node
   {
     floor_cur_ = msg->data;
   }
-  void on_timer()
+  void on_time()
   {
     if (maps_.maps.size() == 0)
       return;
@@ -89,16 +90,16 @@ class SelectMap : public rclcpp::Node
   }
 
 public:
-  SelectMap() : Node("select_map")
+  SelectMap(const rclcpp::NodeOptions& options) : Node("select_map", options)
   , floor_cur_(0)
   , floor_prev_(-1)
   {
     subMaps_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
         "maps",
-        1, [this](const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg){cbMaps(msg);});
+        1, [this](const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg){ cbMaps(msg); });
     subFloor_ = this->create_subscription<std_msgs::msg::Int32>(
         "floor",
-        1, [this](const std_msgs::msg::Int32::SharedPtr msg){cbFloor(msg);});
+        1, [this](const std_msgs::msg::Int32::SharedPtr msg){ cbFloor(msg); });
     pubMap_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map",
         rclcpp::QoS(1).transient_local());
@@ -109,16 +110,12 @@ public:
     trans_.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
 
     timer_ = this->create_wall_timer(
-      std::chrono::duration<double>(1.0 / 10.0),
-      std::bind(&SelectMap::on_timer, this));
+      std::chrono::milliseconds(100),
+      [this](){ on_time(); });
   }
 };
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-  auto node = std::make_shared<SelectMap>();
-
-  rclcpp::spin(node);
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(map_organizer::SelectMap)

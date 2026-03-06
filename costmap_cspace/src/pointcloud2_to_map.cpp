@@ -42,6 +42,9 @@
 
 #include <costmap_cspace/pointcloud_accumulator.h>
 
+namespace costmap_cspace
+{
+
 class Pointcloud2ToMapNode : public rclcpp::Node
 {
 private:
@@ -50,7 +53,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_cloud_single_;
 
   nav_msgs::msg::OccupancyGrid map_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
   rclcpp::Time published_;
   rclcpp::Duration publish_interval_;
@@ -67,8 +70,8 @@ private:
   std::vector<costmap_cspace::PointcloudAccumulator<sensor_msgs::msg::PointCloud2>> accums_;
 
 public:
-  Pointcloud2ToMapNode() : Node("pointcloud2_to_map")
-    , published_(0, 0, RCL_ROS_TIME)
+  Pointcloud2ToMapNode(const rclcpp::NodeOptions& options) : Node("pointcloud2_to_map", options)
+    , published_(0L, RCL_ROS_TIME)
     , publish_interval_(0, 0)
     , accums_(2)
   {
@@ -109,7 +112,7 @@ public:
     hz = this->declare_parameter("hz", 1.0);
     publish_interval_ = rclcpp::Duration::from_seconds(1.0 / hz);
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 
@@ -143,7 +146,7 @@ private:
     try
     {
       tf2::Stamped<tf2::Transform> trans_to_robot;
-      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0, 0, RCL_ROS_TIME)), trans_to_robot);
+      tf2::fromMsg(tfbuf_->lookupTransform(global_frame_, robot_frame_, rclcpp::Time(0L, RCL_ROS_TIME)), trans_to_robot);
 
       auto pos = trans_to_robot.getOrigin();
       float x = static_cast<int>(pos.x() / map_.info.resolution) * map_.info.resolution;
@@ -189,13 +192,7 @@ private:
     pub_map_->publish(map_);
   }
 };
-
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto conv = std::make_shared<Pointcloud2ToMapNode>();
-  rclcpp::spin(conv);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(costmap_cspace::Pointcloud2ToMapNode)

@@ -32,13 +32,18 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/srv/get_map.hpp>
-#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/utils.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
+
+namespace fs = std::filesystem;
 
 /**
  * @brief Map generation node.
@@ -51,12 +56,13 @@ protected:
   bool saved_map_;
 
 public:
-  explicit MapGeneratorNode(const std::string& mapname) : Node("save_maps")
+  explicit MapGeneratorNode(const std::string& mapname, const rclcpp::NodeOptions& options) : Node("save_maps", options)
     , mapname_(mapname)
     , saved_map_(false)
   {
     RCLCPP_INFO(this->get_logger(), "Waiting for the map");
-    map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(), std::bind(&MapGeneratorNode::mapsCallback, this, std::placeholders::_1));
+    map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(),
+      [this](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg){ mapsCallback(msg); });
   }
 
   bool done() const
@@ -72,6 +78,7 @@ public:
       i++;
     }
     saved_map_ = true;
+    rclcpp::shutdown();
   }
   void mapCallback(const nav_msgs::msg::OccupancyGrid* map, const int floor)
   {
@@ -80,55 +87,58 @@ public:
              map->info.height,
              map->info.resolution);
 
-    std::string mapdatafile = mapname_ + std::to_string(floor) + ".pgm";
+    fs::path mapdatafile(mapname_ + std::to_string(floor) + ".pgm");
     RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s", mapdatafile.c_str());
-    FILE* out = fopen(mapdatafile.c_str(), "w");
+
+    std::ofstream out(mapdatafile, std::ios::binary);
     if (!out)
     {
       RCLCPP_ERROR(this->get_logger(), "Couldn't save map file to %s", mapdatafile.c_str());
       return;
     }
 
-    fprintf(out, "P5\n# CREATOR: Map_generator.cpp %.3f m/pix\n%d %d\n255\n",
-            map->info.resolution, map->info.width, map->info.height);
+    out << "P5\n# CREATOR: Map_generator.cpp"
+        << std::fixed << std::setprecision(3)
+        << map->info.resolution << " m/pix\n"
+        << map->info.width << " "
+        << map->info.height << "\n255\n";
+
+    std::vector<u_char> buffer(map->info.width * map->info.height);
     for (unsigned int y = 0; y < map->info.height; y++)
     {
       for (unsigned int x = 0; x < map->info.width; x++)
       {
         unsigned int i = x + (map->info.height - y - 1) * map->info.width;
-        if (map->data[i] == 0)
-        {  // occ [0,0.1)
-          fputc(254, out);
-        }
-        else if (map->data[i] == +100)
-        {  // occ (0.65,1]
-          fputc(000, out);
-        }
-        else
-        {  // occ [0.1,0.65]
-          fputc(205, out);
+        switch (map->data[i])
+        {
+          case 0: // occ [0,0.1)
+            buffer[x + y * map->info.width] = 254;
+            break;
+          case 100: // occ (0.65,1]
+            buffer[x + y * map->info.width] = 0;
+            break;
+          default: // occ [0.1,0.65]
+            buffer[x + y * map->info.width] = 205;
+            break;
         }
       }
     }
 
-    fclose(out);
+    out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+    out.close();
 
-    std::string mapmetadatafile = mapname_ + std::to_string(floor) + ".yaml";
+    fs::path mapmetadatafile(mapname_ + std::to_string(floor) + ".yaml");
     RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s", mapmetadatafile.c_str());
-    FILE* yaml = fopen(mapmetadatafile.c_str(), "w");
+    std::ofstream yaml(mapmetadatafile);
 
-    geometry_msgs::msg::Quaternion orientation = map->info.origin.orientation;
-    tf2::Matrix3x3 mat(tf2::Quaternion(orientation.x, orientation.y, orientation.z, orientation.w));
-    double yaw, pitch, roll;
-    mat.getEulerYPR(yaw, pitch, roll);
+    double yaw = tf2::getYaw(map->info.origin.orientation);
 
-    fprintf(yaml, "image: %s\nresolution: %f\n"
-                  "origin: [%f, %f, %f]\nheight: %f\n"
-                  "negate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n",
-            mapdatafile.c_str(), map->info.resolution,
-            map->info.origin.position.x, map->info.origin.position.y, yaw, map->info.origin.position.z);
-
-    fclose(yaml);
+    const auto& position = map->info.origin.position;
+    yaml << "image: " << mapdatafile.filename().string()
+         << "\nresolution: " << map->info.resolution
+         << "\norigin: [" << position.x << ", " << position.y << ", " << yaw << "]"
+         << "\nheight: " << position.z
+         << "\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n";
 
     RCLCPP_INFO(this->get_logger(), "Done\n");
   }
@@ -136,7 +146,7 @@ public:
 
 #define USAGE "Usage: \n"        \
               "  map_saver -h\n" \
-              "  map_saver [-f <mapname>] [ROS remapping args]"
+              "  map_saver [-f <mapname>] [ROS arguments]"
 
 int main(int argc, char** argv)
 {
@@ -146,32 +156,26 @@ int main(int argc, char** argv)
 
   for (size_t i = 1; i < args.size(); i++)
   {
-    if (!strcmp(argv[i], "-h"))
+    if (args[i] == "-h")
     {
-      puts(USAGE);
+      std::cout << USAGE << std::endl;
       return 0;
     }
-    else if (!strcmp(argv[i], "-f"))
+    else if (args[i] == "-f" && ++i < args.size())
     {
-      if (++i < static_cast<size_t>(argc))
-        mapname = argv[i];
-      else
-      {
-        puts(USAGE);
-        return 1;
-      }
+      mapname = argv[i];
     }
     else
     {
-      puts(USAGE);
+      std::cout << USAGE << std::endl;;
       return 1;
     }
   }
 
-  auto mg = std::make_shared<MapGeneratorNode>(mapname);
+  auto mg = std::make_shared<MapGeneratorNode>(mapname, rclcpp::NodeOptions());
 
-  while (!mg->done() && rclcpp::ok())
-    rclcpp::spin_some(mg);
+  // while (!mg->done() && rclcpp::ok())
+  rclcpp::spin(mg);
 
   return 0;
 }

@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRACK_ODOMETRY_TF_PROJECTION_H
-#define TRACK_ODOMETRY_TF_PROJECTION_H
+#pragma once
 
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -40,4 +39,3 @@ tf2::Transform projectTranslation(
     const tf2::Transform& trans, const tf2::Transform& trans_target);
 }  // namespace track_odometry
 
-#endif  // TRACK_ODOMETRY_TF_PROJECTION_H

@@ -1,19 +1,16 @@
-include_directories(include)
 
-ament_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
-target_link_libraries(test_${PROJECT_NAME}_filter)
+ament_auto_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
+target_include_directories(test_${PROJECT_NAME}_filter PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-ament_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
-target_link_libraries(test_${PROJECT_NAME}_path2d ${nav_msgs_TARGETS} Eigen3::Eigen ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
+ament_auto_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
+target_include_directories(test_${PROJECT_NAME}_path2d PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-ament_add_gtest_executable(test_trajectory_recorder
+ament_auto_add_gtest(test_trajectory_recorder SKIP_TEST
     src/test_trajectory_recorder.cpp)
-target_link_libraries(test_trajectory_recorder rclcpp::rclcpp tf2_ros::tf2_ros ${tf2_geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${std_srvs_TARGETS})
 add_launch_test(launch/trajectory_recorder_test.launch.py TIMEOUT 60)
 
-ament_add_gtest_executable(test_trajectory_tracker
+ament_auto_add_gtest(test_trajectory_tracker SKIP_TEST
     src/test_trajectory_tracker.cpp)
-target_link_libraries(test_trajectory_tracker Eigen3::Eigen rclcpp::rclcpp ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
 
 add_launch_test(launch/trajectory_tracker_test.launch.py
   TARGET test_trajectory_tracker_rostest0
@@ -32,23 +29,14 @@ add_launch_test(launch/trajectory_tracker_test.launch.py
   TIMEOUT 480 # TODO pass within 120
 )
 
-ament_add_gtest_executable(test_trajectory_tracker_with_odom
+ament_auto_add_gtest(test_trajectory_tracker_with_odom SKIP_TEST
     src/test_trajectory_tracker_with_odom.cpp)
-target_link_libraries(test_trajectory_tracker_with_odom Eigen3::Eigen rclcpp::rclcpp ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
 add_launch_test(launch/trajectory_tracker_with_odom_test.launch.py TIMEOUT 120)
 
-ament_add_gtest_executable(test_trajectory_tracker_overshoot
+ament_auto_add_gtest(test_trajectory_tracker_overshoot SKIP_TEST
     src/test_trajectory_tracker_overshoot.cpp)
-target_link_libraries(test_trajectory_tracker_overshoot Eigen3::Eigen rclcpp::rclcpp ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
 add_launch_test(launch/trajectory_tracker_overshoot_test.launch.py TIMEOUT 120)
 
-install(TARGETS
-    test_trajectory_recorder
-    test_trajectory_tracker
-    test_trajectory_tracker_with_odom
-    test_trajectory_tracker_overshoot
-  DESTINATION lib/${PROJECT_NAME}
-)
 
 install(DIRECTORY test
   DESTINATION share/${PROJECT_NAME}

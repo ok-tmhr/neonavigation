@@ -54,11 +54,13 @@
 
 #include <trajectory_tracker/filter.h>
 
+namespace trajectory_tracker
+{
 
 class ServerNode : public rclcpp::Node
 {
 public:
-  ServerNode();
+  ServerNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~ServerNode();
   void spin();
 
@@ -67,6 +69,7 @@ private:
   rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>::SharedPtr pub_status_;
   rclcpp::Service<trajectory_tracker_msgs::srv::ChangePath>::SharedPtr srv_change_path_;
   std::shared_ptr<interactive_markers::InteractiveMarkerServer> srv_im_fb_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
   nav_msgs::msg::Path path_;
   trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
@@ -82,16 +85,16 @@ private:
   void processFeedback(
       const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback);
   void updateIM();
-  enum
+  enum class Menu
   {
-    MENU_DELETE = 1,
-    MENU_ADD = 2
+    DELETE = 1,
+    ADD = 2
   };
   int update_num_;
   int max_markers_;
 };
 
-ServerNode::ServerNode() : Node("trajectory_server")
+ServerNode::ServerNode(const rclcpp::NodeOptions& options) : Node("trajectory_server", options)
 {
   buffer_ = std::make_unique<uint8_t[]>(1024);
   req_path_.filename = this->declare_parameter("file", std::string("a.path"));
@@ -109,6 +112,10 @@ ServerNode::ServerNode() : Node("trajectory_server")
   max_markers_ = 0;
 
   srv_im_fb_ = std::make_shared<interactive_markers::InteractiveMarkerServer>(this->get_namespace(), this);
+
+  timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(1.0 / hz_),
+    [this](){ spin(); });
 }
 ServerNode::~ServerNode()
 {
@@ -144,12 +151,12 @@ void ServerNode::processFeedback(
       pub_path_->publish(path_);
       break;
     case visualization_msgs::msg::InteractiveMarkerFeedback::MENU_SELECT:
-      switch (feedback->menu_entry_id)
+      switch (static_cast<Menu>(feedback->menu_entry_id))
       {
-        case MENU_DELETE:
+        case Menu::DELETE:
           path_.poses.erase(path_.poses.begin() + id);
           break;
-        case MENU_ADD:
+        case Menu::ADD:
           path_.poses.insert(path_.poses.begin() + id, path_.poses[id]);
           break;
       }
@@ -211,12 +218,12 @@ void ServerNode::updateIM()
     ctl.markers[0] = marker;
     mark.controls.push_back(ctl);
 
-    menu.id = MENU_DELETE;
+    menu.id = static_cast<uint32_t>(Menu::DELETE);
     menu.parent_id = 0;
     menu.title = "Delete";
     menu.command_type = menu.FEEDBACK;
     mark.menu_entries.push_back(menu);
-    menu.id = MENU_ADD;
+    menu.id = static_cast<uint32_t>(Menu::ADD);
     menu.parent_id = 0;
     menu.title = "Add";
 
@@ -245,9 +252,9 @@ void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request:
     {
       std::cout << filter_step_ << std::endl;
       lpf_[0] = new trajectory_tracker::Filter(
-          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
+          trajectory_tracker::Filter::Type::LPF, filter_step_, path_.poses[0].pose.position.x);
       lpf_[1] = new trajectory_tracker::Filter(
-          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
+          trajectory_tracker::Filter::Type::LPF, filter_step_, path_.poses[0].pose.position.y);
 
       for (size_t i = 0; i < path_.poses.size(); i++)
       {
@@ -273,26 +280,17 @@ void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request:
 
 void ServerNode::spin()
 {
-  rclcpp::Rate loop_rate(hz_);
   trajectory_tracker_msgs::msg::TrajectoryServerStatus status;
 
-  while (rclcpp::ok())
   {
     status.header = path_.header;
     status.filename = req_path_.filename;
     status.id = req_path_.id;
     pub_status_->publish(status);
-    rclcpp::spin_some(shared_from_this());
-    loop_rate.sleep();
   }
 }
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto serv = std::make_shared<ServerNode>();
-  serv->spin();
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(trajectory_tracker::ServerNode)

@@ -76,11 +76,11 @@ void validateMap1(const nav_msgs::msg::OccupancyGrid& map, const double z)
 
 TEST(MapOrganizer, MapArray)
 {
-  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
+  auto nh = rclcpp::Node::make_shared("test_map_organizer");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps;
-  const std::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg) -> void
+  const auto
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg)
   {
     maps = msg;
   };
@@ -103,12 +103,12 @@ TEST(MapOrganizer, MapArray)
 
 TEST(MapOrganizer, Maps)
 {
-  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
+  auto nh = rclcpp::Node::make_shared("test_map_organizer");
 
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr map[2];
-  const std::function<void(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr, int)>
+  const auto
       cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
-                  const int id) -> void
+                  const int id)
   {
     map[id] = msg;
   };
@@ -135,11 +135,11 @@ TEST(MapOrganizer, Maps)
 
 TEST(MapOrganizer, SelectMap)
 {
-  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
+  auto nh = rclcpp::Node::make_shared("test_map_organizer");
 
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr map;
-  const std::function<void(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr)>
-      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg) -> void
+  const auto
+      cb = [&map](const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
     map = msg;
   };
@@ -190,11 +190,11 @@ TEST(MapOrganizer, SelectMap)
 
 TEST(MapOrganizer, SavedMapArray)
 {
-  rclcpp::Node::SharedPtr nh = rclcpp::Node::make_shared("test_map_organizer");
+  auto nh = rclcpp::Node::make_shared("test_map_organizer");
 
   map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps;
-  const std::function<void(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr)>
-      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg) -> void
+  const auto
+      cb = [&maps](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg)
   {
     maps = msg;
   };

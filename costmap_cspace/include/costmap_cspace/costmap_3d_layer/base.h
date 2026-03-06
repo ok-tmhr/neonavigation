@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -95,10 +94,23 @@ public:
   }
 };
 
-enum MapOverlayMode
+enum class MapOverlayMode
 {
   OVERWRITE,
   MAX
+};
+
+MapOverlayMode mapOverlayMode(const std::string& mode)
+{
+  if (mode == "overwrite")
+  {
+    return MapOverlayMode::OVERWRITE;
+  }
+  else if (mode == "max")
+  {
+    return MapOverlayMode::MAX;
+  }
+  throw std::runtime_error("Unkown overlay_mode specified: '" + mode + "'");
 };
 
 class UpdatedRegion
@@ -115,13 +127,13 @@ public:
     , width_(0)
     , height_(0)
     , angle_(0)
-    , stamp_(0, 0, RCL_ROS_TIME)
+    , stamp_(0L, RCL_ROS_TIME)
   {
   }
   UpdatedRegion(
       const int& x, const int& y, const int& yaw,
       const int& width, const int& height, const int& angle,
-      const rclcpp::Time& stamp = rclcpp::Time(0, 0, RCL_ROS_TIME))
+      const rclcpp::Time& stamp = rclcpp::Time(0L, RCL_ROS_TIME))
     : x_(x)
     , y_(y)
     , yaw_(yaw)
@@ -257,14 +269,7 @@ public:
   using SharedPtr = std::shared_ptr<Costmap3dLayerBase>;
   struct LayerConfig {
     std::string name;
-    std::string type;
-    std::string overlay_mode;
     std::string footprint;
-    double linear_expand;
-    double linear_spread;
-    int linear_spread_min_cost = 0;
-    bool keep_unknown = false;
-    int8_t unknown_cost = -1;
   };
 
 protected:
@@ -453,4 +458,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H

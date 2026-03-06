@@ -2,11 +2,11 @@ import os
 import unittest
 
 import launch_testing
-from ament_index_python.packages import get_package_prefix, get_package_share_directory
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
 from launch_ros.actions import Node
-from launch_testing.actions import GTest, ReadyToTest
+from launch_testing.actions import ReadyToTest
 from launch_xml.launch_description_sources import XMLLaunchDescriptionSource
 
 

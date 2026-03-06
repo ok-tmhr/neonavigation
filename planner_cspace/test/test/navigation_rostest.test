@@ -63,11 +63,11 @@
 
   <node pkg="nav2_map_server" exec="map_server" name="map_server_global">
     <remap from="map" to="map_global" />
-    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/global_map.yaml" />
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/data/global_map.yaml" />
   </node>
   <node pkg="nav2_map_server" exec="map_server" name="map_server_local">
     <remap from="map" to="map_local" />
-    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/test/data/local_map.yaml" />
+    <param name="yaml_filename" value="$(find-pkg-share planner_cspace)/data/local_map.yaml" />
   </node>
 
   <node pkg="planner_cspace" exec="patrol" name="patrol">

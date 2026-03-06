@@ -52,7 +52,7 @@ protected:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_init_;
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
@@ -98,7 +98,7 @@ public:
     sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>("cmd_vel", 1, std::bind(&DummyRobotNode::cbTwist, this, std::placeholders::_1));
     sub_init_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>("initialpose", rclcpp::QoS(1).transient_local(), std::bind(&DummyRobotNode::cbInit, this, std::placeholders::_1));
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }

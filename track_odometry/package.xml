@@ -9,12 +9,14 @@
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
   <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_ros</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <test_depend>launch_testing_ament_cmake</test_depend>
 
   <depend>geometry_msgs</depend>
   <depend>message_filters</depend>
@@ -26,6 +28,7 @@
   <depend>tf2_ros</depend>
   <depend>trajectory_msgs</depend>
 
+  <depend>generate_parameter_library</depend>
 
   <depend>eigen</depend>
   <export>

@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_H
-#define COSTMAP_CSPACE_COSTMAP_3D_H
+#pragma once
 
 #include <cassert>
 #include <memory>
@@ -102,6 +101,12 @@ public:
 
     return costmap_overlay;
   }
+  std::shared_ptr<Costmap3dLayerBase> addLayer(
+      std::shared_ptr<Costmap3dLayerBase> costmap_overlay,
+      const std::string& overlay_mode)
+  {
+    return addLayer(costmap_overlay, mapOverlayMode(overlay_mode));
+  }
   std::shared_ptr<Costmap3dLayerBase> getRootLayer()
   {
     return costmaps_.front();
@@ -109,4 +114,3 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_H

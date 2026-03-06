@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_PRIMITIVE_BUILDER_H
-#define PLANNER_CSPACE_PLANNER_3D_MOTION_PRIMITIVE_BUILDER_H
+#pragma once
 
 #include <vector>
 
@@ -54,5 +53,3 @@ private:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_PRIMITIVE_BUILDER_H

@@ -39,7 +39,7 @@ TEST(Filter, LPFCharacteristic)
 {
   for (int time_const = 20; time_const < 100; time_const += 20)
   {
-    trajectory_tracker::Filter lpf(trajectory_tracker::Filter::FILTER_LPF, time_const, 0.0);
+    trajectory_tracker::Filter lpf(trajectory_tracker::Filter::Type::LPF, time_const, 0.0);
     ASSERT_LT(std::abs(lpf.get()), 1e-6);
 
     // Input step function
@@ -72,8 +72,8 @@ TEST(Filter, HPFCharacteristic)
 {
   for (int time_const = 20; time_const < 100; time_const += 20)
   {
-    trajectory_tracker::Filter lpf(trajectory_tracker::Filter::FILTER_LPF, time_const, 0.0);
-    trajectory_tracker::Filter hpf(trajectory_tracker::Filter::FILTER_HPF, time_const, 0.0);
+    trajectory_tracker::Filter lpf(trajectory_tracker::Filter::Type::LPF, time_const, 0.0);
+    trajectory_tracker::Filter hpf(trajectory_tracker::Filter::Type::HPF, time_const, 0.0);
 
     // Input step function
     for (int i = 0; i < time_const * 10; ++i)
@@ -96,8 +96,8 @@ TEST(Filter, AugleLPF)
     const float start1 = zero + 0.5;
     const float end1 = zero + M_PI * 2.0 - 0.5;
 
-    trajectory_tracker::Filter lpf(trajectory_tracker::Filter::FILTER_LPF, 10, start1);
-    trajectory_tracker::Filter lpf_angle(trajectory_tracker::Filter::FILTER_LPF, 10, start1, true);
+    trajectory_tracker::Filter lpf(trajectory_tracker::Filter::Type::LPF, 10, start1);
+    trajectory_tracker::Filter lpf_angle(trajectory_tracker::Filter::Type::LPF, 10, start1, true);
     ASSERT_LT(std::abs(lpf.get() - start1), 1e-6);
     ASSERT_LT(std::abs(lpf_angle.get() - start1), 1e-6);
 

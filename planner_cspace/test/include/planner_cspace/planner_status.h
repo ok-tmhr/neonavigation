@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_STATUS_H
-#define PLANNER_CSPACE_PLANNER_STATUS_H
+#pragma once
 
 #include <ostream>
 #include <planner_cspace_msgs/msg/planner_status.hpp>
@@ -52,5 +51,3 @@ std::ostream& operator<<(std::ostream& os, const PlannerStatus::ConstSharedPtr m
   return os;
 }
 }  // namespace planner_cspace_msgs
-
-#endif  // PLANNER_CSPACE_PLANNER_STATUS_H

@@ -1,0 +1,4 @@
+unknown_handle:
+  unknown_cost:
+    type: int
+    default_value: -1

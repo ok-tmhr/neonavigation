@@ -37,6 +37,8 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+namespace joystick_interrupt
+{
 
 class JoystickInterrupt : public rclcpp::Node
 {
@@ -91,16 +93,16 @@ private:
     {
       RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
                 msg->buttons.size(), interrupt_button_);
-      last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      last_joy_msg_ = rclcpp::Time(0L, RCL_ROS_TIME);
       return;
     }
     if (!msg->buttons[interrupt_button_])
     {
-      if (last_joy_msg_ != rclcpp::Time(0, 0, RCL_ROS_TIME))
+      if (last_joy_msg_ != rclcpp::Time(0L, RCL_ROS_TIME))
       {
         pub_twist_->publish(last_input_twist_);
       }
-      last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      last_joy_msg_ = rclcpp::Time(0L, RCL_ROS_TIME);
       return;
     }
 
@@ -140,7 +142,7 @@ private:
     std_msgs::msg::Bool status;
     bool use_sim_time = this->get_parameter("use_sim_time").as_bool();
     if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
-        (use_sim_time && last_joy_msg_ == rclcpp::Time(0, 0, RCL_ROS_TIME)))
+        (use_sim_time && last_joy_msg_ == rclcpp::Time(0L, RCL_ROS_TIME)))
     {
       pub_twist_->publish(last_input_twist_);
       status.data = true;
@@ -153,14 +155,13 @@ private:
   };
 
 public:
-  JoystickInterrupt() : Node("joystick_interrupt")
-  , last_joy_msg_(0, 0, RCL_ROS_TIME)
+  JoystickInterrupt(const rclcpp::NodeOptions& options) : Node("joystick_interrupt", options)
+  , last_joy_msg_(0L, RCL_ROS_TIME)
   {
-    using std::placeholders::_1;
-      sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, std::bind(&JoystickInterrupt::cbJoy, this, _1));
+    sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, [this](const sensor_msgs::msg::Joy::SharedPtr msg){ cbJoy(msg); });
     sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
         "cmd_vel_input",
-        1, std::bind(&JoystickInterrupt::cbTwist, this, _1));
+        1,[this](const geometry_msgs::msg::Twist::SharedPtr msg){ cbTwist(msg); });
     pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
         "cmd_vel",
         2);
@@ -180,8 +181,6 @@ public:
     linear_y_vel_ = this->declare_parameter("linear_y_vel", 0.0);
     linear_y_axis_ = this->declare_parameter("linear_y_axis", -1);
     linear_y_axis2_ = this->declare_parameter("linear_y_axis2", -1);
-
-    last_joy_msg_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 
     if (interrupt_button_ < 0)
     {
@@ -203,13 +202,7 @@ public:
     }
   }
 };
-
-int main(int argc, char* argv[])
-{
-  rclcpp::init(argc, argv);
-
-  auto jy = std::make_shared<JoystickInterrupt>();
-  rclcpp::spin(jy);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(joystick_interrupt::JoystickInterrupt)

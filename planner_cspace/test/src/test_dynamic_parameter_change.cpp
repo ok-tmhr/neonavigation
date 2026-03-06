@@ -227,11 +227,11 @@ protected:
     auto future = move_base_->async_send_goal(CreateGoalInFree());
     rclcpp::spin_until_future_complete(node_, future);
 
-    last_path_received_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+    last_path_received_time_ = rclcpp::Time(0L, RCL_ROS_TIME);
     publishMapAndRobot(2.55, 0.45, M_PI);
     rclcpp::Time last_costmap_publishing_time = node_->now();
     rclcpp::Rate r(100);
-    while (rclcpp::ok() && (last_path_received_time_ == rclcpp::Time(0, 0, RCL_ROS_TIME)))
+    while (rclcpp::ok() && (last_path_received_time_ == rclcpp::Time(0L, RCL_ROS_TIME)))
     {
       if ((node_->now() - last_costmap_publishing_time) > costmap_publishing_interval)
       {

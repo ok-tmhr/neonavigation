@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -48,6 +47,7 @@
 #include <costmap_cspace/cspace3_cache.h>
 #include <costmap_cspace/polygon.h>
 
+#include <costmap_cspace/footprint_parameters.hpp>
 namespace costmap_cspace
 {
 class Costmap3dLayerFootprint : public Costmap3dLayerBase
@@ -83,28 +83,15 @@ public:
   }
   void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    if (config.name.empty())
-    {
-    const int linear_spread_min_cost =
-        config.linear_spread_min_cost;
+    auto param_listener = std::make_shared<footprint::ParamListener>(node.get_node_parameters_interface(), config.name);
+    auto params = param_listener->get_params();
     setExpansion(
-        config.linear_expand,
-        config.linear_spread,
-        linear_spread_min_cost);
+        static_cast<float>(params.linear_expand),
+        static_cast<float>(params.linear_spread),
+        static_cast<int>(params.linear_spread_min_cost)
+    );
     setFootprint(costmap_cspace::Polygon(config.footprint));
-    setKeepUnknown(node.declare_parameter("keep_unknown", false));
-    }
-    else
-    {
-    const int linear_spread_min_cost =
-        node.declare_parameter(config.name + ".linear_spread_min_cost", 0);
-    setExpansion(
-        node.declare_parameter<float>(config.name + ".linear_expand", 0.2f),
-        node.declare_parameter<float>(config.name + ".linear_spread", 0.5f),
-        linear_spread_min_cost);
-    setFootprint(costmap_cspace::Polygon(config.footprint));
-    setKeepUnknown(node.declare_parameter(config.name + ".keep_unknown", false));
-    }
+    setKeepUnknown(params.keep_unknown);
   }
   void setKeepUnknown(const bool keep_unknown)
   {
@@ -238,7 +225,7 @@ protected:
       CSpace3DMsg::SharedPtr map,
       const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
-    if (overlay_mode_ != OVERWRITE || root_)
+    if (overlay_mode_ != MapOverlayMode::OVERWRITE || root_)
     {
       return;
     }
@@ -382,4 +369,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H

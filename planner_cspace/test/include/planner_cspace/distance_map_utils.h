@@ -28,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_DISTANCE_MAP_UTILS_H
-#define PLANNER_CSPACE_DISTANCE_MAP_UTILS_H
+#pragma once
 
 #include <limits>
 #include <string>
@@ -87,5 +86,3 @@ inline void debugOutput(
 }  // namespace
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_DISTANCE_MAP_UTILS_H

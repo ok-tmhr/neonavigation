@@ -1,0 +1,108 @@
+safety_limiter:
+  num_input_clouds:
+    type: int
+    default_value: 1
+  base_frame:
+    type: string
+    default_value: base_link
+  fixed_frame:
+    type: string
+    default_value: odom
+  watchdog_interval:
+    type: double
+    default_value: 0.0
+  footprint:
+    type: string
+  freq:
+    type: double
+    default_value: 6.0
+    validation:
+      bounds<>: [0., 100.]
+  cloud_timeout:
+    type: double
+    default_value: 0.8
+    validation:
+      bounds<>: [0., 10.]
+  disable_timeout:
+    type: double
+    default_value: 0.1
+    validation:
+      bounds<>: [0., 10.]
+  lin_vel:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [0., 10.]
+  lin_acc:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 10.]
+  ang_vel:
+    type: double
+    default_value: 0.8
+    validation:
+      bounds<>: [0., 10.]
+  ang_acc:
+    type: double
+    default_value: 1.6
+    validation:
+      bounds<>: [0., 10.]
+  max_linear_vel:
+    type: double
+    default_value: 10.0
+    validation:
+      bounds<>: [0., 10.]
+  max_angular_vel:
+    type: double
+    default_value: 10.0
+    validation:
+      bounds<>: [0., 10.]
+  z_range_min:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [-3., 3.]
+  z_range_max:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [-3., 3.]
+  dt:
+    type: double
+    default_value: 0.1
+    validation:
+      bounds<>: [0., 1.]
+  d_margin:
+    type: double
+    default_value: 0.2
+    validation:
+      bounds<>: [0., 1.]
+  d_escape:
+    type: double
+    default_value: 0.05
+    validation:
+      bounds<>: [0., 1.]
+  yaw_margin:
+    type: double
+    default_value: 0.2
+    validation:
+      bounds<>: [0., 1.57]
+  yaw_escape:
+    type: double
+    default_value: 0.05
+    validation:
+      bounds<>: [0., 1.57]
+  downsample_grid:
+    type: double
+    default_value: 0.05
+    validation:
+      bounds<>: [0., 1.]
+  hold:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [0., 10.]
+  allow_empty_cloud:
+    type: bool
+    default_value: false

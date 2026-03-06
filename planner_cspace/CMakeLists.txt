@@ -1,50 +1,21 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(planner_cspace)
 
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-  set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wshadow)
-endif()
-
-set(COLCON_DEPENDS
-  rclcpp
-
-  rclcpp_action
-  diagnostic_updater
-  geometry_msgs
-  nav2_msgs
-  nav_msgs
-  sensor_msgs
-  std_srvs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros
-  trajectory_msgs
-
-  costmap_cspace
-  costmap_cspace_msgs
-  neonavigation_metrics_msgs
-  planner_cspace_msgs
-  trajectory_tracker
-  trajectory_tracker_msgs
-)
-
-find_package(ament_cmake REQUIRED)
-foreach(COLCON_DEPEND ${COLCON_DEPENDS})
-  find_package(${COLCON_DEPEND} REQUIRED)
-endforeach()
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
 find_package(OpenMP REQUIRED)
 
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
 
-include_directories(include ${neonavigation_metrics_msgs_INCLUDE_DIRS} ${trajectory_tracker_INCLUDE_DIRS} ${trajectory_tracker_msgs_INCLUDE_DIRS})
+generate_parameter_library(
+  planner_2dof_serial_joints_parameters
+  param/planner_2dof_serial_joints_parameters.yaml
+)
 
-add_executable(planner_3d
+ament_auto_add_executable(planner_3d
   src/costmap_bbf.cpp
   src/grid_astar_model_3dof.cpp
   src/motion_cache.cpp
@@ -54,11 +25,7 @@ add_executable(planner_3d
   src/rotation_cache.cpp
   src/start_pose_predictor.cpp
 )
-target_include_directories(planner_3d PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
 target_link_libraries(planner_3d ${OpenMP_CXX_FLAGS})
-ament_target_dependencies(planner_3d ${COLCON_DEPENDS})
 set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/bbf.h
   include/planner_cspace/blockmem_gridmap.h
@@ -69,54 +36,20 @@ set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
   include/planner_cspace/reservable_priority_queue.h
 )
 
-add_executable(planner_2dof_serial_joints
+ament_auto_add_executable(planner_2dof_serial_joints
   src/planner_2dof_serial_joints.cpp
   src/grid_astar_model_2dof_joints.cpp
 )
-target_include_directories(planner_2dof_serial_joints PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS})
-ament_target_dependencies(planner_2dof_serial_joints ${COLCON_DEPENDS})
+target_link_libraries(planner_2dof_serial_joints ${OpenMP_CXX_FLAGS} planner_2dof_serial_joints_parameters)
 
-add_executable(dummy_robot src/dummy_robot.cpp)
-target_include_directories(dummy_robot PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(dummy_robot)
-ament_target_dependencies(dummy_robot ${COLCON_DEPENDS})
+ament_auto_add_executable(dummy_robot src/dummy_robot.cpp)
 
-add_executable(patrol src/patrol.cpp)
-target_include_directories(patrol PUBLIC
-   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-   "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
-target_link_libraries(patrol)
-ament_target_dependencies(patrol ${COLCON_DEPENDS})
-
+ament_auto_add_executable(patrol src/patrol.cpp)
 
 if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
-  find_package(launch_testing_ament_cmake REQUIRED)
+  ament_auto_find_test_dependencies()
   add_subdirectory(test)
-  find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)
-  set(ament_cmake_cpplint_FOUND TRUE)
-  ament_lint_auto_find_test_dependencies()
 endif()
 
-
-install(TARGETS
-    dummy_robot
-    patrol
-    planner_2dof_serial_joints
-    planner_3d
-  DESTINATION lib/${PROJECT_NAME}
-  PUBLIC_HEADER DESTINATION include
-)
-
-install(DIRECTORY include/
-  DESTINATION include
-)
-
-ament_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
 

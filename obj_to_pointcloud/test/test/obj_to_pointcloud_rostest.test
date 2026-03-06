@@ -2,7 +2,7 @@
 <launch>
 
   <node pkg="obj_to_pointcloud" exec="obj_to_pointcloud" name="obj_to_pointcloud" output="screen">
-    <param name="objs" value="$(find-pkg-share obj_to_pointcloud)/test/data/sample.obj" />
+    <param name="objs" value="$(find-pkg-share obj_to_pointcloud)/data/sample.obj" />
     <param name="scale" value="0.001" />
   </node>
 

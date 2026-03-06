@@ -37,11 +37,13 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+namespace map_organizer
+{
 
 class PoseTransformNode : public rclcpp::Node
 {
 private:
-  std::shared_ptr<tf2_ros::Buffer> tfbuf_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string to_;
@@ -57,7 +59,7 @@ private:
       geometry_msgs::msg::PoseStamped out;
       geometry_msgs::msg::PoseWithCovarianceStamped out_msg;
       in.header = msg->header;
-      in.header.stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      in.header.stamp = rclcpp::Time(0L, RCL_ROS_TIME);
       in.pose = msg->pose.pose;
       geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
           to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
@@ -74,27 +76,22 @@ private:
   }
 
 public:
-  PoseTransformNode() : Node("pose_transform")
+  PoseTransformNode(const rclcpp::NodeOptions& options) : Node("pose_transform", options)
   {
-      sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_in",
-        1, std::bind(&PoseTransformNode::cbPose, this, std::placeholders::_1));
+        1, [this](const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg){ cbPose(msg); });
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_out",
         1);
-    to_ = this->declare_parameter("to_frame", std::string("map"));
+    to_ = this->declare_parameter("to_frame", "map");
 
-    tfbuf_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 };
 
-int main(int argc, char** argv)
-{
-  rclcpp::init(argc, argv);
-
-  auto ptn = std::make_shared<PoseTransformNode>();
-  rclcpp::spin(ptn);
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(map_organizer::PoseTransformNode)
