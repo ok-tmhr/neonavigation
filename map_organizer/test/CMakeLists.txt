@@ -13,3 +13,6 @@ install(DIRECTORY test data
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(TARGETS test_map_organizer test_pointcloud_to_maps
+  DESTINATION lib/${PROJECT_NAME}
+)

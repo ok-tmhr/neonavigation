@@ -8,8 +8,9 @@
     <param name="frame_id" value="map_ground" />
   </node>
 
-  <node pkg="map_organizer" exec="save_maps" name="save_maps" output="screen"
-    args="-f $(var tmpfile_prefix)" />
+  <node pkg="map_organizer" exec="save_maps" name="save_maps" output="screen">
+    <param name="map_name" value="$(var tmpfile_prefix)"/>
+  </node>
 
   <group>
     <node pkg="map_organizer" exec="tie_maps" name="tie_maps2" output="screen" respawn="true" namespace="saved">

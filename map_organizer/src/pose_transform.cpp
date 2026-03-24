@@ -37,6 +37,8 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
+
 namespace map_organizer
 {
 
@@ -48,25 +50,17 @@ private:
 
   std::string to_;
 
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
-  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_;
+  rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr pub_pose_;
+  rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr sub_pose_;
 
-  void cbPose(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
+  void cbPose(PoseWithCovarianceStamped::ConstSharedPtr msg)
   {
     try
     {
-      geometry_msgs::msg::PoseStamped in;
-      geometry_msgs::msg::PoseStamped out;
-      geometry_msgs::msg::PoseWithCovarianceStamped out_msg;
-      in.header = msg->header;
-      in.header.stamp = rclcpp::Time(0L, RCL_ROS_TIME);
-      in.pose = msg->pose.pose;
-      geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
-          to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
-      tf2::doTransform(in, out, trans);
-      out_msg = *msg;
-      out_msg.header = out.header;
-      out_msg.pose.pose = out.pose;
+      PoseWithCovarianceStamped out_msg;
+      const auto trans = tfbuf_->lookupTransform(
+          to_, msg->header.frame_id, tf2::TimePointZero, tf2::durationFromSec(0.5));
+      tf2::doTransform(*msg, out_msg, trans);
       pub_pose_->publish(out_msg);
     }
     catch (tf2::TransformException& e)
@@ -78,10 +72,10 @@ private:
 public:
   PoseTransformNode(const rclcpp::NodeOptions& options) : Node("pose_transform", options)
   {
-    sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    sub_pose_ = this->create_subscription<PoseWithCovarianceStamped>(
         "pose_in",
-        1, [this](const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg){ cbPose(msg); });
-    pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+        1, [this](PoseWithCovarianceStamped::ConstSharedPtr msg){ cbPose(msg); });
+    pub_pose_ = this->create_publisher<PoseWithCovarianceStamped>(
         "pose_out",
         1);
     to_ = this->declare_parameter("to_frame", "map");

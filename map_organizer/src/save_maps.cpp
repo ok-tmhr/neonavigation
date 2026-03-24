@@ -40,142 +40,141 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <fmt/format.h>
+#include <fmt/core.h>
+#include <yaml-cpp/yaml.h>
 
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
 namespace fs = std::filesystem;
 
+void writeMapMeta(const fs::path& yaml_path, const fs::path& image_path,
+                  const nav_msgs::msg::OccupancyGrid& map)
+{
+  YAML::Emitter out;
+
+  const auto& pos = map.info.origin.position;
+  const auto yaw = tf2::getYaw(map.info.origin.orientation);
+
+  out << YAML::BeginMap;
+
+  out << YAML::Key << "image" << YAML::Value << image_path.filename().string();
+  out << YAML::Key << "resolution" << YAML::Value << map.info.resolution;
+  out << YAML::Key << "origin" << YAML::Value << YAML::Flow << YAML::BeginSeq
+      << pos.x << pos.y << yaw << YAML::EndSeq;
+  out << YAML::Key << "height" << YAML::Value << pos.z;
+  out << YAML::Key << "negate" << YAML::Value << 0;
+  out << YAML::Key << "occupied_thresh" << YAML::Value << 0.65;
+  out << YAML::Key << "free_thresh" << YAML::Value << 0.196;
+
+  out << YAML::EndMap;
+
+  std::ofstream fout(yaml_path);
+  fout << out.c_str();
+}
+
+bool writeMap(const fs::path& filepath, const nav_msgs::msg::OccupancyGrid& map)
+{
+  const auto& width = map.info.width;
+  const auto& height = map.info.height;
+
+  std::ofstream out(filepath, std::ios::binary);
+  if (!out) {
+    return false;
+  }
+
+  out << "P5\n# CREATOR: save_maps.cpp" << std::fixed << std::setprecision(3)
+      << map.info.resolution << " m/pix\n"
+      << width << " " << height << "\n255\n";
+
+  std::vector<std::uint8_t> buffer(width * height);
+  for (unsigned int y = 0; y < height; y++) {
+    for (unsigned int x = 0; x < width; x++) {
+      const unsigned int src = x + (height - y - 1) * width;
+      const unsigned int dst = x + y * width;
+
+      switch (map.data[src]) {
+      case 0: // occ [0,0.1)
+        buffer[dst] = 254;
+        break;
+      case 100: // occ (0.65,1]
+        buffer[dst] = 0;
+        break;
+      default: // occ [0.1,0.65]
+        buffer[dst] = 205;
+        break;
+      }
+    }
+  }
+
+  out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
+  return true;
+}
+
 /**
  * @brief Map generation node.
  */
-class MapGeneratorNode : public rclcpp::Node
+class SaveMapsNode : public rclcpp::Node
 {
 protected:
   std::string mapname_;
   rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr map_sub_;
-  bool saved_map_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
 public:
-  explicit MapGeneratorNode(const std::string& mapname, const rclcpp::NodeOptions& options) : Node("save_maps", options)
-    , mapname_(mapname)
-    , saved_map_(false)
+  explicit SaveMapsNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions())
+  : Node("save_maps", options)
   {
+    mapname_ = this->declare_parameter("map_name", "map");
     RCLCPP_INFO(this->get_logger(), "Waiting for the map");
     map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(),
       [this](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg){ mapsCallback(msg); });
   }
 
-  bool done() const
-  {
-    return saved_map_;
-  }
   void mapsCallback(const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr maps)
   {
-    int i = 0;
-    for (auto& map : maps->maps)
+    int floor = 0;
+    for (const auto& map : maps->maps)
     {
-      mapCallback(&map, i);
-      i++;
-    }
-    saved_map_ = true;
-    rclcpp::shutdown();
-  }
-  void mapCallback(const nav_msgs::msg::OccupancyGrid* map, const int floor)
-  {
-    RCLCPP_INFO(this->get_logger(), "Received a %d X %d map @ %.3f m/pix",
-             map->info.width,
-             map->info.height,
-             map->info.resolution);
+      RCLCPP_INFO(this->get_logger(), "Received a %u X %u map @ %.3f m/pix",
+                  map.info.width, map.info.height, map.info.resolution);
 
-    fs::path mapdatafile(mapname_ + std::to_string(floor) + ".pgm");
-    RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s", mapdatafile.c_str());
+      const fs::path mapdatafile = fmt::format("{}{}.pgm", mapname_, floor);
+      RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s",
+                  mapdatafile.c_str());
 
-    std::ofstream out(mapdatafile, std::ios::binary);
-    if (!out)
-    {
-      RCLCPP_ERROR(this->get_logger(), "Couldn't save map file to %s", mapdatafile.c_str());
-      return;
-    }
-
-    out << "P5\n# CREATOR: Map_generator.cpp"
-        << std::fixed << std::setprecision(3)
-        << map->info.resolution << " m/pix\n"
-        << map->info.width << " "
-        << map->info.height << "\n255\n";
-
-    std::vector<u_char> buffer(map->info.width * map->info.height);
-    for (unsigned int y = 0; y < map->info.height; y++)
-    {
-      for (unsigned int x = 0; x < map->info.width; x++)
-      {
-        unsigned int i = x + (map->info.height - y - 1) * map->info.width;
-        switch (map->data[i])
-        {
-          case 0: // occ [0,0.1)
-            buffer[x + y * map->info.width] = 254;
-            break;
-          case 100: // occ (0.65,1]
-            buffer[x + y * map->info.width] = 0;
-            break;
-          default: // occ [0.1,0.65]
-            buffer[x + y * map->info.width] = 205;
-            break;
-        }
+      if (!writeMap(mapdatafile, map)) {
+        RCLCPP_ERROR(this->get_logger(), "Couldn't save map file to %s",
+                     mapdatafile.c_str());
+        return;
       }
+
+      const fs::path mapmetadatafile =
+          fmt::format("{}{}.yaml", mapname_, floor);
+      RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s",
+                  mapmetadatafile.c_str());
+      writeMapMeta(mapmetadatafile, mapdatafile, map);
+
+      RCLCPP_INFO(this->get_logger(), "Done");
+      floor++;
     }
+    timer_ = this->create_wall_timer(
+      std::chrono::seconds(1),
+      [](){ rclcpp::shutdown(); });
 
-    out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size());
-    out.close();
-
-    fs::path mapmetadatafile(mapname_ + std::to_string(floor) + ".yaml");
-    RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s", mapmetadatafile.c_str());
-    std::ofstream yaml(mapmetadatafile);
-
-    double yaw = tf2::getYaw(map->info.origin.orientation);
-
-    const auto& position = map->info.origin.position;
-    yaml << "image: " << mapdatafile.filename().string()
-         << "\nresolution: " << map->info.resolution
-         << "\norigin: [" << position.x << ", " << position.y << ", " << yaw << "]"
-         << "\nheight: " << position.z
-         << "\nnegate: 0\noccupied_thresh: 0.65\nfree_thresh: 0.196\n\n";
-
-    RCLCPP_INFO(this->get_logger(), "Done\n");
   }
 };
-
-#define USAGE "Usage: \n"        \
-              "  map_saver -h\n" \
-              "  map_saver [-f <mapname>] [ROS arguments]"
 
 int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
-  auto args = rclcpp::remove_ros_arguments(argc, argv);
-  std::string mapname = "map";
 
-  for (size_t i = 1; i < args.size(); i++)
+  auto mg = std::make_shared<SaveMapsNode>();
+
+  while (rclcpp::ok())
   {
-    if (args[i] == "-h")
-    {
-      std::cout << USAGE << std::endl;
-      return 0;
-    }
-    else if (args[i] == "-f" && ++i < args.size())
-    {
-      mapname = argv[i];
-    }
-    else
-    {
-      std::cout << USAGE << std::endl;;
-      return 1;
-    }
+    rclcpp::spin_some(mg);
   }
-
-  auto mg = std::make_shared<MapGeneratorNode>(mapname, rclcpp::NodeOptions());
-
-  // while (!mg->done() && rclcpp::ok())
-  rclcpp::spin(mg);
 
   return 0;
 }
