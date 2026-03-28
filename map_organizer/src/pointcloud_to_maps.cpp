@@ -53,6 +53,11 @@
 
 namespace map_organizer
 {
+struct GridRange
+{
+  int x_min, x_max, y_min, y_max, z_min, z_max;
+};
+
 class PointcloudToMapsNode : public rclcpp::Node
 {
 private:
@@ -70,131 +75,158 @@ public:
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
     param_listener_ = std::make_shared<pointcloud_to_maps::ParamListener>(get_node_parameters_interface());
   }
+
   void cbPoints(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
   {
-    sensor_msgs::PointCloud2ConstIterator<float> it_x(*msg, "x"), it_y(*msg, "y"), it_z(*msg, "z");
-
-    auto params = param_listener_->get_params();
-
-    int min_points;
-
-    int robot_height = static_cast<int>(std::round(params.robot_height / params.grid));
-    int floor_height = static_cast<int>(std::round(params.floor_height / params.grid));
-    int floor_tolerance = static_cast<int>(std::round(params.floor_tolerance / params.grid));
-
-    std::unordered_map<int, int> hist;
-    int x_min = std::numeric_limits<int>::max(), x_max = std::numeric_limits<int>::min();
-    int y_min = std::numeric_limits<int>::max(), y_max = std::numeric_limits<int>::min();
-    int h_min = std::numeric_limits<int>::max(), h_max = std::numeric_limits<int>::min();
-    const float inv_grid = 1.f / static_cast<float>(params.grid);
-
-    auto it_end = it_x.end();
-    for (; it_x != it_end; ++it_x, ++it_y, ++it_z)
-    {
-      const int x = static_cast<int>(std::floor(*it_x * inv_grid));
-      const int y = static_cast<int>(std::floor(*it_y * inv_grid));
-      const int h = static_cast<int>(std::floor(*it_z * inv_grid));
-      x_min = std::min(x_min, x);
-      y_min = std::min(y_min, y);
-      h_min = std::min(h_min, h);
-      x_max = std::max(x_max, x);
-      y_max = std::max(y_max, y);
-      h_max = std::max(h_max, h);
-      hist[h]++;
+    if (msg->data.empty() || msg->width == 0 || msg->height == 0){
+      RCLCPP_WARN(this->get_logger(), "Empty point cloud");
+      return;
     }
+    const auto params = param_listener_->get_params();
 
-    const auto max_height = h_max;
-    const auto min_height = h_min;
+    const auto robot_height = static_cast<int>(std::floor(params.robot_height / params.grid));
+    const auto floor_height = static_cast<int>(std::floor(params.floor_height / params.grid));
+    const auto floor_tolerance = static_cast<int>(std::floor(params.floor_tolerance / params.grid));
+
+    const auto inv_grid = 1.f / static_cast<float>(params.grid);
+
+    const auto range = [msg, inv_grid](){
+      sensor_msgs::PointCloud2ConstIterator<float> it_x(*msg, "x"), it_y(*msg, "y"), it_z(*msg, "z");
+
+      int x_min = std::numeric_limits<int>::max(), x_max = std::numeric_limits<int>::min();
+      int y_min = std::numeric_limits<int>::max(), y_max = std::numeric_limits<int>::min();
+      int h_min = std::numeric_limits<int>::max(), h_max = std::numeric_limits<int>::min();
+
+      const auto it_end = it_x.end();
+      for (; it_x != it_end; ++it_x, ++it_y, ++it_z)
+      {
+        const int x = static_cast<int>(std::floor(*it_x * inv_grid));
+        const int y = static_cast<int>(std::floor(*it_y * inv_grid));
+        const int h = static_cast<int>(std::floor(*it_z * inv_grid));
+        x_min = std::min(x_min, x);
+        y_min = std::min(y_min, y);
+        h_min = std::min(h_min, h);
+        x_max = std::max(x_max, x);
+        y_max = std::max(y_max, y);
+        h_max = std::max(h_max, h);
+      }
+      return GridRange(x_min, x_max, y_min, y_max, h_min, h_max);
+    }();
+
+    const auto& max_height = range.z_max;
+    const auto& min_height = range.z_min;
     const auto H = max_height - min_height + 1;
-    std::vector<float> floor_area(H, 0.f);
-    std::vector<float> floor_runnable_area(H, 0.f);
+
+    std::vector<int> hist(H, 0);
+    {
+      sensor_msgs::PointCloud2ConstIterator<float> it_z(*msg, "z");
+      const auto it_end = it_z.end();
+      for (; it_z != it_end; ++it_z)
+      {
+        const int h = static_cast<int>(std::floor(*it_z * inv_grid));
+        hist[h - min_height]++;
+      }
+    }
+    std::vector<int> floor_area(H, 0);
+    std::vector<int> floor_runnable_area(H, 0);
 
     nav_msgs::msg::MapMetaData mmd;
     mmd.resolution = params.grid;
-    mmd.origin.position.x = x_min * params.grid;
-    mmd.origin.position.y = y_min * params.grid;
+    mmd.origin.position.x = range.x_min * params.grid;
+    mmd.origin.position.y = range.y_min * params.grid;
     mmd.origin.orientation.w = 1.0;
-    mmd.width = x_max - x_min + 1;
-    mmd.height = y_max - y_min + 1;
+    mmd.width = range.x_max - range.x_min + 1;
+    mmd.height = range.y_max - range.y_min + 1;
     RCLCPP_INFO(this->get_logger(), "width %d, height %d", mmd.width, mmd.height);
     std::vector<nav_msgs::msg::OccupancyGrid> maps;
 
-    int hist_max = std::numeric_limits<int>::lowest();
-    for (const auto& [h, points] : hist)
-    {
-      hist_max = std::max(hist_max, points);
-    }
+    const auto hist_max = *std::max_element(hist.begin(), hist.end());
+    const auto min_points = static_cast<int>(hist_max * params.points_thresh_rate);
 
-    min_points = hist_max * params.points_thresh_rate;
-
-    it_x = sensor_msgs::PointCloud2ConstIterator<float>(*msg, "x");
-    it_y = sensor_msgs::PointCloud2ConstIterator<float>(*msg, "y");
-    it_z = sensor_msgs::PointCloud2ConstIterator<float>(*msg, "z");
-    it_end = it_x.end();
-
-    std::vector<std::vector<std::array<int, 3>>> buckets(H);
-
-    for (; it_x != it_end; ++it_x, ++it_y, ++it_z)
-    {
-      const int x = static_cast<int>(std::floor(*it_x * inv_grid));
-      const int y = static_cast<int>(std::floor(*it_y * inv_grid));
-      const int h = static_cast<int>(std::floor(*it_z * inv_grid));
-      buckets[h - min_height].push_back({x, y, h});
-    }
-
-    float floor_area_max = 0.f;
-    double floor_runnable_area_max = 0;
+    int floor_area_max;
+    int floor_runnable_area_max;
     const auto cell_area = params.grid * params.grid;
-    auto pack = [](int x, int y)->uint64_t { return uint64_t(uint32_t(x)) << 32 | uint64_t(uint32_t(y)); };
-    std::vector<std::unordered_map<uint64_t, char>> floor(H);
+    std::vector<std::vector<int8_t>> floor(H, std::vector<int8_t>(mmd.width * mmd.height, -1));
+    std::vector<std::vector<int>> active_indices(H);
+    std::vector<uint8_t> visited(mmd.width * mmd.height, 0);
+    std::vector<int> touched;
+    touched.reserve(1024);
 
-    for (int i = 0; i < H; i++)
     {
-      const int h = min_height + i;
-      if (hist[h] <= min_points)
+      sensor_msgs::PointCloud2ConstIterator<float> it_x(*msg, "x"), it_y(*msg, "y"), it_z(*msg, "z");
+      const auto it_end = it_x.end();
+      for (; it_x != it_end; ++it_x, ++it_y, ++it_z)
       {
-        floor_area[i] = 0.f;
-        continue;
-      }
-
-      auto& layer = floor[i];
-      auto& pts = buckets[i];
-      layer.reserve(pts.size());
-
-      for (auto& [x, y, z] : pts)
-      {
-        auto key = pack(x, y);
-
-        if (std::abs(h - z) <= floor_height)
+        const int x = static_cast<int>(std::floor(*it_x * inv_grid));
+        const int y = static_cast<int>(std::floor(*it_y * inv_grid));
+        const int h = static_cast<int>(std::floor(*it_z * inv_grid));
+        const auto index = (x - range.x_min) + mmd.width * (y - range.y_min);
+        const auto hi = h - range.z_min;
+        if (floor[hi][index] == -1)
         {
-          layer.try_emplace(key, 0);
-        }
-        else if (h + floor_height + floor_tolerance < z && z <= h + robot_height)
-        {
-          layer.insert_or_assign(key, 1);
+          floor[hi][index] = 0;
+          active_indices[hi].push_back(index);
+          floor_runnable_area[hi]++;
         }
       }
-
-      int cnt = 0;
-      for (const auto& [pt, occ] : layer)
-      {
-        if (occ == 0)
-        {
-          cnt++;
-        }
-      }
-
-      floor_runnable_area[i] = cnt * cell_area;
-      floor_area[i] = layer.size() * cell_area;
-      floor_area_max = std::max(floor_area_max, floor_area[i]);
-      floor_runnable_area_max = std::max(floor_runnable_area_max, static_cast<double>(floor_runnable_area[i]));
     }
-    const double floor_area_filter = floor_runnable_area_max * params.floor_area_thresh_rate;
+
+    for (int h = 0; h < H; h++)
+    {
+      if (active_indices[h].size() < min_points)
+          continue;
+
+      const auto i_begin = std::max(0, h - floor_height);
+      const auto i_end = std::min(H - 1, h + floor_height);
+      touched.clear();
+      for (int i = i_begin; i <= i_end; i++)
+      {
+          for (int index : active_indices[i])
+          {
+              if (!visited[index])
+              {
+                  floor[h][index] = 0;
+                  visited[index] = 1;
+                  touched.push_back(index);
+                  floor_runnable_area[h]++;
+              }
+          }
+      }
+
+      const auto i_begin2 = std::max(0, h - robot_height);
+      const auto i_end2 = std::min(H - 1, h - floor_height - floor_tolerance);
+      for (int i = i_begin2; i <= i_end2; i++)
+      {
+          for (int index : active_indices[i])
+          {
+            if (floor[h][index] != 100)
+            {
+              if (floor[h][index] == 0)
+              {
+                floor_runnable_area[h]--;
+              }
+              floor[h][index] = 100;
+              floor_area[h]++;
+            }
+          }
+      }
+
+      for (const auto& i : touched)
+      {
+          visited[i] = 0;
+      }
+
+      floor_area[h] += floor_runnable_area[h];
+    }
+
+    floor_area_max = *std::max_element(floor_area.begin(), floor_area.end());
+    floor_runnable_area_max = *std::max_element(floor_runnable_area.begin(), floor_runnable_area.end());
+
+    const auto floor_area_filter = static_cast<int>(floor_runnable_area_max * params.floor_area_thresh_rate);
     int map_num = 0;
-    auto is_peak = [&](int h) {
-      const int i = h - min_height;
-      return (h == min_height || floor_runnable_area[i - 1] <= floor_runnable_area[i]) &&
-          (h == max_height || floor_runnable_area[i + 1] <= floor_runnable_area[i]);
+    auto is_peak = [H, &floor_runnable_area](const int i) {
+      return (i == 0 || floor_runnable_area[i - 1] <= floor_runnable_area[i]) &&
+          (i == H - 1 || floor_runnable_area[i + 1] <= floor_runnable_area[i]);
     };
 
     for (int i = 0; i < H; i++)
@@ -219,26 +251,7 @@ public:
       map.info = mmd;
       map.info.origin.position.z = h * params.grid;
       map.header = msg->header;
-      map.data.assign(mmd.width * mmd.height, -1);
-      auto unpack = [](uint64_t k)->std::pair<int, int>
-      {
-        int x = int(int32_t(k >> 32));
-        int y = int(int32_t(uint32_t(k)));
-        return {x, y};
-      };
-
-      for (const auto& [xy, occ] : floor[i])
-      {
-        auto [gx_raw, gy_raw] = unpack(xy);
-        const int addr = (gx_raw - x_min) + (gy_raw - y_min) * mmd.width;
-        if (occ == 0)
-        {
-          map.data[addr] = 0;
-        }
-        else if (occ == 1)
-          map.data[addr] = 100;
-      }
-
+      map.data = std::move(floor[h]);
       maps.push_back(std::move(map));
       map_num++;
     }
@@ -280,8 +293,8 @@ public:
       const int i_cur = int(z_cur * inv_grid) - min_height;
       const int i_prev = int(z_prev * inv_grid) - min_height;
 
-      floor_runnable_area[i_cur] = cnt(cur) * cell_area;
-      floor_runnable_area[i_prev] = cnt(prev) * cell_area;
+      floor_runnable_area[i_cur] = cnt(cur);
+      floor_runnable_area[i_prev] = cnt(prev);
     }
 
     for (int h = max_height; h >= min_height; h--)
@@ -299,10 +312,10 @@ public:
         else
           bar.push_back(' ');
       }
-      if (floor_runnable_area[i] == 0.0)
+      if (floor_runnable_area[i] == 0)
         RCLCPP_INFO(this->get_logger(), "%6.2f %s  (%7d points)", z, bar.c_str(), hist[h]);
       else
-        RCLCPP_INFO(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist[h], floor_runnable_area[i]);
+        RCLCPP_INFO(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist[h], floor_runnable_area[i] * cell_area);
     }
 
     int num = -1;
@@ -312,10 +325,10 @@ public:
     {
       num++;
       int h = map.info.origin.position.z / params.grid;
-      if (floor_runnable_area[h] < params.min_floor_area)
+      if (floor_runnable_area[h] * cell_area < params.min_floor_area)
       {
         RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm skipped",
-                 floor_num, floor_runnable_area[h], map.info.origin.position.z);
+                 floor_num, floor_runnable_area[h] * cell_area, map.info.origin.position.z);
         continue;
       }
 
@@ -366,7 +379,7 @@ public:
       pub_maps_[name]->publish(map);
       map_array.maps.push_back(map);
       RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm",
-               floor_num, floor_runnable_area[h], map.info.origin.position.z);
+               floor_num, floor_runnable_area[h] * cell_area, map.info.origin.position.z);
       floor_num++;
     }
     pub_map_array_->publish(map_array);
