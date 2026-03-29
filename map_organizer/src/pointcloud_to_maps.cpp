@@ -212,7 +212,7 @@ public:
 
     for (auto h = 0; h < H; h++)
     {
-      if (active_indices[h].size() < min_points)
+      if (static_cast<int>(active_indices[h].size()) < min_points)
       {
         continue;
       }
@@ -295,7 +295,7 @@ public:
         continue;
       }
 
-      for (auto j = 0; j < cur.data.size(); j++)
+      for (auto j = 0UL; j < cur.data.size(); j++)
       {
         const auto c = cur.data[j];
         const auto p = prev.data[j];
