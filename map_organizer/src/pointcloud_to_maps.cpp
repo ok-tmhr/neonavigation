@@ -336,20 +336,13 @@ public:
       }
     }
 
-    std::vector<int> map_runnable_area(maps.size());
-    for (size_t i = 0; i < maps.size(); i++)
-    {
-      map_runnable_area[i] =
-        static_cast<int>(std::count(maps[i].data.begin(), maps[i].data.end(), OCCUPANCY::FREE));
-    }
-
     if (rcutils_logging_get_logger_effective_level(this->get_logger().get_name()) <= RCUTILS_LOG_SEVERITY::RCUTILS_LOG_SEVERITY_DEBUG)
     {
       for (auto h = H - 1; h >= 0; h--)
       {
         std::string bar;
         const auto bar_len = (hist_[h] * 16) / hist_max;
-        bar.reserve(16);
+        bar.reserve(17);
         for (auto j = 0; j <= 16; j++)
         {
           bar.push_back(j <= bar_len ? '#' : ' ');
@@ -361,14 +354,20 @@ public:
         }
         else
         {
-          RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist_[h], floor_runnable_area_[h] * cell_area);
+          RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor)", z, bar.c_str(), hist_[h], floor_runnable_area_[h] * cell_area);
         }
       }
     }
 
+    std::vector<int> map_runnable_area(maps.size());
+    for (size_t i = 0; i < maps.size(); i++)
+    {
+      map_runnable_area[i] =
+        static_cast<int>(std::count(maps[i].data.begin(), maps[i].data.end(), OCCUPANCY::FREE));
+    }
+
     int floor_num = 0;
     map_organizer_msgs::msg::OccupancyGridArray map_array;
-    pub_maps_.clear();
     for (size_t k = 0 ; k < maps.size(); k++)
     {
       auto& map = maps[k];
@@ -382,19 +381,19 @@ public:
       {
         const auto& src = map.data;
 
-        const int& mW = map.info.width;
-        const int& mH = map.info.height;
+        const int mW = map.info.width;
+        const int mH = map.info.height;
         const int R = 6;
         std::vector<int> dist(mW * mH, std::numeric_limits<int>::max());
 
         for (auto i = 0; i < mW * mH; i++) {
           if (src[i] == OCCUPANCY::OCCUPIED)
-            dist[i] = OCCUPANCY::FREE;
+            dist[i] = 0;
         }
 
         for (int y = 0; y < mH; y++) {
           for (int x = 0; x < mW; x++) {
-            const auto i = x + y * mW;
+            const int i = x + y * mW;
             if (x > 0) {
               dist[i] = std::min(dist[i], dist[i - 1] + 1);
             }
