@@ -65,6 +65,7 @@ struct GridRange
   int x_span() const { return x_max - x_min + 1; }
   int y_span() const { return y_max - y_min + 1; }
   int z_span() const { return z_max - z_min + 1; }
+  int xy_span() const { return x_span() * y_span(); }
 
 };
 
@@ -122,7 +123,7 @@ private:
   pointcloud_to_maps::Params params_;
   int robot_height_, floor_height_, floor_tolerance_;
   std::vector<int> floor_runnable_area_;
-  std::vector<std::vector<int8_t>> floor_;
+  std::vector<int8_t> floor_;
   std::vector<uint8_t> visited_;
   std::vector<int> touched_;
   std::vector<int> hist_;
@@ -137,7 +138,6 @@ public:
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
     param_listener_ = std::make_shared<pointcloud_to_maps::ParamListener>(get_node_parameters_interface());
     cbParam(param_listener_->get_params());
-    touched_.reserve(1024);
   }
 
   void cbParam(const pointcloud_to_maps::Params& params)
@@ -163,7 +163,7 @@ public:
 
     const auto inv_grid = 1.f / static_cast<float>(params_.grid);
 
-    const auto range = [msg, inv_grid](){
+    const auto range = [&](){
       int x_min = std::numeric_limits<int>::max(), x_max = std::numeric_limits<int>::min();
       int y_min = std::numeric_limits<int>::max(), y_max = std::numeric_limits<int>::min();
       int h_min = std::numeric_limits<int>::max(), h_max = std::numeric_limits<int>::min();
@@ -194,9 +194,9 @@ public:
       return;
     }
 
-    hist_.resize(H, 0);
+    hist_.assign(H, 0);
     processPointCloudZ(*msg, inv_grid, [this, &range](int z){ hist_[z - range.z_min]++; });
-    floor_runnable_area_.resize(H, 0);
+    floor_runnable_area_.assign(H, 0);
 
     nav_msgs::msg::MapMetaData mmd;
     mmd.resolution = static_cast<float>(params_.grid);
@@ -212,16 +212,18 @@ public:
     const auto min_points = static_cast<int>(hist_max * params_.points_thresh_rate);
     const auto cell_area = params_.grid * params_.grid;
 
-    floor_.resize(H, std::vector<int8_t>(mmd.width * mmd.height, OCCUPANCY::UNKNOWN));
-    active_indices_.resize(H);
-    visited_.resize(mmd.width * mmd.height, 0);
+    const auto map_area = range.xy_span();
+    floor_.assign(H * map_area, OCCUPANCY::UNKNOWN);
+    visited_.assign(map_area, 0);
+    active_indices_.assign(H, {});
+    touched_.reserve(map_area);
 
     processPointCloudXYZ(*msg, inv_grid, [&](int x, int y, int z) {
       const auto index = (x - range.x_min) + range.x_span() * (y - range.y_min);
       const auto h = z - range.z_min;
-      if (floor_[h][index] == OCCUPANCY::UNKNOWN)
+      if (floor_[h * map_area + index] == OCCUPANCY::UNKNOWN)
       {
-        floor_[h][index] = OCCUPANCY::FREE;
+        floor_[h * map_area + index] = OCCUPANCY::FREE;
         active_indices_[h].push_back(index);
         floor_runnable_area_[h]++;
       }
@@ -243,7 +245,7 @@ public:
           {
               if (!visited_[index])
               {
-                  floor_[h][index] = OCCUPANCY::FREE;
+                  floor_[h * map_area + index] = OCCUPANCY::FREE;
                   visited_[index] = 1;
                   touched_.push_back(index);
                   floor_runnable_area_[h]++;
@@ -257,7 +259,7 @@ public:
       {
           for (const auto& index : active_indices_[i])
           {
-            auto& occ = floor_[h][index];
+            auto& occ = floor_[h * map_area + index];
             if (occ != OCCUPANCY::OCCUPIED)
             {
               if (occ == OCCUPANCY::FREE)
@@ -273,6 +275,10 @@ public:
       {
           visited_[i] = 0;
       }
+
+      floor_runnable_area_[h] = static_cast<int>(
+          std::count(floor_.begin() + h * map_area,
+                     floor_.begin() + (h + 1) * map_area, OCCUPANCY::FREE));
     }
 
     const auto floor_area_filter = static_cast<int>(*std::max_element(floor_runnable_area_.begin(), floor_runnable_area_.end()) * params_.floor_area_thresh_rate);
@@ -288,7 +294,8 @@ public:
         map.info = mmd;
         map.info.origin.position.z = (h + range.z_min) * params_.grid;
         map.header = msg->header;
-        map.data = std::move(floor_[h]);
+        map.data.resize(map_area);
+        std::copy_n(floor_.begin() + h * map_area, map_area, map.data.begin());
         maps.push_back(std::move(map));
       }
     }
@@ -318,25 +325,22 @@ public:
         const auto c = cur.data[j];
         const auto p = prev.data[j];
 
-        if (p == FREE)
+        if (p == OCCUPANCY::FREE)
         {
-          prev.data[j] = UNKNOWN;
-          if (c != FREE)
+          prev.data[j] = OCCUPANCY::UNKNOWN;
+          if (c != OCCUPANCY::FREE)
           {
-            cur.data[j] = FREE;
+            cur.data[j] = OCCUPANCY::FREE;
           }
         }
       }
+    }
 
-      auto cnt = [](const nav_msgs::msg::OccupancyGrid& map){
-        return static_cast<int>(std::count(map.data.begin(), map.data.end(), FREE));
-      };
-
-      const auto i_cur = static_cast<int>(z_cur / params_.grid) - range.z_min;
-      const auto i_prev = static_cast<int>(z_prev / params_.grid) - range.z_min;
-
-      floor_runnable_area_[i_cur] = cnt(cur);
-      floor_runnable_area_[i_prev] = cnt(prev);
+    std::vector<int> map_runnable_area(maps.size());
+    for (size_t i = 0; i < maps.size(); i++)
+    {
+      map_runnable_area[i] =
+        static_cast<int>(std::count(maps[i].data.begin(), maps[i].data.end(), OCCUPANCY::FREE));
     }
 
     if (rcutils_logging_get_logger_effective_level(this->get_logger().get_name()) <= RCUTILS_LOG_SEVERITY::RCUTILS_LOG_SEVERITY_DEBUG)
@@ -352,22 +356,26 @@ public:
         }
         const auto z = (h + range.z_min) * params_.grid;
         if (floor_runnable_area_[h] == 0)
-        RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points)", z, bar.c_str(), hist_[h]);
+        {
+          RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points)", z, bar.c_str(), hist_[h]);
+        }
         else
-        RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist_[h], floor_runnable_area_[h] * cell_area);
+        {
+          RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist_[h], floor_runnable_area_[h] * cell_area);
+        }
       }
     }
 
     int floor_num = 0;
     map_organizer_msgs::msg::OccupancyGridArray map_array;
     pub_maps_.clear();
-    for (auto&& map : maps)
+    for (size_t k = 0 ; k < maps.size(); k++)
     {
-      const auto h = static_cast<int>(map.info.origin.position.z / params_.grid) - range.z_min;
-      if (floor_runnable_area_[h] * cell_area < params_.min_floor_area)
+      auto& map = maps[k];
+      if (map_runnable_area[k] * cell_area < params_.min_floor_area)
       {
         RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm skipped",
-                 floor_num, floor_runnable_area_[h] * cell_area, map.info.origin.position.z);
+                 floor_num, map_runnable_area[k] * cell_area, map.info.origin.position.z);
         continue;
       }
 
@@ -380,8 +388,8 @@ public:
         std::vector<int> dist(mW * mH, std::numeric_limits<int>::max());
 
         for (auto i = 0; i < mW * mH; i++) {
-          if (src[i] == OCCUPIED)
-            dist[i] = FREE;
+          if (src[i] == OCCUPANCY::OCCUPIED)
+            dist[i] = OCCUPANCY::FREE;
         }
 
         for (int y = 0; y < mH; y++) {
@@ -408,17 +416,21 @@ public:
 
         for (int i = 0; i < mW * mH; i++) {
           if (dist[i] > R) {
-            map.data[i] = FREE;
+            map.data[i] = OCCUPANCY::FREE;
           }
         }
       }
-
+      for (size_t j = 0; j < maps.size(); j++)
+      {
+        map_runnable_area[j] =
+          static_cast<int>(std::count(maps[j].data.begin(), maps[j].data.end(), OCCUPANCY::FREE));
+      }
       const std::string name = "map" + std::to_string(floor_num);
       pub_maps_[name] = this->create_publisher<nav_msgs::msg::OccupancyGrid>("~/" + name, rclcpp::QoS(1).transient_local());
       pub_maps_[name]->publish(map);
       map_array.maps.push_back(map);
       RCLCPP_DEBUG(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm",
-               floor_num, floor_runnable_area_[h] * cell_area, map.info.origin.position.z);
+               floor_num, map_runnable_area[k] * cell_area, map.info.origin.position.z);
       floor_num++;
     }
     pub_map_array_->publish(map_array);
