@@ -29,7 +29,6 @@
  */
 
 #include <cmath>
-#include <iostream>
 #include <limits>
 #include <map>
 #include <random>
@@ -45,10 +44,6 @@
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl_conversions/pcl_conversions.h>
-
 #include <map_organizer/pointcloud_to_maps_parameters.hpp>
 
 namespace map_organizer
@@ -63,6 +58,18 @@ enum OCCUPANCY {
   FREE = 0,
   OCCUPIED = 100
 };
+
+inline bool has_field(const sensor_msgs::msg::PointCloud2& cloud, const std::string& field_name)
+{
+  for (const auto& field : cloud.fields)
+  {
+    if (field.name == field_name)
+    {
+      return true;
+    }
+  }
+  return false;
+}
 
 class PointcloudToMapsNode : public rclcpp::Node
 {
@@ -100,6 +107,12 @@ public:
       return;
     }
 
+    if (!has_field(*msg, "x") || !has_field(*msg, "y") || !has_field(*msg, "z"))
+    {
+      RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 3000, "Point cloud missing required fields (x, y, z)");
+      return;
+    }
+
     const auto inv_grid = 1.f / static_cast<float>(params_.grid);
 
     const auto range = [msg, inv_grid](){
@@ -111,6 +124,11 @@ public:
       const auto it_end = it_x.end();
       for (; it_x != it_end; ++it_x, ++it_y, ++it_z)
       {
+        if (!(std::isfinite(*it_x) && std::isfinite(*it_y) && std::isfinite(*it_z)))
+        {
+          continue;
+        }
+
         const int x = static_cast<int>(std::floor(*it_x * inv_grid));
         const int y = static_cast<int>(std::floor(*it_y * inv_grid));
         const int h = static_cast<int>(std::floor(*it_z * inv_grid));
@@ -132,6 +150,10 @@ public:
       const auto it_end = it_z.end();
       for (; it_z != it_end; ++it_z)
       {
+        if (!std::isfinite(*it_z))
+        {
+          continue;
+        }
         const int z = static_cast<int>(std::floor(*it_z * inv_grid));
         hist[z - range.z_min]++;
       }
@@ -145,7 +167,7 @@ public:
     mmd.origin.orientation.w = 1.0;
     mmd.width = range.x_max - range.x_min + 1;
     mmd.height = range.y_max - range.y_min + 1;
-    RCLCPP_INFO(this->get_logger(), "width %d, height %d", mmd.width, mmd.height);
+    RCLCPP_DEBUG(this->get_logger(), "width %d, height %d", mmd.width, mmd.height);
     std::vector<nav_msgs::msg::OccupancyGrid> maps;
 
     const auto hist_max = *std::max_element(hist.begin(), hist.end());
@@ -162,6 +184,10 @@ public:
       const auto it_end = it_x.end();
       for (; it_x != it_end; ++it_x, ++it_y, ++it_z)
       {
+        if (!(std::isfinite(*it_x) & std::isfinite(*it_y) & std::isfinite(*it_z)))
+        {
+          continue;
+        }
         const int x = static_cast<int>(std::floor(*it_x * inv_grid));
         const int y = static_cast<int>(std::floor(*it_y * inv_grid));
         const int z = static_cast<int>(std::floor(*it_z * inv_grid));
@@ -240,7 +266,11 @@ public:
         maps.push_back(std::move(map));
       }
     }
-    RCLCPP_INFO(this->get_logger(), "Floor candidates: %ld", maps.size());
+    RCLCPP_DEBUG(this->get_logger(), "Floor candidates: %ld", maps.size());
+    if (maps.empty())
+    {
+      return;
+    }
     const auto merge_threshold = params_.grid * 1.5;
     for (size_t i = maps.size() - 1; i > 0; i--)
     {
@@ -271,7 +301,7 @@ public:
         }
       }
 
-      auto cnt = [&](const decltype(cur) map){
+      auto cnt = [](const auto& map){
         return std::count(map.data.begin(), map.data.end(), 0);
       };
 
@@ -282,7 +312,7 @@ public:
       floor_runnable_area[i_prev] = cnt(prev);
     }
 
-    if (rcutils_logging_get_logger_effective_level(this->get_logger().get_name()) <= RCUTILS_LOG_SEVERITY::RCUTILS_LOG_SEVERITY_INFO)
+    if (rcutils_logging_get_logger_effective_level(this->get_logger().get_name()) <= RCUTILS_LOG_SEVERITY::RCUTILS_LOG_SEVERITY_DEBUG)
     {
       for (int h = H - 1; h >= 0; h--)
       {
@@ -298,17 +328,18 @@ public:
         }
         const auto z = (h + range.z_min) * params_.grid;
         if (floor_runnable_area[h] == 0)
-        RCLCPP_INFO(this->get_logger(), "%6.2f %s  (%7d points)", z, bar.c_str(), hist[h]);
+        RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points)", z, bar.c_str(), hist[h]);
         else
-        RCLCPP_INFO(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist[h], floor_runnable_area[h] * cell_area);
+        RCLCPP_DEBUG(this->get_logger(), "%6.2f %s  (%7d points, %5.2f m^2 of floor))", z, bar.c_str(), hist[h], floor_runnable_area[h] * cell_area);
       }
     }
 
     int floor_num = 0;
     map_organizer_msgs::msg::OccupancyGridArray map_array;
-    for (auto& map : maps)
+    pub_maps_.clear();
+    for (auto&& map : maps)
     {
-      int h = map.info.origin.position.z / params_.grid;
+      const auto h = static_cast<int>(map.info.origin.position.z / params_.grid) - range.z_min;
       if (floor_runnable_area[h] * cell_area < params_.min_floor_area)
       {
         RCLCPP_WARN(this->get_logger(), "floor %d (%5.2fm^2), h = %0.2fm skipped",
