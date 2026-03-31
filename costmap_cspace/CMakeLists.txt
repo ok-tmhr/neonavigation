@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(costmap_cspace)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
-
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies()
 
 foreach(layer plain unknown_handle footprint)
   generate_parameter_library(
@@ -13,38 +11,56 @@ foreach(layer plain unknown_handle footprint)
   )
 endforeach()
 
-ament_auto_add_library(costmap_3d_layers src/costmap_3d_layers.cpp)
-target_link_libraries(costmap_3d_layers plain_parameters unknown_handle_parameters footprint_parameters)
+neonavigation_add_library(costmap_3d_layers src/costmap_3d_layers.cpp
+  NO_PRIVATE
+  LINK_LIBRARIES
+    plain_parameters
+    unknown_handle_parameters
+    footprint_parameters
+    costmap_cspace_msgs
+    nav_msgs
+)
 
-rclcpp_components_auto_register_node(
-  costmap_3d
+neonavigation_register_node(
+  costmap_3d src/costmap_3d.cpp
   PLUGIN costmap_cspace::Costmap3DOFNode
-  PARAMETERS param/costmap_3d_parameters.yaml
-  src/costmap_3d.cpp
+  PARAMETER param/costmap_3d_parameters.yaml
+  LINK_LIBRARIES
+    costmap_3d_layers
+    geometry_msgs
+    sensor_msgs
 )
-target_link_libraries(costmap_3d_component costmap_3d_layers)
 
-rclcpp_components_auto_register_node(
-  laserscan_to_map
+neonavigation_register_node(
+  laserscan_to_map src/laserscan_to_map.cpp
   PLUGIN costmap_cspace::LaserscanToMapNode
-  src/laserscan_to_map.cpp
+  LINK_LIBRARIES
+    laser_geometry::laser_geometry
+    nav_msgs
+    tf2_geometry_msgs::tf2_geometry_msgs
 )
 
-rclcpp_components_auto_register_node(
-  pointcloud2_to_map
+neonavigation_register_node(
+  pointcloud2_to_map src/pointcloud2_to_map.cpp
   PLUGIN costmap_cspace::Pointcloud2ToMapNode
-  src/pointcloud2_to_map.cpp
+  LINK_LIBRARIES
+    tf2_geometry_msgs::tf2_geometry_msgs
+    nav_msgs
+  DEPENDENCIES
+    tf2_sensor_msgs
 )
 
-rclcpp_components_auto_register_node(
-  largemap_to_map
+neonavigation_register_node(
+  largemap_to_map src/largemap_to_map.cpp
   PLUGIN costmap_cspace::LargeMapToMapNode
-  src/largemap_to_map.cpp
+  LINK_LIBRARIES
+    nav_msgs
+    tf2_geometry_msgs::tf2_geometry_msgs
 )
 
 if(BUILD_TESTING)
-  ament_auto_find_test_dependencies()
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+neonavigation_package()
