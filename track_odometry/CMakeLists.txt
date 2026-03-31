@@ -1,29 +1,38 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(track_odometry)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies(EXCLUDE eigen)
+find_package(Eigen3 REQUIRED COMPONENTS Core Geometry)
 
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
-
-rclcpp_components_auto_register_node(
-  track_odometry
+neonavigation_register_node(
+  track_odometry src/track_odometry.cpp
   PLUGIN track_odometry::TrackOdometryNode
-  PARAMETERS param/track_odometry_parameters.yaml
-  src/track_odometry.cpp
+  PARAMETER param/track_odometry_parameters.yaml
+  LINK_LIBRARIES
+    Eigen3::Eigen
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    std_msgs
+    message_filters::message_filters
+    tf2_geometry_msgs::tf2_geometry_msgs
+    tf2_ros::tf2_ros
 )
 
-rclcpp_components_auto_register_node(
-  tf_projection
+neonavigation_register_node(
+  tf_projection src/tf_projection_node.cpp src/tf_projection.cpp
   PLUGIN track_odometry::TfProjectionNode
-  PARAMETERS param/tf_projection_node_parameters.yaml
-  src/tf_projection_node.cpp src/tf_projection.cpp
+  PARAMETER param/tf_projection_node_parameters.yaml
+  LINK_LIBRARIES
+    tf2_geometry_msgs::tf2_geometry_msgs
+    tf2_ros::tf2_ros
 )
 
 if(BUILD_TESTING)
-  ament_auto_find_test_dependencies()
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+neonavigation_package()
 
