@@ -10,7 +10,6 @@ macro(neonavigation_add_library target)
   endif()
 
   set(_libs "")
-
   if(ARG_PARAMETER)
     generate_parameter_library(${target}_parameters ${ARG_PARAMETER})
     target_link_libraries(${target} PRIVATE ${target}_parameters)

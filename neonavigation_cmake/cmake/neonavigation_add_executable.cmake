@@ -1,7 +1,7 @@
 
 macro(neonavigation_add_executable target)
 
-  cmake_parse_arguments(ARG "NO_TARGET_INCLUDE_DIRECTORIES;NO_PRIVATE" "" "LINK_LIBRARIES;DEPENDENCIES" ${ARGN})
+  cmake_parse_arguments(ARG "NO_TARGET_INCLUDE_DIRECTORIES;NO_PRIVATE" "PARAMETER" "LINK_LIBRARIES;DEPENDENCIES" ${ARGN})
 
   add_executable(${target} ${ARG_UNPARSED_ARGUMENTS})
 
@@ -10,8 +10,14 @@ macro(neonavigation_add_executable target)
   endif()
 
   set(_libs "")
+  if(ARG_PARAMETER)
+    generate_parameter_library(${target}_parameters ${ARG_PARAMETER})
+    target_link_libraries(${target} PRIVATE ${target}_parameters)
+  endif()
   foreach(_pkg IN LISTS ARG_LINK_LIBRARIES)
-    if(_pkg MATCHES "(_msgs|_srvs|_interfaces)$")
+    if(_pkg MATCHES "(.+)::(.+)")
+      list(APPEND _libs ${_pkg})
+    elseif(_pkg MATCHES "(_msgs|_srvs|_interfaces)$")
       list(APPEND _libs ${${_pkg}_TARGETS})
     else()
       list(APPEND _libs ${_pkg})
@@ -19,17 +25,13 @@ macro(neonavigation_add_executable target)
   endforeach()
 
   if(ARG_NO_PRIVATE)
-      target_link_libraries(${target} ${_libs})
+      target_link_libraries(${target} PUBLIC ${_libs})
     else()
       target_link_libraries(${target} PRIVATE ${_libs})
   endif()
 
   if(ARG_DEPENDENCIES)
-    if (ARG_NO_PRIVATE)
-      ament_target_dependencies(${target} ${ARG_DEPENDENCIES})
-    else()
-      ament_target_dependencies(${target} PUBLIC ${ARG_DEPENDENCIES})
-    endif()
+    ament_target_dependencies(${target} PUBLIC ${ARG_DEPENDENCIES})
   endif()
 
   list(APPEND ${PROJECT_NAME}_EXECUTABLES ${target})
