@@ -9,7 +9,7 @@
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
   <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
-  <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  <buildtool_depend>neonavigation_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <test_depend>ament_cmake_gtest</test_depend>

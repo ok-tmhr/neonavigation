@@ -1,9 +1,10 @@
 
 macro(neonavigation_register_node target)
 
-  cmake_parse_arguments(ARG "" "PARAMETER;PLUGIN" "" ${ARGN})
+  cmake_parse_arguments(ARG "" "PARAMETER;PLUGIN" "LINK_LIBRARIES" ${ARGN})
 
-  neonavigation_add_library(${target}_component ${ARG_UNPARSED_ARGUMENTS})
+  set(_libs rclcpp::rclcpp rclcpp_components::component ${ARG_LINK_LIBRARIES})
+  neonavigation_add_library(${target}_component ${ARG_UNPARSED_ARGUMENTS} LINK_LIBRARIES ${_libs})
 
   if(ARG_PARAMETER)
     generate_parameter_library(${target}_parameters ${ARG_PARAMETER})
