@@ -1,22 +1,36 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(safety_limiter)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
+find_package(neonavigation_cmake REQUIRED)
 
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
+neonavigation_find_build_dependencies(EXCLUDE eigen)
+find_package(PCL REQUIRED COMPONENTS common filters kdtree)
+find_package(Eigen3 REQUIRED COMPONENTS Core Geometry)
 
-rclcpp_components_auto_register_node(
-  safety_limiter
+neonavigation_register_node(
+  safety_limiter src/safety_limiter.cpp
   PLUGIN safety_limiter::SafetyLimiterNode
-  PARAMETERS param/safety_limiter_parameters.yaml
-  src/safety_limiter.cpp
+  PARAMETER param/safety_limiter_parameters.yaml
+  LINK_LIBRARIES
+    Eigen3::Eigen
+    rclcpp::rclcpp
+    geometry_msgs
+    sensor_msgs
+    std_msgs
+    tf2_geometry_msgs
+    safety_limiter_msgs
+    diagnostic_updater::diagnostic_updater
+    pcl_common
+    pcl_filters
+    pcl_kdtree
+  DEPENDENCIES
+    pcl_conversions
 )
 
 if(BUILD_TESTING)
-  ament_auto_find_test_dependencies()
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+neonavigation_package()
 
