@@ -1,55 +1,59 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(map_organizer)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies(EXCLUDE eigen)
 
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
-
-generate_parameter_library(
-  pointcloud_to_maps_parameters
-  param/pointcloud_to_maps_parameters.yaml
-)
-
-ament_auto_add_library(pointcloud_to_maps_component src/pointcloud_to_maps.cpp)
-target_link_libraries(pointcloud_to_maps_component pointcloud_to_maps_parameters)
-
-rclcpp_components_register_node(
-  pointcloud_to_maps_component
+neonavigation_register_node(
+  pointcloud_to_maps
+  src/pointcloud_to_maps.cpp
   PLUGIN map_organizer::PointcloudToMapsNode
-  EXECUTABLE pointcloud_to_maps
+  PARAMETER param/pointcloud_to_maps_parameters.yaml
+  LINK_LIBRARIES
+    sensor_msgs
+    map_organizer_msgs
+    pcl_common
+  DEPENDENCIES
+    pcl_conversions
 )
 
-ament_auto_add_library(tie_maps_component src/tie_maps.cpp)
-
-rclcpp_components_register_node(
-  tie_maps_component
+neonavigation_register_node(
+  tie_maps src/tie_maps.cpp
   PLUGIN map_organizer::TieMapNode
-  EXECUTABLE tie_maps
+  LINK_LIBRARIES
+    map_organizer_msgs
+  DEPENDENCIES
+    nav2_map_server
 )
 
-ament_auto_add_executable(save_maps src/save_maps.cpp)
+neonavigation_add_executable(save_maps src/save_maps.cpp
+  LINK_LIBRARIES
+    rclcpp::rclcpp
+    nav_msgs
+    tf2::tf2
+    tf2_geometry_msgs::tf2_geometry_msgs
+    map_organizer_msgs
+)
 
-ament_auto_add_library(select_map_component src/select_map.cpp)
-
-rclcpp_components_register_node(
-  select_map_component
+neonavigation_register_node(
+  select_map src/select_map.cpp
   PLUGIN map_organizer::SelectMap
-  EXECUTABLE select_map
+  LINK_LIBRARIES
+    map_organizer_msgs
+    tf2_geometry_msgs::tf2_geometry_msgs
 )
 
-ament_auto_add_library(pose_transform_component src/pose_transform.cpp)
-
-rclcpp_components_register_node(
-  pose_transform_component
+neonavigation_register_node(
+  pose_transform src/pose_transform.cpp
   PLUGIN map_organizer::PoseTransformNode
-  EXECUTABLE pose_transform
+  LINK_LIBRARIES
+    geometry_msgs
+    tf2_geometry_msgs::tf2_geometry_msgs
 )
 
 if(BUILD_TESTING)
-  ament_auto_find_test_dependencies()
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
-
+neonavigation_package()
