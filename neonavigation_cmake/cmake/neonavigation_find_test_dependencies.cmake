@@ -1,8 +1,0 @@
-macro(neonavigation_find_test_dependencies)
-  cmake_parse_arguments(ARG "" "" "EXCLUDE" ${ARGN})
-  foreach(_dep IN LISTS ${PROJECT_NAME}_TEST_DEPENDS)
-    if(NOT _dep IN_LIST ARG_EXCLUDE)
-      find_package(${_dep} REQUIRED)
-    endif()
-  endforeach()
-endmacro()
