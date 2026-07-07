@@ -1,26 +1,28 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(joystick_interrupt)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies()
 
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
-
-rclcpp_components_auto_register_node(
-  joystick_interrupt
+neonavigation_register_node(
+  joystick_interrupt src/joystick_interrupt.cpp
   PLUGIN joystick_interrupt::JoystickInterrupt
-  src/joystick_interrupt.cpp
+  LINK_LIBRARIES
+    geometry_msgs
+    sensor_msgs
+    std_msgs
 )
 
-rclcpp_components_auto_register_node(
-  joystick_mux
+neonavigation_register_node(
+  joystick_mux src/joystick_mux.cpp
   PLUGIN joystick_interrupt::JoystickMux
-  src/joystick_mux.cpp
+  LINK_LIBRARIES
+    sensor_msgs
 )
 
 if(BUILD_TESTING)
-  ament_auto_find_test_dependencies()
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE launch)
+neonavigation_package(INSTALL_TO_SHARE launch)
