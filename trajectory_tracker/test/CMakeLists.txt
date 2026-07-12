@@ -1,5 +1,12 @@
-add_library(test_${PROJECT_NAME}_pch INTERFACE)
-target_link_libraries(test_${PROJECT_NAME}_pch INTERFACE Eigen3::Eigen rclcpp::rclcpp ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
+neonavigation_add_library(test_${PROJECT_NAME}_pch INTERFACE
+  LIBRARIES
+    Eigen3::Eigen
+    rclcpp::rclcpp
+    geometry_msgs
+    nav_msgs
+    tf2_geometry_msgs
+    trajectory_tracker_msgs
+)
 target_precompile_headers(test_${PROJECT_NAME}_pch INTERFACE include/trajectory_tracker_test.h)
 
 ament_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
@@ -7,12 +14,12 @@ target_include_directories(test_${PROJECT_NAME}_filter PRIVATE ${CMAKE_SOURCE_DI
 
 ament_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
 target_include_directories(test_${PROJECT_NAME}_path2d PRIVATE ${CMAKE_SOURCE_DIR}/include)
-target_link_libraries(test_${PROJECT_NAME}_path2d ${nav_msgs_TARGETS} Eigen3::Eigen ${tf2_geometry_msgs_TARGETS} ${trajectory_tracker_msgs_TARGETS})
+neonavigation_target_link_libraries(test_${PROJECT_NAME}_path2d nav_msgs Eigen3::Eigen tf2_geometry_msgs trajectory_tracker_msgs)
 
 ament_add_gtest_executable(test_trajectory_recorder
     src/test_trajectory_recorder.cpp)
 add_launch_test(launch/trajectory_recorder_test.launch.py TIMEOUT 60)
-target_link_libraries(test_trajectory_recorder rclcpp::rclcpp tf2_ros::tf2_ros ${tf2_geometry_msgs_TARGETS} ${nav_msgs_TARGETS} ${std_srvs_TARGETS})
+neonavigation_target_link_libraries(test_trajectory_recorder rclcpp::rclcpp tf2_ros::tf2_ros tf2_geometry_msgs nav_msgs std_srvs)
 
 ament_add_gtest_executable(test_trajectory_tracker
     src/test_trajectory_tracker.cpp)
