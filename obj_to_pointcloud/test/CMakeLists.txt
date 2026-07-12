@@ -1,5 +1,8 @@
-ament_auto_add_gtest(test_obj_to_pointcloud SKIP_TEST
+neonavigation_add_gtest(test_obj_to_pointcloud SKIP_TEST
   src/test_obj_to_pointcloud.cpp
+  LIBRARIES
+    sensor_msgs
+    rclcpp::rclcpp
 )
 add_launch_test(launch/obj_to_pointcloud_test.launch.py TIMEOUT 120)
 
