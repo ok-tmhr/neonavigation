@@ -1,5 +1,5 @@
 add_library(test_safety_limiter_base INTERFACE)
-neonavigation_target_link_library(
+neonavigation_target_link_libraries(
   test_safety_limiter_base
   INTERFACE
     safety_limiter_msgs
@@ -11,7 +11,7 @@ neonavigation_target_link_library(
 ament_add_gtest(test_safety_limiter SKIP_TEST
   src/test_safety_limiter.cpp
 )
-neonavigation_target_link_library(test_safety_limiter
+neonavigation_target_link_libraries(test_safety_limiter
   rclcpp::rclcpp
   diagnostic_msgs
   geometry_msgs
@@ -24,7 +24,7 @@ add_launch_test(launch/safety_limiter_test.launch.py TIMEOUT 120)
 ament_add_gtest(test_safety_limiter2 SKIP_TEST
 src/test_safety_limiter2.cpp
 )
-neonavigation_target_link_library(test_safety_limiter2
+neonavigation_target_link_libraries(test_safety_limiter2
   rclcpp::rclcpp
   diagnostic_msgs
   geometry_msgs
