@@ -25,7 +25,7 @@
   <depend>diagnostic_updater</depend>
   <depend>geometry_msgs</depend>
   <depend>pcl_conversions</depend>
-  <depend>pcl_ros</depend>
+  <depend>libpcl-all-dev</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>tf2_ros</depend>
@@ -34,6 +34,9 @@
   <depend>safety_limiter_msgs</depend>
 
   <depend>eigen</depend>
+  <exec_depend>libpcl-common</exec_depend>
+  <exec_depend>libpcl-kdtree</exec_depend>
+  <exec_depend>libpcl-filters</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

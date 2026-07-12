@@ -3,15 +3,16 @@ project(safety_limiter)
 
 find_package(neonavigation_cmake REQUIRED)
 
-neonavigation_find_build_dependencies(EXCLUDE eigen)
+neonavigation_find_build_dependencies(EXCLUDE eigen libpcl-all-dev)
 find_package(PCL REQUIRED COMPONENTS common filters kdtree)
 find_package(Eigen3 REQUIRED COMPONENTS Core Geometry)
 
 neonavigation_register_node(
-  safety_limiter src/safety_limiter.cpp
+  safety_limiter_component src/safety_limiter.cpp
+  EXECUTABLE safety_limiter
   PLUGIN safety_limiter::SafetyLimiterNode
   PARAMETER param/safety_limiter_parameters.yaml
-  LINK_LIBRARIES
+  LIBRARIES
     Eigen3::Eigen
     rclcpp::rclcpp
     geometry_msgs
@@ -23,9 +24,12 @@ neonavigation_register_node(
     pcl_common
     pcl_filters
     pcl_kdtree
-  DEPENDENCIES
+    tf2_ros::tf2_ros
+)
+ament_target_dependencies(safety_limiter_component
     pcl_conversions
 )
+neonavigation_target_include_directories(safety_limiter_component PRIVATE)
 
 if(BUILD_TESTING)
   neonavigation_find_test_dependencies()

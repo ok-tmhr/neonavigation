@@ -5,18 +5,20 @@ find_package(neonavigation_cmake REQUIRED)
 neonavigation_find_build_dependencies()
 
 neonavigation_register_node(
-  joystick_interrupt src/joystick_interrupt.cpp
+  joystick_interrupt_component src/joystick_interrupt.cpp
+  EXECUTABLE joystick_interrupt
   PLUGIN joystick_interrupt::JoystickInterrupt
-  LINK_LIBRARIES
+  LIBRARIES
     geometry_msgs
     sensor_msgs
     std_msgs
 )
 
 neonavigation_register_node(
-  joystick_mux src/joystick_mux.cpp
+  joystick_mux_component src/joystick_mux.cpp
+  EXECUTABLE joystick_mux
   PLUGIN joystick_interrupt::JoystickMux
-  LINK_LIBRARIES
+  LIBRARIES
     sensor_msgs
 )
 
