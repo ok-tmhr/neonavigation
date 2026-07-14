@@ -65,50 +65,6 @@ neonavigation_add_library(path2d INTERFACE
     tf2::tf2
     rclcpp::rclcpp
 )
-# target_include_directories(path2d
-#    INTERFACE
-#       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-#       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-# )
-# neonavigation_target_link_library(path2d
-#    INTERFACE
-#       Eigen3::Eigen
-#       geometry_msgs
-#       nav_msgs
-#       tf2_geometry_msgs::tf2_geometry_msgs
-#       tf2::tf2
-#       rclcpp::rclcpp
-# )
-
-# install(
-#   TARGETS path2d
-#   EXPORT export_${PROJECT_NAME}
-#   ARCHIVE DESTINATION lib
-#   LIBRARY DESTINATION lib
-#   RUNTIME DESTINATION bin
-# )
-
-# install(
-#   DIRECTORY include
-#   DESTINATION include/${PROJECT_NAME}
-# )
-
-# install(EXPORT
-#   export_${PROJECT_NAME}
-#   NAMESPACE ${PROJECT_NAME}::
-#   DESTINATION share/${PROJECT_NAME}/cmake
-# )
-
-# ament_export_targets(export_${PROJECT_NAME})
-
-# ament_export_dependencies(
-#   Eigen3
-#   geometry_msgs
-#   nav_msgs
-#   tf2_geometry_msgs
-#   tf2
-#   rclcpp
-# )
 
 if(BUILD_TESTING)
   neonavigation_find_test_dependencies()
