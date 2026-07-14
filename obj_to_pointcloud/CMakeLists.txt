@@ -1,23 +1,27 @@
 cmake_minimum_required(VERSION 3.14.4)
 project(obj_to_pointcloud)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies(EXCLUDE eigen libpcl-all-dev)
+find_package(PCL COMPONENTS filters io)
 
-find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
-
-ament_auto_add_library(obj_to_pointcloud_component src/obj_to_pointcloud.cpp)
-
-rclcpp_components_register_node(
-  obj_to_pointcloud_component
-  PLUGIN obj_to_pointcloud::ObjToPointcloudNode
-  EXECUTABLE obj_to_pointcloud
+neonavigation_register_node(
+  ${PROJECT_NAME}_component src/${PROJECT_NAME}.cpp
+  EXECUTABLE ${PROJECT_NAME}
+  PLUGIN ${PROJECT_NAME}::ObjToPointcloudNode
+  LIBRARIES
+    sensor_msgs
+    pcl_filters
+    pcl_io
+)
+ament_target_dependencies(${PROJECT_NAME}_component
+  pcl_conversions
 )
 
 if(BUILD_TESTING)
-  ament_auto_find_test_dependencies()
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
 endif()
 
-ament_auto_package()
+neonavigation_package()
 

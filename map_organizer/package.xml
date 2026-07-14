@@ -9,7 +9,7 @@
   <author email="atsushi.w@ieee.org">Atsushi Watanabe</author>
   <author email="tomohiro.oku2023@gmail.com">Tomohiro Oku</author>
 
-  <buildtool_depend>ament_cmake_ros</buildtool_depend>
+  <buildtool_depend>neonavigation_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
@@ -24,7 +24,7 @@
   <depend>nav2_map_server</depend>
   <depend>nav_msgs</depend>
   <depend>pcl_conversions</depend>
-  <depend>pcl_ros</depend>
+  <depend>libpcl-all-dev</depend>
   <depend>sensor_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
@@ -32,7 +32,7 @@
 
   <depend>map_organizer_msgs</depend>
 
-  <depend>eigen</depend>
+  <exec_depend>libpcl-common</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
