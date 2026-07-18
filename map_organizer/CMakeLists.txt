@@ -24,6 +24,7 @@ neonavigation_register_node(
   tie_maps_component src/tie_maps.cpp
   EXECUTABLE tie_maps
   PLUGIN map_organizer::TieMapNode
+  PARAMETER param/tie_maps_parameters.yaml
   LIBRARIES
     map_organizer_msgs
 )
