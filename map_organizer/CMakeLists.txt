@@ -39,6 +39,7 @@ neonavigation_add_executable(save_maps src/save_maps.cpp
     tf2::tf2
     tf2_geometry_msgs::tf2_geometry_msgs
     map_organizer_msgs
+  PARAMETER param/save_maps_parameters.yaml
 )
 
 neonavigation_register_node(
@@ -48,6 +49,7 @@ neonavigation_register_node(
   LIBRARIES
     map_organizer_msgs
     tf2_geometry_msgs::tf2_geometry_msgs
+  PARAMETER param/select_map_parameters.yaml
 )
 
 neonavigation_register_node(
@@ -57,6 +59,7 @@ neonavigation_register_node(
   LIBRARIES
     geometry_msgs
     tf2_geometry_msgs::tf2_geometry_msgs
+  PARAMETER param/pose_transform_parameters.yaml
 )
 
 if(BUILD_TESTING)

@@ -44,7 +44,7 @@
 #include <nav2_map_server/map_io.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include "map_organizer/tie_maps_parameters.hpp"
+#include "map_organizer/tie_maps_component_parameter.hpp"
 namespace map_organizer
 {
 class TieMapNode : public rclcpp::Node

@@ -1,0 +1,7 @@
+pose_transform:
+  frame_id:
+    type: string
+    default_value: map
+    description: A destination frame for the pose to transform
+    validation:
+      not_empty<>: null
