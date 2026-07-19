@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
-<launch>
+<launch xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="https://ok-tmhr.github.io/ros2_awesome/schema/launch_ros.xsd">
   <arg name="tmpfile_prefix" default="/tmp/tmp-map-organizer-988dbe-" />
 
   <node pkg="map_organizer" exec="tie_maps" name="tie_maps" output="screen">
-    <param name="map_files"
+    <param name="map_files" type="list_of_str" value-sep=","
       value="$(find-pkg-share map_organizer)/data/0.yaml,$(find-pkg-share map_organizer)/data/1.yaml" />
     <param name="frame_id" value="map_ground" />
   </node>
@@ -13,7 +14,7 @@
 
   <group>
     <node pkg="map_organizer" exec="tie_maps" name="tie_maps2" output="screen" respawn="true" namespace="saved">
-      <param name="map_files"
+      <param name="map_files" type="list_of_str" value-sep=","
         value="$(var tmpfile_prefix)0.yaml,$(var tmpfile_prefix)1.yaml" />
       <param name="frame_id" value="map_ground" />
     </node>

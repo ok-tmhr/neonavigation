@@ -37,6 +37,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
+#include "map_organizer/pose_transform_component_parameter.hpp"
 namespace map_organizer
 {
 
@@ -45,6 +46,7 @@ class PoseTransformNode : public rclcpp::Node
 private:
   std::unique_ptr<tf2_ros::Buffer> tfbuf_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
+  std::shared_ptr<pose_transform::ParamListener> param_listener_;
 
   std::string to_;
 
@@ -84,7 +86,8 @@ public:
     pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
         "pose_out",
         1);
-    to_ = this->declare_parameter("to_frame", "map");
+    param_listener_ = std::make_shared<pose_transform::ParamListener>(this->get_node_parameters_interface());
+    to_ = param_listener_->get_params().frame_id;
 
     tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);

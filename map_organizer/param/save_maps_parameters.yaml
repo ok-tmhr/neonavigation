@@ -1,0 +1,7 @@
+save_maps:
+  map_name:
+    type: string
+    default_value: map
+    description: A map name to export
+    validation:
+      not_empty<>: null

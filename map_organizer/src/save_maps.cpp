@@ -43,6 +43,8 @@
 
 #include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
 
+#include "map_organizer/save_maps_parameter.hpp"
+
 namespace fs = std::filesystem;
 
 /**
@@ -54,15 +56,17 @@ protected:
   std::string mapname_;
   rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr map_sub_;
   bool saved_map_;
+  std::shared_ptr<save_maps::ParamListener> param_listener_;
 
 public:
-  explicit MapGeneratorNode(const std::string& mapname, const rclcpp::NodeOptions& options) : Node("save_maps", options)
-    , mapname_(mapname)
+  explicit MapGeneratorNode(const rclcpp::NodeOptions& options=rclcpp::NodeOptions()) : Node("save_maps", options)
     , saved_map_(false)
   {
     RCLCPP_INFO(this->get_logger(), "Waiting for the map");
     map_sub_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local(),
       [this](const map_organizer_msgs::msg::OccupancyGridArray::ConstSharedPtr msg){ mapsCallback(msg); });
+    param_listener_ = std::make_shared<save_maps::ParamListener>(this->get_node_parameters_interface());
+    mapname_ = param_listener_->get_params().map_name;
   }
 
   bool done() const
@@ -87,6 +91,7 @@ public:
              map->info.height,
              map->info.resolution);
 
+    mapname_ = param_listener_->get_params().map_name;
     fs::path mapdatafile(mapname_ + std::to_string(floor) + ".pgm");
     RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s", mapdatafile.c_str());
 
@@ -152,7 +157,7 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   auto args = rclcpp::remove_ros_arguments(argc, argv);
-  std::string mapname = "map";
+  std::string mapname = "";
 
   for (size_t i = 1; i < args.size(); i++)
   {
@@ -172,8 +177,10 @@ int main(int argc, char** argv)
     }
   }
 
-  auto mg = std::make_shared<MapGeneratorNode>(mapname, rclcpp::NodeOptions());
-
+  auto mg = std::make_shared<MapGeneratorNode>(rclcpp::NodeOptions());
+  if (!mapname.empty()){
+    mg->set_parameter({"map_name", mapname});
+  }
   // while (!mg->done() && rclcpp::ok())
   rclcpp::spin(mg);
 

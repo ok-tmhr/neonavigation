@@ -37,6 +37,7 @@
 
 #include <vector>
 
+#include "map_organizer/select_map_component_parameter.hpp"
 namespace map_organizer
 {
 class SelectMap : public rclcpp::Node
@@ -45,6 +46,7 @@ class SelectMap : public rclcpp::Node
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr subFloor_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pubMap_;
   rclcpp::TimerBase::SharedPtr timer_;
+  std::shared_ptr<select_map::ParamListener> param_listener_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
   map_organizer_msgs::msg::OccupancyGridArray maps_;
   std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos_;
@@ -103,10 +105,12 @@ public:
     pubMap_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "map",
         rclcpp::QoS(1).transient_local());
+    param_listener_ = std::make_shared<select_map::ParamListener>(this->get_node_parameters_interface());
+    const auto param = param_listener_->get_params();
 
     tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
-    trans_.header.frame_id = "map_ground";
-    trans_.child_frame_id = "map";
+    trans_.header.frame_id = param.ground_frame;
+    trans_.child_frame_id = param.map_frame;
     trans_.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
 
     timer_ = this->create_wall_timer(

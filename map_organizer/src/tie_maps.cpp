@@ -44,6 +44,7 @@
 #include <nav2_map_server/map_io.hpp>
 #include <yaml-cpp/yaml.h>
 
+#include "map_organizer/tie_maps_component_parameter.hpp"
 namespace map_organizer
 {
 class TieMapNode : public rclcpp::Node
@@ -51,22 +52,22 @@ class TieMapNode : public rclcpp::Node
 private:
   rclcpp::Publisher<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr pub_map_array_;
   std::vector<rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr> pub_map_;
+  std::shared_ptr<tie_maps::ParamListener> param_listener_;
 
 public:
   TieMapNode(const rclcpp::NodeOptions& options) : Node("tie_maps", options)
   {
     pub_map_array_ = this->create_publisher<map_organizer_msgs::msg::OccupancyGridArray>("maps", rclcpp::QoS(1).transient_local());
 
+    param_listener_ = std::make_shared<tie_maps::ParamListener>(this->get_node_parameters_interface());
+    const auto param = param_listener_->get_params();
+
     map_organizer_msgs::msg::OccupancyGridArray maps;
 
     double height;
-    std::string files_str = this->declare_parameter("map_files", "");
-    std::string frame_id = this->declare_parameter("frame_id", "map");
 
     int i = 0;
-    std::string file;
-    std::stringstream ss(files_str);
-    while (std::getline(ss, file, ','))
+    for (const auto& file: param.map_files)
     {
       std::ifstream fin(file);
       if (fin.fail())
@@ -90,7 +91,7 @@ public:
       nav2_map_server::loadMapFromYaml(file, map_resp);
       map_resp.info.origin.position.z = height;
       map_resp.info.map_load_time = this->now();
-      map_resp.header.frame_id = frame_id;
+      map_resp.header.frame_id = param.frame_id;
       map_resp.header.stamp = this->now();
       RCLCPP_INFO(this->get_logger(), "Read a %d X %d map @ %.3lf m/cell",
                map_resp.info.width,

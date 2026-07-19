@@ -48,7 +48,7 @@
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 
-#include <map_organizer/pointcloud_to_maps_parameters.hpp>
+#include <map_organizer/pointcloud_to_maps_component_parameter.hpp>
 
 namespace map_organizer
 {

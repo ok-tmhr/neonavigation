@@ -58,7 +58,7 @@ tie_maps node loads maps from files and ties into layered OccupancyGrid.
 
 ### Parameters
 
-* "map_files" (string, default: std::string(""))
+* "map_files" (string_array, default: [map.yaml])
 * "frame_id" (string, default: std::string("map"))
 
 ----
