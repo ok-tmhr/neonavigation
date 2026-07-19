@@ -91,6 +91,7 @@ public:
              map->info.height,
              map->info.resolution);
 
+    mapname_ = param_listener_->get_params().map_name;
     fs::path mapdatafile(mapname_ + std::to_string(floor) + ".pgm");
     RCLCPP_INFO(this->get_logger(), "Writing map occupancy data to %s", mapdatafile.c_str());
 
