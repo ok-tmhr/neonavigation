@@ -1,79 +1,75 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(trajectory_tracker)
 
-set(CATKIN_DEPENDS
-  roscpp
+find_package(neonavigation_cmake REQUIRED)
 
-  dynamic_reconfigure
-  geometry_msgs
-  interactive_markers
-  nav_msgs
-  std_srvs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros
+neonavigation_find_build_dependencies(EXCLUDE eigen)
+find_package(Eigen3 REQUIRED COMPONENTS Core Geometry)
 
-  neonavigation_common
-  trajectory_tracker_msgs
+# Tracker
+neonavigation_register_node(trajectory_tracker_component src/trajectory_tracker.cpp
+  EXECUTABLE trajectory_tracker
+  PLUGIN
+    trajectory_tracker::TrackerNode
+  PARAMETER
+    param/trajectory_tracker_parameters.yaml
+  LIBRARIES
+    Eigen3::Eigen
+    tf2::tf2
+    geometry_msgs
+    nav_msgs
+    tf2_geometry_msgs
+    trajectory_tracker_msgs
+)
+neonavigation_target_include_directories(trajectory_tracker_component PUBLIC)
+
+# Recorder
+neonavigation_register_node(trajectory_recorder_component src/trajectory_recorder.cpp
+  EXECUTABLE trajectory_recorder
+  PLUGIN
+    trajectory_tracker::RecorderNode
+  LIBRARIES
+    geometry_msgs
+    nav_msgs
+    tf2_geometry_msgs
+    std_srvs
 )
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
-find_package(Boost REQUIRED COMPONENTS thread)
-find_package(Eigen3 REQUIRED)
-
-generate_dynamic_reconfigure_options(
-  cfg/TrajectoryTracker.cfg
+# Saver
+neonavigation_add_executable(trajectory_saver src/trajectory_saver.cpp
+  LIBRARIES
+    rclcpp::rclcpp
+    geometry_msgs
+    nav_msgs
 )
 
-catkin_package(
-  INCLUDE_DIRS include
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
+# Server
+neonavigation_register_node(trajectory_server_component src/trajectory_server.cpp
+  EXECUTABLE trajectory_server
+  PLUGIN trajectory_tracker::ServerNode
+  LIBRARIES
+    interactive_markers::interactive_markers
+    geometry_msgs
+    nav_msgs
+    tf2_geometry_msgs
+    trajectory_tracker_msgs
+)
+neonavigation_target_include_directories(trajectory_server_component PUBLIC)
+
+neonavigation_add_library(path2d INTERFACE
+  LIBRARIES
+    Eigen3::Eigen
+    geometry_msgs
+    nav_msgs
+    tf2_geometry_msgs::tf2_geometry_msgs
+    tf2::tf2
+    rclcpp::rclcpp
 )
 
-
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-
-
-add_executable(trajectory_tracker src/trajectory_tracker.cpp)
-target_link_libraries(trajectory_tracker ${catkin_LIBRARIES})
-add_dependencies(trajectory_tracker ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
-
-add_executable(trajectory_recorder src/trajectory_recorder.cpp)
-target_link_libraries(trajectory_recorder ${catkin_LIBRARIES})
-add_dependencies(trajectory_recorder ${catkin_EXPORTED_TARGETS})
-
-add_executable(trajectory_saver src/trajectory_saver.cpp)
-target_link_libraries(trajectory_saver ${catkin_LIBRARIES})
-add_dependencies(trajectory_saver ${catkin_EXPORTED_TARGETS})
-
-add_executable(trajectory_server src/trajectory_server.cpp)
-target_link_libraries(trajectory_server ${catkin_LIBRARIES})
-add_dependencies(trajectory_server ${catkin_EXPORTED_TARGETS})
-
-
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+if(BUILD_TESTING)
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
-
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
 endif()
 
+neonavigation_package(EXPORT_TARGETS)
 
-install(TARGETS
-    trajectory_recorder
-    trajectory_saver
-    trajectory_server
-    trajectory_tracker
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)

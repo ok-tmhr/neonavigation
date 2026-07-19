@@ -1,12 +1,11 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(neonavigation_launch)
 
-find_package(catkin REQUIRED)
-catkin_package(
-	CATKIN_DEPENDS
-)
-
+find_package(ament_cmake REQUIRED)
 
 install(DIRECTORY launch config map
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION share/${PROJECT_NAME}
 )
+
+ament_package()
+

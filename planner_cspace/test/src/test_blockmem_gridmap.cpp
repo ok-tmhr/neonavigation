@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -69,26 +70,26 @@ TEST(BlockmemGridmap, ResetClear)
       gm.reset(CyclicVecInt<3, 3>(s, s, s));
       gm.clear(0.0);
 
-      CyclicVecInt<3, 3> i;
-      for (i[0] = 0; i[0] < s; ++i[0])
+      CyclicVecInt<3, 3> cv;
+      for (cv[0] = 0; cv[0] < s; ++cv[0])
       {
-        for (i[1] = 0; i[1] < s; ++i[1])
+        for (cv[1] = 0; cv[1] < s; ++cv[1])
         {
-          for (i[2] = 0; i[2] < s; ++i[2])
+          for (cv[2] = 0; cv[2] < s; ++cv[2])
           {
-            ASSERT_EQ(gm[i], 0.0);
+            ASSERT_EQ(gm[cv], 0.0);
           }
         }
       }
 
       gm.clear(3.0);
-      for (i[0] = 0; i[0] < s; ++i[0])
+      for (cv[0] = 0; cv[0] < s; ++cv[0])
       {
-        for (i[1] = 0; i[1] < s; ++i[1])
+        for (cv[1] = 0; cv[1] < s; ++cv[1])
         {
-          for (i[2] = 0; i[2] < s; ++i[2])
+          for (cv[2] = 0; cv[2] < s; ++cv[2])
           {
-            ASSERT_EQ(gm[i], 3.0);
+            ASSERT_EQ(gm[cv], 3.0);
           }
         }
       }

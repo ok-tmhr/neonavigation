@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,8 +29,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_BASIC_CONTROL_H
-#define TRAJECTORY_TRACKER_BASIC_CONTROL_H
+#pragma once
 
 #include <cmath>
 
@@ -101,4 +101,3 @@ public:
 };
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_BASIC_CONTROL_H

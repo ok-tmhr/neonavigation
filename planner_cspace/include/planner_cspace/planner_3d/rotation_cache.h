@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018-2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
-#define PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H
+#pragma once
 
 #include <cmath>
 #include <list>
@@ -106,4 +106,3 @@ public:
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_PLANNER_3D_ROTATION_CACHE_H

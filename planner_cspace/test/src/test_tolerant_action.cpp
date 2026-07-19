@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,24 +34,25 @@
 
 #include <gtest/gtest.h>
 
-#include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <planner_cspace_msgs/MoveWithToleranceAction.h>
-#include <planner_cspace_msgs/PlannerStatus.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <planner_cspace_msgs/action/move_with_tolerance.hpp>
+#include <planner_cspace_msgs/msg/planner_status.hpp>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <planner_cspace/action_test_base.h>
 
 class TolerantActionTest
-  : public ActionTestBase<planner_cspace_msgs::MoveWithToleranceAction, ACTION_TOPIC_TOLERANT_MOVE>
+  : public ActionTestBase<planner_cspace_msgs::action::MoveWithTolerance, ACTION_TOPIC_TOLERANT_MOVE>
 {
 protected:
-  planner_cspace_msgs::MoveWithToleranceGoal createGoalInFree()
+  planner_cspace_msgs::action::MoveWithTolerance::Goal createGoalInFree()
   {
-    planner_cspace_msgs::MoveWithToleranceGoal goal;
-    goal.target_pose.header.stamp = ros::Time::now();
+    planner_cspace_msgs::action::MoveWithTolerance::Goal goal;
+    goal.target_pose.header.stamp = node_->now();
     goal.target_pose.header.frame_id = "map";
     goal.target_pose.pose.position.x = 2.1;
     goal.target_pose.pose.position.y = 0.45;
@@ -66,12 +68,12 @@ protected:
     return goal;
   }
 
-  double getDistBetweenRobotAndGoal(const planner_cspace_msgs::MoveWithToleranceGoal& goal)
+  double getDistBetweenRobotAndGoal(const planner_cspace_msgs::action::MoveWithTolerance::Goal& goal)
   {
     try
     {
-      const geometry_msgs::TransformStamped map_to_robot =
-          tfbuf_.lookupTransform("map", "base_link", ros::Time(), ros::Duration(0.1));
+      const geometry_msgs::msg::TransformStamped map_to_robot =
+          tfbuf_->lookupTransform("map", "base_link", rclcpp::Time(0L, RCL_ROS_TIME), rclcpp::Duration::from_seconds(0.1));
       return std::hypot(map_to_robot.transform.translation.x - goal.target_pose.pose.position.x,
                         map_to_robot.transform.translation.y - goal.target_pose.pose.position.y);
     }
@@ -84,44 +86,42 @@ protected:
 
 TEST_F(TolerantActionTest, GoalWithTolerance)
 {
-  const ros::Time deadline = ros::Time::now() + ros::Duration(10);
-  const ros::Duration wait(1.0);
+  const rclcpp::Time deadline = node_->now() + rclcpp::Duration::from_seconds(10);
+  const rclcpp::Rate wait(1.0);
 
   // Assure that goal is received after map in planner_3d.
-  ros::Duration(0.5).sleep();
-  const planner_cspace_msgs::MoveWithToleranceGoal goal = createGoalInFree();
-  move_base_->sendGoal(goal);
+  rclcpp::sleep_for(std::chrono::milliseconds(500));
+  const planner_cspace_msgs::action::MoveWithTolerance::Goal goal = createGoalInFree();
+  auto future = move_base_->async_send_goal(goal);
 
-  while (ros::ok() && move_base_->getState().state_ != actionlib::SimpleClientGoalState::ACTIVE)
+  while (rclcpp::ok() && rclcpp::spin_until_future_complete(node_, future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't get active: " << move_base_->getState().toString()
-        << " " << statusString();
-    ros::spinOnce();
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't get active: " << statusString();
   }
 
-  while (ros::ok() && move_base_->getState().state_ != actionlib::SimpleClientGoalState::SUCCEEDED)
+  auto result_future = move_base_->async_get_result(future.get());
+  while (rclcpp::ok() && rclcpp::spin_until_future_complete(node_, result_future, wait.period()) != rclcpp::FutureReturnCode::SUCCESS)
   {
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Action didn't succeeded: " << move_base_->getState().toString()
-        << " " << statusString();
-    ros::spinOnce();
+    ASSERT_LT(node_->now(), deadline)
+        << "Action didn't succeeded: " << statusString();
   }
 
+  EXPECT_EQ(rclcpp_action::ResultCode::SUCCEEDED, result_future.get().code);
   const double dist_to_goal = getDistBetweenRobotAndGoal(goal);
-  // distance_remains is less than updated goal_tolerance_lin (set in planner_cspace_msgs::MoveWithToleranceGoal).
+  // distance_remains is less than updated goal_tolerance_lin (set in planner_cspace_msgs::action::MoveWithTolerance::Goal).
   EXPECT_LT(dist_to_goal, goal.goal_tolerance_lin);
   // distance_remains is greater than default goal_tolerance_lin (set in actionlib_common_rostest.test).
   EXPECT_GT(dist_to_goal, 0.05);
   // Navigation still continues after ActionClient succeeded.
-  EXPECT_EQ(planner_status_->status, planner_cspace_msgs::PlannerStatus::DOING);
+  EXPECT_EQ(planner_status_->status, planner_cspace_msgs::msg::PlannerStatus::DOING);
 
-  while (ros::ok() && planner_status_->status != planner_cspace_msgs::PlannerStatus::DONE)
+  while (rclcpp::ok() && planner_status_->status != planner_cspace_msgs::msg::PlannerStatus::DONE)
   {
-    ASSERT_LT(ros::Time::now(), deadline)
-        << "Navigation didn't finished: " << move_base_->getState().toString()
+    ASSERT_LT(node_->now(), deadline)
+        << "Navigation didn't finished: " << future.get()->get_status()
         << " " << statusString();
-    ros::spinOnce();
+    rclcpp::spin_some(node_);
   }
   EXPECT_LT(getDistBetweenRobotAndGoal(goal), 0.05);
 }
@@ -129,6 +129,6 @@ TEST_F(TolerantActionTest, GoalWithTolerance)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_tolerant_action");
+  rclcpp::init(argc, argv);
   return RUN_ALL_TESTS();
 }

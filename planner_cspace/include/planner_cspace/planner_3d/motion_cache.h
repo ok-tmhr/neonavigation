@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018-2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
-#define PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H
+#pragma once
 
 #include <memory>
 #include <list>
@@ -71,7 +71,7 @@ public:
   using Cache =
       std::unordered_map<CyclicVecInt<3, 2>, Page, CyclicVecInt<3, 2>>;
 
-  using Ptr = std::shared_ptr<MotionCache>;
+  using SharedPtr = std::shared_ptr<MotionCache>;
 
   inline const typename Cache::const_iterator find(
       const int start_yaw,
@@ -121,5 +121,3 @@ protected:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_CACHE_H

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,10 +31,10 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
 
 #include <gtest/gtest.h>
 
@@ -60,21 +61,21 @@ bool isOnCorner(const float x, const float y, const float z)
 
 TEST(ObjToPointCloud, PointCloud)
 {
-  ros::NodeHandle nh;
-  sensor_msgs::PointCloud2::ConstPtr cloud;
+  auto nh = rclcpp::Node::make_shared("test_obj_to_pointcloud");
+  sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud;
 
-  const boost::function<void(const sensor_msgs::PointCloud2::ConstPtr&)> cb =
-      [&cloud](const sensor_msgs::PointCloud2::ConstPtr& msg) -> void
+  const auto cb =
+      [&cloud](const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg)
   {
     cloud = msg;
   };
-  ros::Subscriber sub = nh.subscribe("mapcloud", 1, cb);
+  auto sub = nh->create_subscription<sensor_msgs::msg::PointCloud2>("mapcloud", rclcpp::QoS(1).transient_local(), cb);
 
-  ros::Rate rate(10.0);
-  for (int i = 0; i < 30 && ros::ok(); ++i)
+  rclcpp::Rate rate(10.0);
+  for (int i = 0; i < 30 && rclcpp::ok(); ++i)
   {
     rate.sleep();
-    ros::spinOnce();
+    rclcpp::spin_some(nh);
     if (cloud)
       break;
   }
@@ -99,7 +100,7 @@ TEST(ObjToPointCloud, PointCloud)
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_obj_to_pointcloud");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

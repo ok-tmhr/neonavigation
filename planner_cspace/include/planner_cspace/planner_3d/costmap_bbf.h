@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
-#define PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H
+#pragma once
 
 #include <functional>
 #include <memory>
@@ -44,8 +44,8 @@ class CostmapBBF
 {
 public:
   using Vec = CyclicVecInt<3, 2>;
-  using Ptr = std::shared_ptr<CostmapBBF>;
-  using ConstPtr = std::shared_ptr<const CostmapBBF>;
+  using SharedPtr = std::shared_ptr<CostmapBBF>;
+  using ConstSharedPtr = std::shared_ptr<const CostmapBBF>;
 
   virtual void reset(const Vec& size) = 0;
   virtual void clear() = 0;
@@ -105,32 +105,30 @@ public:
 class CostmapBBFNoOp : public CostmapBBF
 {
 public:
-  inline void reset(const Vec& size)
+  inline void reset(const Vec& /*size*/)
   {
   }
   inline void clear()
   {
   }
-  inline char getCost(const Vec& p) const
+  inline char getCost(const Vec& /*p*/) const
   {
     return 0;
   }
   inline void remember(
-      const BlockMemGridmapBase<char, 3, 2>* const costmap,
-      const Vec& center,
-      const float remember_hit_odds, const float remember_miss_odds,
-      const int range_min, const int range_max)
+      const BlockMemGridmapBase<char, 3, 2>* const /*costmap*/,
+      const Vec& /*center*/,
+      const float /*remember_hit_odds*/, const float /*remember_miss_odds*/,
+      const int /*range_min*/, const int /*range_max*/)
   {
   }
   inline void updateCostmap()
   {
   }
-  inline void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> cb)
+  inline void forEach(const std::function<void(const Vec&, bbf::BinaryBayesFilter&)> /*cb*/)
   {
   }
 };
 
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_COSTMAP_BBF_H

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,12 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_MOTION_PRIMITIVE_BUILDER_H
-#define PLANNER_CSPACE_PLANNER_3D_MOTION_PRIMITIVE_BUILDER_H
+#pragma once
 
 #include <vector>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
 
@@ -46,12 +46,10 @@ public:
   using Vec = CyclicVecInt<3, 2>;
   using Vecf = CyclicVecFloat<3, 2>;
 
-  static std::vector<std::vector<Vec>> build(const costmap_cspace_msgs::MapMetaData3D& map_info,
+  static std::vector<std::vector<Vec>> build(const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
                                              const CostCoeff& cc, const int range);
 
 private:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_MOTION_PRIMITIVE_BUILDER_H

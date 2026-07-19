@@ -1,0 +1,13 @@
+select_map:
+  ground_frame:
+    type: string
+    default_value: map_ground
+    description: A ground frame ID
+    validation:
+      not_empty<>: null
+  map_frame:
+    type: string
+    default_value: map
+    description: A frame ID for a map to publish
+    validation:
+      not_empty<>: null

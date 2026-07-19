@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,13 +28,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_H
-#define COSTMAP_CSPACE_COSTMAP_3D_H
+#pragma once
 
+#include <cassert>
 #include <memory>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/footprint.h>
 #include <costmap_cspace/costmap_3d_layer/plain.h>
@@ -48,22 +49,22 @@ namespace costmap_cspace
 class Costmap3d
 {
 protected:
-  std::vector<Costmap3dLayerBase::Ptr> costmaps_;
+  std::vector<std::shared_ptr<Costmap3dLayerBase>> costmaps_;
   int ang_resolution_;
 
 public:
-  using Ptr = std::shared_ptr<Costmap3d>;
+  using SharedPtr = std::shared_ptr<Costmap3d>;
 
   explicit Costmap3d(const int ang_resolution)
   {
     ang_resolution_ = ang_resolution;
 
-    ROS_ASSERT(ang_resolution_ > 0);
+    assert(ang_resolution_ > 0);
   }
   template <typename T>
-  typename T::Ptr addRootLayer()
+  typename T::SharedPtr addRootLayer()
   {
-    typename T::Ptr
+    typename T::SharedPtr
         costmap_base(new T);
 
     costmap_base->setAngleResolution(ang_resolution_);
@@ -76,10 +77,10 @@ public:
     return costmap_base;
   }
   template <typename T>
-  typename T::Ptr addLayer(
+  typename T::SharedPtr addLayer(
       const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
   {
-    typename T::Ptr costmap_overlay(new T);
+    typename T::SharedPtr costmap_overlay(new T);
     costmap_overlay->setAngleResolution(ang_resolution_);
     costmap_overlay->setOverlayMode(overlay_mode);
 
@@ -88,8 +89,8 @@ public:
 
     return costmap_overlay;
   }
-  Costmap3dLayerBase::Ptr addLayer(
-      Costmap3dLayerBase::Ptr costmap_overlay,
+  std::shared_ptr<Costmap3dLayerBase> addLayer(
+      std::shared_ptr<Costmap3dLayerBase> costmap_overlay,
       const MapOverlayMode overlay_mode = MapOverlayMode::MAX)
   {
     costmap_overlay->setAngleResolution(ang_resolution_);
@@ -100,11 +101,16 @@ public:
 
     return costmap_overlay;
   }
-  Costmap3dLayerBase::Ptr getRootLayer()
+  std::shared_ptr<Costmap3dLayerBase> addLayer(
+      std::shared_ptr<Costmap3dLayerBase> costmap_overlay,
+      const std::string& overlay_mode)
+  {
+    return addLayer(costmap_overlay, mapOverlayMode(overlay_mode));
+  }
+  std::shared_ptr<Costmap3dLayerBase> getRootLayer()
   {
     return costmaps_.front();
   }
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_H

@@ -1,6 +1,12 @@
-add_rostest_gtest(test_joystick_interrupt
-  test/joystick_interrupt_rostest.test
+neonavigation_add_gtest(test_joystick_interrupt SKIP_TEST
   src/test_joystick_interrupt.cpp
+  LIBRARIES
+    rclcpp::rclcpp
+    geometry_msgs
+    sensor_msgs
 )
-target_link_libraries(test_joystick_interrupt ${catkin_LIBRARIES})
-add_dependencies(test_joystick_interrupt joystick_interrupt joystick_mux)
+add_launch_test(launch/joystick_interrupt_test.launch.py TIMEOUT 120)
+
+install(DIRECTORY test
+  DESTINATION share/${PROJECT_NAME}
+)

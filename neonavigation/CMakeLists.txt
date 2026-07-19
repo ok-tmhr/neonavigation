@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(neonavigation)
-find_package(catkin REQUIRED)
-catkin_metapackage()
+find_package(ament_cmake REQUIRED)
+
+ament_package()
+

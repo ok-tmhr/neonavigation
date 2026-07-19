@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,9 +31,10 @@
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
-#include <geometry_msgs/TransformStamped.h>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <tf2/utils.h>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -41,14 +43,17 @@
 class TfProjectionTest : public ::testing::TestWithParam<const char*>
 {
 public:
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  rclcpp::Node::SharedPtr node_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
   std::string projected_frame_;
 
   TfProjectionTest()
-    : tfl_(tfbuf_)
   {
+    node_ = rclcpp::Node::make_shared("test_tf_projection_node");
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
   void SetUp() override
   {
@@ -58,12 +63,12 @@ public:
 
 TEST_P(TfProjectionTest, ProjectionTransform)
 {
-  EXPECT_TRUE(tfbuf_.canTransform("map", projected_frame_, ros::Time(0), ros::Duration(10.0)));
+  EXPECT_TRUE(tfbuf_->canTransform("map", projected_frame_, tf2::TimePointZero, tf2::durationFromSec(10.0)));
 
-  geometry_msgs::TransformStamped out;
+  geometry_msgs::msg::TransformStamped out;
   try
   {
-    out = tfbuf_.lookupTransform("map", projected_frame_, ros::Time(0), ros::Duration(1.0));
+    out = tfbuf_->lookupTransform("map", projected_frame_, tf2::TimePointZero, tf2::durationFromSec(1.0));
   }
   catch (tf2::TransformException& e)
   {
@@ -102,7 +107,7 @@ INSTANTIATE_TEST_CASE_P(
 int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
-  ros::init(argc, argv, "test_tf_projection_node");
+  rclcpp::init(argc, argv);
 
   return RUN_ALL_TESTS();
 }

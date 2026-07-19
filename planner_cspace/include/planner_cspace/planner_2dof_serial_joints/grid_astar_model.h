@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_2DOF_SERIAL_JOINTS_GRID_ASTAR_MODEL_H
-#define PLANNER_CSPACE_PLANNER_2DOF_SERIAL_JOINTS_GRID_ASTAR_MODEL_H
+#pragma once
 
 #include <memory>
 #include <utility>
@@ -52,8 +52,8 @@ public:
 class GridAstarModel2DoFSerialJoint : public GridAstarModelBase<2, 0>
 {
 public:
-  using Ptr = std::shared_ptr<GridAstarModel2DoFSerialJoint>;
-  using ConstPtr = std::shared_ptr<const GridAstarModel2DoFSerialJoint>;
+  using SharedPtr = std::shared_ptr<GridAstarModel2DoFSerialJoint>;
+  using ConstSharedPtr = std::shared_ptr<const GridAstarModel2DoFSerialJoint>;
   using Vec = CyclicVecInt<2, 0>;
   using Vecf = CyclicVecFloat<2, 0>;
 
@@ -85,4 +85,3 @@ public:
 }  // namespace planner_2dof_serial_joints
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_PLANNER_2DOF_SERIAL_JOINTS_GRID_ASTAR_MODEL_H

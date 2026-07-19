@@ -1,53 +1,16 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(planner_cspace)
 
-set(CATKIN_DEPENDS
-  roscpp
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies()
+find_package(Eigen3 COMPONENTS Core)
 
-  actionlib
-  diagnostic_updater
-  dynamic_reconfigure
-  geometry_msgs
-  move_base_msgs
-  nav_msgs
-  sensor_msgs
-  std_srvs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros
-  trajectory_msgs
-
-  costmap_cspace
-  costmap_cspace_msgs
-  neonavigation_common
-  neonavigation_metrics_msgs
-  planner_cspace_msgs
-  trajectory_tracker
-  trajectory_tracker_msgs
-)
-
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
-find_package(Boost REQUIRED COMPONENTS chrono)
 find_package(OpenMP REQUIRED)
 
-generate_dynamic_reconfigure_options(
-  cfg/Planner3D.cfg
-)
-
-catkin_package(
-  INCLUDE_DIRS include
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
-)
-
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 add_compile_options(-funroll-loops -finline-functions ${OpenMP_CXX_FLAGS})
-include_directories(include ${catkin_INCLUDE_DIRS})
 
-
-add_executable(planner_3d
+neonavigation_add_executable(planner_3d
+  HAS_HEADER
   src/costmap_bbf.cpp
   src/grid_astar_model_3dof.cpp
   src/motion_cache.cpp
@@ -56,51 +19,62 @@ add_executable(planner_3d
   src/distance_map.cpp
   src/rotation_cache.cpp
   src/start_pose_predictor.cpp
-)
-target_link_libraries(planner_3d ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_3d ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_gencfg)
-set_property(TARGET planner_3d PROPERTY PUBLIC_HEADER
-  include/planner_cspace/bbf.h
-  include/planner_cspace/blockmem_gridmap.h
-  include/planner_cspace/cyclic_vec.h
-  include/planner_cspace/grid_astar.h
-  include/planner_cspace/grid_astar_model.h
-  include/planner_cspace/jump_detector.h
-  include/planner_cspace/reservable_priority_queue.h
+  LIBRARIES
+    ${OpenMP_CXX_FLAGS}
+    rclcpp::rclcpp
+    costmap_cspace_msgs
+    planner_cspace_msgs
+    tf2::tf2
+    nav_msgs
+    tf2_geometry_msgs
+    neonavigation_metrics_msgs
+    sensor_msgs
+    std_srvs
+    trajectory_tracker_msgs
+    nav2_msgs
+    diagnostic_updater::diagnostic_updater
+    trajectory_tracker::path2d
+    Eigen3::Eigen
 )
 
-add_executable(planner_2dof_serial_joints
+neonavigation_add_executable(planner_2dof_serial_joints
+  HAS_HEADER
   src/planner_2dof_serial_joints.cpp
   src/grid_astar_model_2dof_joints.cpp
+  LIBRARIES
+    ${OpenMP_CXX_FLAGS}
+    rclcpp::rclcpp
+    planner_cspace_msgs
+    trajectory_msgs
+    sensor_msgs
+    tf2_ros::tf2_ros
+  PARAMETER
+    param/planner_2dof_serial_joints_parameters.yaml
 )
-target_link_libraries(planner_2dof_serial_joints ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${OpenMP_CXX_FLAGS})
-add_dependencies(planner_2dof_serial_joints ${catkin_EXPORTED_TARGETS})
 
-add_executable(dummy_robot src/dummy_robot.cpp)
-target_link_libraries(dummy_robot ${catkin_LIBRARIES})
-add_dependencies(dummy_robot ${catkin_EXPORTED_TARGETS})
+neonavigation_add_executable(dummy_robot src/dummy_robot.cpp
+   LIBRARIES
+    rclcpp::rclcpp
+    geometry_msgs
+    nav_msgs
+    tf2::tf2
+    tf2_geometry_msgs::tf2_geometry_msgs
+    tf2_ros::tf2_ros
+)
 
-add_executable(patrol src/patrol.cpp)
-target_link_libraries(patrol ${catkin_LIBRARIES})
-add_dependencies(patrol ${catkin_EXPORTED_TARGETS})
+neonavigation_add_executable(patrol src/patrol.cpp
+   LIBRARIES
+    rclcpp::rclcpp
+    rclcpp_action::rclcpp_action
+    nav2_msgs
+    planner_cspace_msgs
+    nav_msgs
+)
 
-
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
-  add_subdirectory(test)
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
+if(BUILD_TESTING)
+  neonavigation_find_test_dependencies()
+  # add_subdirectory(test)
 endif()
 
+neonavigation_package()
 
-install(TARGETS
-    dummy_robot
-    patrol
-    planner_2dof_serial_joints
-    planner_3d
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  PUBLIC_HEADER DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)

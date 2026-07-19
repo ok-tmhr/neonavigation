@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_GRID_ASTAR_MODEL_H
-#define PLANNER_CSPACE_GRID_ASTAR_MODEL_H
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -41,7 +41,7 @@ template <int DIM = 3, int NONCYCLIC = 2>
 class GridAstarModelBase
 {
 public:
-  using Ptr = typename std::shared_ptr<GridAstarModelBase<DIM, NONCYCLIC>>;
+  using SharedPtr = typename std::shared_ptr<GridAstarModelBase<DIM, NONCYCLIC>>;
   using Vec = CyclicVecInt<DIM, NONCYCLIC>;
   using Vecf = CyclicVecFloat<DIM, NONCYCLIC>;
 
@@ -66,4 +66,3 @@ public:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_GRID_ASTAR_MODEL_H

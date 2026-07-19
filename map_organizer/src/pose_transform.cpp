@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -29,73 +30,71 @@
 
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <neonavigation_common/compatibility.h>
+#include "map_organizer/pose_transform_component_parameter.hpp"
+namespace map_organizer
+{
 
-class PoseTransformNode
+class PoseTransformNode : public rclcpp::Node
 {
 private:
-  ros::NodeHandle pnh_;
-  ros::NodeHandle nh_;
-  tf2_ros::Buffer tfbuf_;
-  tf2_ros::TransformListener tfl_;
+  std::unique_ptr<tf2_ros::Buffer> tfbuf_;
+  std::shared_ptr<tf2_ros::TransformListener> tfl_;
+  std::shared_ptr<pose_transform::ParamListener> param_listener_;
 
   std::string to_;
 
-  ros::Publisher pub_pose_;
-  ros::Subscriber sub_pose_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr sub_pose_;
 
-  void cbPose(const geometry_msgs::PoseWithCovarianceStamped::Ptr& msg)
+  void cbPose(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
   {
     try
     {
-      geometry_msgs::PoseStamped in;
-      geometry_msgs::PoseStamped out;
-      geometry_msgs::PoseWithCovarianceStamped out_msg;
+      geometry_msgs::msg::PoseStamped in;
+      geometry_msgs::msg::PoseStamped out;
+      geometry_msgs::msg::PoseWithCovarianceStamped out_msg;
       in.header = msg->header;
-      in.header.stamp = ros::Time(0);
+      in.header.stamp = rclcpp::Time(0L, RCL_ROS_TIME);
       in.pose = msg->pose.pose;
-      geometry_msgs::TransformStamped trans = tfbuf_.lookupTransform(
-          to_, msg->header.frame_id, in.header.stamp, ros::Duration(0.5));
+      geometry_msgs::msg::TransformStamped trans = tfbuf_->lookupTransform(
+          to_, msg->header.frame_id, in.header.stamp, rclcpp::Duration::from_seconds(0.5));
       tf2::doTransform(in, out, trans);
       out_msg = *msg;
       out_msg.header = out.header;
       out_msg.pose.pose = out.pose;
-      pub_pose_.publish(out_msg);
+      pub_pose_->publish(out_msg);
     }
     catch (tf2::TransformException& e)
     {
-      ROS_WARN("pose_transform: %s", e.what());
+      RCLCPP_WARN(this->get_logger(), "pose_transform: %s", e.what());
     }
   }
 
 public:
-  PoseTransformNode()
-    : pnh_("~")
-    , tfl_(tfbuf_)
+  PoseTransformNode(const rclcpp::NodeOptions& options) : Node("pose_transform", options)
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_pose_ = neonavigation_common::compat::subscribe(
-        nh_, "pose_in",
-        pnh_, "pose_in", 1, &PoseTransformNode::cbPose, this);
-    pub_pose_ = neonavigation_common::compat::advertise<geometry_msgs::PoseWithCovarianceStamped>(
-        nh_, "pose_out",
-        pnh_, "pose_out", 1, false);
-    pnh_.param("to_frame", to_, std::string("map"));
+    sub_pose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+        "pose_in",
+        1, [this](const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg){ cbPose(msg); });
+    pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
+        "pose_out",
+        1);
+    param_listener_ = std::make_shared<pose_transform::ParamListener>(this->get_node_parameters_interface());
+    to_ = param_listener_->get_params().frame_id;
+
+    tfbuf_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tfl_ = std::make_shared<tf2_ros::TransformListener>(*tfbuf_);
   }
 };
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "pose_transform");
-
-  PoseTransformNode ptn();
-  ros::spin();
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(map_organizer::PoseTransformNode)

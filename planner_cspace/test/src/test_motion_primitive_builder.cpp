@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -253,7 +254,7 @@ TEST(MotionPrimitiveBuilder, Generate)
           expected_67deg_primitives,
       };
 
-  costmap_cspace_msgs::MapMetaData3D map_info;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info;
   map_info.linear_resolution = 0.1f;
   map_info.angular_resolution = static_cast<float>(M_PI / 8);
   map_info.angle = 16;

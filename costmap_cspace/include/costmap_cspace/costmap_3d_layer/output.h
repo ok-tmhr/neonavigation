@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,17 +28,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H
+#pragma once
 
+#include <cassert>
 #include <memory>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 
@@ -47,21 +48,21 @@ template <class CALLBACK>
 class Costmap3dLayerOutput : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerOutput>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerOutput>;
 
 protected:
   CALLBACK cb_;
   UpdatedRegion region_prev_;
 
 public:
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& /*config*/, rclcpp::Node& /*node*/)
   {
   }
   void setHandler(CALLBACK cb)
   {
     cb_ = cb;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& /*info*/)
   {
   }
 
@@ -71,17 +72,17 @@ protected:
     return 0;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
-      const UpdatedRegion& region)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr /*map*/,
+      const UpdatedRegion& /*region*/)
   {
   }
 };
 
 class Costmap3dStaticLayerOutput
-  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::SharedPtr&)>>
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dStaticLayerOutput>;
+  using SharedPtr = std::shared_ptr<Costmap3dStaticLayerOutput>;
 
 protected:
   bool updateChain(const bool output)
@@ -93,11 +94,11 @@ protected:
 };
 
 class Costmap3dUpdateLayerOutput
-  : public Costmap3dLayerOutput<boost::function<bool(const typename costmap_cspace::CSpace3DMsg::Ptr&,
-                                                     const typename costmap_cspace_msgs::CSpace3DUpdate::Ptr&)>>
+  : public Costmap3dLayerOutput<std::function<bool(const typename costmap_cspace::CSpace3DMsg::SharedPtr&,
+                                                     const typename costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr&)>>
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
+  using SharedPtr = std::shared_ptr<Costmap3dUpdateLayerOutput>;
 
 protected:
   bool updateChain(const bool output)
@@ -108,9 +109,9 @@ protected:
     return true;
   }
 
-  costmap_cspace_msgs::CSpace3DUpdate::Ptr generateUpdateMsg()
+  costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr generateUpdateMsg()
   {
-    costmap_cspace_msgs::CSpace3DUpdate::Ptr update_msg(new costmap_cspace_msgs::CSpace3DUpdate);
+    costmap_cspace_msgs::msg::CSpace3DUpdate::SharedPtr update_msg(new costmap_cspace_msgs::msg::CSpace3DUpdate);
     update_msg->header = map_->header;
     map_->header.stamp = region_.stamp_;
 
@@ -131,7 +132,7 @@ protected:
     update_msg->yaw = region_merged.yaw_;
     update_msg->angle = region_merged.angle_;
 
-    ROS_ASSERT(
+    assert(
         (update_msg->x + update_msg->width) *
             (update_msg->y + update_msg->height) <=
         map_->info.width * map_->info.height);
@@ -163,4 +164,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_OUTPUT_H

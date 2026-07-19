@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,12 +28,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_GRID_ASTAR_H
-#define PLANNER_CSPACE_GRID_ASTAR_H
+#pragma once
 
 #define _USE_MATH_DEFINES
 #include <cfloat>
 #include <cmath>
+#include <chrono>
+#include <functional>
 #include <limits>
 #include <list>
 #include <map>
@@ -40,8 +42,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#include <boost/chrono.hpp>
 
 #include <planner_cspace/reservable_priority_queue.h>
 #include <planner_cspace/cyclic_vec.h>
@@ -120,7 +120,7 @@ public:
     {
       return p1_;
     }
-    const float getCost() const
+    float getCost() const
     {
       return cost_;
     }
@@ -169,7 +169,7 @@ public:
   bool search(
       const std::vector<VecWithCost>& ss, const Vec& e,
       std::list<Vec>& path,
-      const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
+      const typename GridAstarModelBase<DIM, NONCYCLIC>::SharedPtr& model,
       ProgressCallback cb_progress,
       const float cost_leave,
       const float progress_interval,
@@ -186,7 +186,7 @@ protected:
       Gridmap<float>& g,
       const std::vector<VecWithCost>& sts, const Vec& en,
       std::list<Vec>& path,
-      const typename GridAstarModelBase<DIM, NONCYCLIC>::Ptr& model,
+      const typename GridAstarModelBase<DIM, NONCYCLIC>::SharedPtr& model,
       ProgressCallback cb_progress,
       const float cost_leave,
       const float progress_interval,
@@ -195,7 +195,7 @@ protected:
     if (sts.size() == 0)
       return false;
 
-    auto ts = boost::chrono::high_resolution_clock::now();
+    auto ts = std::chrono::high_resolution_clock::now();
 
     Vec e = en;
     e.cycleUnsigned(g.size());
@@ -270,18 +270,18 @@ protected:
             centers.emplace_back(std::move(center));
             ++i;
           }
-          const auto tnow = boost::chrono::high_resolution_clock::now();
-          if (boost::chrono::duration<float>(tnow - ts).count() >= progress_interval)
+          const auto tnow = std::chrono::high_resolution_clock::now();
+          if (std::chrono::duration<float>(tnow - ts).count() >= progress_interval)
           {
             std::list<Vec> path_tmp;
             ts = tnow;
             findPath(ss_normalized, better, path_tmp);
-            const SearchStats stats =
+            const SearchStats stats
                 {
-                    .num_loop = num_loop,
-                    .num_search_queue = num_search_queue,
-                    .num_prev_updates = num_updates,
-                    .num_total_updates = num_total_updates,
+                    num_loop,
+                    num_search_queue,
+                    num_updates,
+                    num_total_updates,
                 };
             if (!cb_progress(path_tmp, stats))
             {
@@ -315,9 +315,9 @@ protected:
           const std::vector<Vec> search_list = model->searchGrids(p, ss_normalized, e);
 
           bool updated(false);
-          for (auto it = search_list.cbegin(); it < search_list.cend(); ++it)
+          for (auto it2 = search_list.cbegin(); it2 < search_list.cend(); ++it2)
           {
-            Vec next = p + *it;
+            Vec next = p + *it2;
             next.cycleUnsigned(g.size());
             if (next.isExceeded(g.size()))
               continue;
@@ -419,4 +419,3 @@ protected:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_GRID_ASTAR_H

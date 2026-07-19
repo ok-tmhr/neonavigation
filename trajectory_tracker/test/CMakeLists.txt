@@ -1,42 +1,68 @@
-include_directories(include)
+neonavigation_add_library(test_${PROJECT_NAME}_pch INTERFACE
+  LIBRARIES
+    Eigen3::Eigen
+    rclcpp::rclcpp
+    geometry_msgs
+    nav_msgs
+    tf2_geometry_msgs
+    trajectory_tracker_msgs
+)
+target_precompile_headers(test_${PROJECT_NAME}_pch INTERFACE include/trajectory_tracker_test.h)
 
-if(NOT "$ENV{ROS_DISTRO}" STREQUAL "noetic")
-  # This flag is needed to compile dynamic_reconfigure::Client on Melodic
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-reorder")
-endif()
+ament_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
+target_include_directories(test_${PROJECT_NAME}_filter PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-catkin_add_gtest(test_${PROJECT_NAME}_filter src/test_filter.cpp)
-target_link_libraries(test_${PROJECT_NAME}_filter ${catkin_LIBRARIES})
+ament_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
+target_include_directories(test_${PROJECT_NAME}_path2d PRIVATE ${CMAKE_SOURCE_DIR}/include)
+neonavigation_target_link_libraries(test_${PROJECT_NAME}_path2d nav_msgs Eigen3::Eigen tf2_geometry_msgs trajectory_tracker_msgs)
 
-catkin_add_gtest(test_${PROJECT_NAME}_path2d src/test_path2d.cpp)
-target_link_libraries(test_${PROJECT_NAME}_path2d ${catkin_LIBRARIES})
-
-add_rostest_gtest(test_trajectory_recorder test/trajectory_recorder_rostest.test
+ament_add_gtest_executable(test_trajectory_recorder
     src/test_trajectory_recorder.cpp)
-target_link_libraries(test_trajectory_recorder ${catkin_LIBRARIES})
-add_dependencies(test_trajectory_recorder trajectory_recorder)
+add_launch_test(launch/trajectory_recorder_test.launch.py TIMEOUT 60)
+neonavigation_target_link_libraries(test_trajectory_recorder rclcpp::rclcpp tf2_ros::tf2_ros tf2_geometry_msgs nav_msgs std_srvs)
 
-add_rostest_gtest(test_trajectory_tracker test/trajectory_tracker_rostest.test
+ament_add_gtest_executable(test_trajectory_tracker
     src/test_trajectory_tracker.cpp)
-target_link_libraries(test_trajectory_tracker ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker trajectory_tracker)
+target_include_directories(test_trajectory_tracker PRIVATE include)
+target_link_libraries(test_trajectory_tracker test_${PROJECT_NAME}_pch)
 
-add_rostest(test/trajectory_tracker_rostest.test
+add_launch_test(launch/trajectory_tracker_test.launch.py
+  TARGET test_trajectory_tracker_rostest0
+  TIMEOUT 480 # TODO pass within 120
+)
+
+add_launch_test(launch/trajectory_tracker_test.launch.py
   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=true
-  DEPENDENCIES test_trajectory_tracker
+  TARGET test_trajectory_tracker_rostest1
+  TIMEOUT 480 # TODO pass within 120
 )
 
-add_rostest(test/trajectory_tracker_rostest.test
+add_launch_test(launch/trajectory_tracker_test.launch.py
   ARGS odom_delay:=0.04 use_odom:=true use_time_optimal_control:=false
-  DEPENDENCIES test_trajectory_tracker
+  TARGET test_trajectory_tracker_rostest2
+  TIMEOUT 480 # TODO pass within 120
 )
 
-add_rostest_gtest(test_trajectory_tracker_with_odom test/trajectory_tracker_with_odom_rostest.test
+ament_add_gtest_executable(test_trajectory_tracker_with_odom
     src/test_trajectory_tracker_with_odom.cpp)
-target_link_libraries(test_trajectory_tracker_with_odom ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker_with_odom trajectory_tracker)
+add_launch_test(launch/trajectory_tracker_with_odom_test.launch.py TIMEOUT 120)
+target_include_directories(test_trajectory_tracker_with_odom PRIVATE include)
+target_link_libraries(test_trajectory_tracker_with_odom test_${PROJECT_NAME}_pch)
 
-add_rostest_gtest(test_trajectory_tracker_overshoot test/trajectory_tracker_overshoot_rostest.test
+ament_add_gtest_executable(test_trajectory_tracker_overshoot
     src/test_trajectory_tracker_overshoot.cpp)
-target_link_libraries(test_trajectory_tracker_overshoot ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(test_trajectory_tracker_overshoot trajectory_tracker)
+add_launch_test(launch/trajectory_tracker_overshoot_test.launch.py TIMEOUT 120)
+target_include_directories(test_trajectory_tracker_overshoot PRIVATE include)
+target_link_libraries(test_trajectory_tracker_overshoot test_${PROJECT_NAME}_pch)
+
+install(DIRECTORY test
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(TARGETS
+  test_trajectory_recorder
+  test_trajectory_tracker
+  test_trajectory_tracker_with_odom
+  test_trajectory_tracker_overshoot
+  DESTINATION lib/${PROJECT_NAME}
+)

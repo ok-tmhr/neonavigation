@@ -1,13 +1,24 @@
-add_rostest_gtest(test_map_organizer
-  test/map_organizer_rostest.test
-  src/test_map_organizer.cpp
-)
-target_link_libraries(test_map_organizer ${catkin_LIBRARIES})
-add_dependencies(test_map_organizer tie_maps save_maps select_map)
 
-add_rostest_gtest(test_pointcloud_to_maps
-  test/pointcloud_to_maps_rostest.test
-  src/test_pointcloud_to_maps.cpp
+neonavigation_add_gtest(test_map_organizer SKIP_TEST
+  src/test_map_organizer.cpp
+  LIBRARIES
+    rclcpp::rclcpp
+    map_organizer_msgs
+    std_msgs
+    nav_msgs
 )
-target_link_libraries(test_pointcloud_to_maps ${catkin_LIBRARIES})
-add_dependencies(test_pointcloud_to_maps pointcloud_to_maps)
+add_launch_test(launch/map_organizer_test.launch.py TIMEOUT 60)
+
+neonavigation_add_gtest(test_pointcloud_to_maps SKIP_TEST
+  src/test_pointcloud_to_maps.cpp
+  LIBRARIES
+    rclcpp::rclcpp
+    map_organizer_msgs
+    sensor_msgs
+)
+add_launch_test(launch/pointcloud_to_maps_test.launch.py TIMEOUT 120)
+
+install(DIRECTORY test data
+  DESTINATION share/${PROJECT_NAME}
+)
+

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <atomic>
 #include <list>
+#include <thread>
 #include <unordered_map>
 #include <vector>
-
-#include <boost/thread.hpp>
 
 #include <omp.h>
 
@@ -75,7 +76,7 @@ TEST(GridAstar, ParallelSearch)
     {
       return 1.0;
     }
-    float costEstim(const Vec& s, const Vec& e) const final
+    float costEstim(const Vec& /*s*/, const Vec& /*e*/) const final
     {
       return 0.0;
     }
@@ -84,7 +85,7 @@ TEST(GridAstar, ParallelSearch)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {
@@ -131,7 +132,7 @@ TEST(GridAstar, TimeoutAbort)
     {
       return 1.0;
     }
-    float costEstim(const Vec& s, const Vec& e) const final
+    float costEstim(const Vec& /*s*/, const Vec& /*e*/) const final
     {
       return 0.0;
     }
@@ -140,7 +141,7 @@ TEST(GridAstar, TimeoutAbort)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   int cnt(0);
   const auto cb_progress = [&cnt](const std::list<Vec>& /* path_grid */, const SearchStats& stats) -> bool
@@ -205,7 +206,7 @@ TEST(GridAstar, SearchWithMultipleStarts)
     {
       return 1.0;
     }
-    float costEstim(const Vec& s, const Vec& e) const final
+    float costEstim(const Vec& /*s*/, const Vec& /*e*/) const final
     {
       return 0.0;
     }
@@ -214,7 +215,7 @@ TEST(GridAstar, SearchWithMultipleStarts)
       return search_[p[0]];
     }
   };
-  Model::Ptr model(new Model());
+  Model::SharedPtr model(new Model());
 
   const auto cb_progress = [](const std::list<Vec>&, const SearchStats&) -> bool
   {
@@ -271,24 +272,22 @@ TEST(GridAstar, FindPathLooped)
   as.parentMap()[Vec(1)] = Vec(2);
 
   std::list<Vec> path;
-  const auto timeout_func = []()
+  std::atomic<bool> done = false;
+  const auto timeout_func = [&]()
   {
-    try
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (!done)
     {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+      EXPECT_TRUE(false) << "Looks entered endless loop. Test will be aborted.";
+      std::abort();
     }
-    catch (boost::thread_interrupted&)
-    {
-      return;
-    }
-    EXPECT_TRUE(false) << "Looks entered endless loop. Test will be aborted.";
-    abort();
   };
-  boost::thread timeout(timeout_func);
+  std::thread timeout(timeout_func);
   std::vector<GridAstarTestWrapper::VecWithCost> starts;
   starts.emplace_back(Vec(0));
   ASSERT_FALSE(as.findPath(starts, Vec(3), path));
-  timeout.interrupt();
+  done = true;
+  timeout.join();
 }
 
 TEST(GridAstar, FindPathUnconnected)

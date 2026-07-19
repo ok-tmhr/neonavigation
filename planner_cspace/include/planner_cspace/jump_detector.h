@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,16 +28,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_JUMP_DETECTOR_H
-#define PLANNER_CSPACE_JUMP_DETECTOR_H
+#pragma once
 
 #include <cmath>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <tf2/utils.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
 namespace planner_cspace
@@ -85,10 +86,10 @@ public:
     tf2::Stamped<tf2::Transform> map_trans;
     try
     {
-      geometry_msgs::TransformStamped base_trans_tmp =
-          tfbuf_.lookupTransform(jump_detect_frame_, "base_link", ros::Time());
-      geometry_msgs::TransformStamped map_trans_tmp =
-          tfbuf_.lookupTransform(map_frame_, "base_link", ros::Time());
+      geometry_msgs::msg::TransformStamped base_trans_tmp =
+          tfbuf_.lookupTransform(jump_detect_frame_, "base_link", rclcpp::Time(0L, RCL_ROS_TIME));
+      geometry_msgs::msg::TransformStamped map_trans_tmp =
+          tfbuf_.lookupTransform(map_frame_, "base_link", rclcpp::Time(0L, RCL_ROS_TIME));
       tf2::fromMsg(base_trans_tmp, base_trans);
       tf2::fromMsg(map_trans_tmp, map_trans);
     }
@@ -112,7 +113,7 @@ public:
 
     if (pos_diff > pos_jump_ || std::abs(yaw_diff) > yaw_jump_)
     {
-      ROS_ERROR("Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
+      RCLCPP_ERROR(rclcpp::get_logger("jump_detector"), "Position jumped (%0.3f/%0.3f, %0.3f/%0.3f); clearing history",
                 pos_diff, pos_jump_, yaw_diff, yaw_jump_);
       return true;
     }
@@ -122,4 +123,3 @@ public:
 }  // namespace planner_3d
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_JUMP_DETECTOR_H

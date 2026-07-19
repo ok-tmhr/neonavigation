@@ -1,0 +1,28 @@
+tf_projection_node:
+  source_frame:
+    type: string
+    default_value: base_link
+  projection_surface_frame:
+    type: string
+    default_value: map
+  parent_frame:
+    type: string
+    default_value: map
+  projected_frame:
+    type: string
+    default_value: base_link_projected
+  hz:
+    type: double
+    default_value: 10.0
+  tf_tolerance:
+    type: double
+    default_value: 0.1
+  flat:
+    type: bool
+    default_value: false
+  project_posture:
+    type: bool
+    default_value: false
+  align_all_posture_to_source:
+    type: bool
+    default_value: false

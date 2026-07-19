@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2021, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
-#define PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H
+#pragma once
 
 #include <cmath>
 #include <limits>
@@ -53,9 +53,9 @@ public:
   {
     Astar::Vec min;
     Astar::Vec max;
-    Rect(const Astar::Vec& min, const Astar::Vec& max)
-      : min(min)
-      , max(max)  // NOLINT(build/include_what_you_use)
+    Rect(const Astar::Vec& v_min, const Astar::Vec& v_max)
+      : min(v_min)
+      , max(v_max)  // NOLINT(build/include_what_you_use)
     {
     }
   };
@@ -87,11 +87,11 @@ public:
 
   DistanceMap(
       const BlockMemGridmapBase<char, 3, 2>& cm_rough,
-      const CostmapBBF::ConstPtr bbf_costmap);
+      const CostmapBBF::ConstSharedPtr bbf_costmap);
 
   void setParams(const CostCoeff& cc, const int num_cost_estim_task);
 
-  void init(const GridAstarModel3D::Ptr model, const Params& p);
+  void init(const GridAstarModel3D::SharedPtr model, const Params& p);
 
   void update(
       const Astar::Vec& s, const Astar::Vec& e,
@@ -107,7 +107,7 @@ public:
   {
     return g_.operator[](pos);
   }
-  inline const float operator[](const Astar::Vec& pos) const
+  inline float operator[](const Astar::Vec& pos) const
   {
     return g_.operator[](pos);
   }
@@ -126,7 +126,7 @@ protected:
   CostCoeff cc_;
   int num_cost_estim_task_;
   const BlockMemGridmapBase<char, 3, 2>& cm_rough_;
-  const CostmapBBF::ConstPtr bbf_costmap_;
+  const CostmapBBF::ConstSharedPtr bbf_costmap_;
 
   std::vector<SearchDiffs> search_diffs_;
   DebugData debug_data_;
@@ -143,5 +143,3 @@ protected:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_DISTANCE_MAP_H

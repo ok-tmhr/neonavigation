@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H
-#define PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H
+#pragma once
 
 #include <queue>
 
@@ -62,4 +62,3 @@ public:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_RESERVABLE_PRIORITY_QUEUE_H

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRAJECTORY_TRACKER_FILTER_H
-#define TRAJECTORY_TRACKER_FILTER_H
+#pragma once
 
 #include <cassert>
 #include <cmath>
@@ -38,10 +38,10 @@ namespace trajectory_tracker
 class Filter
 {
 public:
-  enum Type
+  enum class Type
   {
-    FILTER_HPF,
-    FILTER_LPF
+    HPF,
+    LPF
   };
 
 protected:
@@ -60,14 +60,14 @@ public:
     type_ = type;
     switch (type_)
     {
-      case FILTER_LPF:
+      case Type::LPF:
         k_[3] = -1 / (1.0 + 2 * time_const_);
         k_[2] = -k_[3];
         k_[1] = (1.0 - 2 * time_const_) * k_[3];
         k_[0] = -k_[1] - 1.0;
         x_ = (1 - k_[2]) * out0 / k_[3];
         break;
-      case FILTER_HPF:
+      case Type::HPF:
         k_[3] = -1 / (1.0 + 2 * time_const_);
         k_[2] = -k_[3] * 2 * time_const_;
         k_[1] = (1.0 - 2 * time_const_) * k_[3];
@@ -104,4 +104,3 @@ public:
 };
 }  // namespace trajectory_tracker
 
-#endif  // TRAJECTORY_TRACKER_FILTER_H

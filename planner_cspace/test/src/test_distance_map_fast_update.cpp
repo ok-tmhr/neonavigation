@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -36,7 +37,7 @@
 
 #include <omp.h>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 #include <planner_cspace/distance_map_utils.h>
 #include <planner_cspace/grid_astar.h>
 #include <planner_cspace/planner_3d/costmap_bbf.h>
@@ -61,7 +62,7 @@ protected:
   const float tolerance_ = 0.4;
 
   Astar::Gridmap<char, 0x80> cm_rough_;
-  CostmapBBF::Ptr bbf_costmap_;
+  CostmapBBF::SharedPtr bbf_costmap_;
 
   DistanceMap dm_full_;
   DistanceMap dm_fast_;
@@ -76,7 +77,7 @@ protected:
     const int local_range = 0;
     omp_set_num_threads(2);
 
-    costmap_cspace_msgs::MapMetaData3D map_info;
+    costmap_cspace_msgs::msg::MapMetaData3D map_info;
     map_info.width = w_;
     map_info.height = h_;
     map_info.angle = angle_;
@@ -94,7 +95,7 @@ protected:
     const Astar::Vec size2d(w_, h_, 1);
     Astar::Gridmap<char, 0x40> cm;
     Astar::Gridmap<char, 0x80> cm_hyst;
-    GridAstarModel3D::Ptr model(
+    GridAstarModel3D::SharedPtr model(
         new GridAstarModel3D(
             map_info,
             ec_,
@@ -111,14 +112,14 @@ protected:
     cm_rough_.clear(0);
     bbf_costmap_->clear();
 
-    const DistanceMap::Params dmp =
+    const DistanceMap::Params dmp
         {
-            .euclid_cost = ec_,
-            .range = range,
-            .local_range = local_range,
-            .longcut_range = 0,
-            .size = size2d,
-            .resolution = map_info.linear_resolution,
+            ec_,
+            range,
+            local_range,
+            0,
+            size2d,
+            map_info.linear_resolution,
         };
     dm_full_.init(model, dmp);
     dm_fast_.init(model, dmp);

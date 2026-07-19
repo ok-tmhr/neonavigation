@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,12 +28,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_CSPACE3_CACHE_H
-#define COSTMAP_CSPACE_CSPACE3_CACHE_H
+#pragma once
 
+#include <cassert>
 #include <memory>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace costmap_cspace
 {
@@ -73,14 +74,14 @@ public:
   char& e(const int& x, const int& y, const int& yaw)
   {
     const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
+    assert(addr < array_size_);
 
     return c_[addr];
   }
   const char& e(const int& x, const int& y, const int& yaw) const
   {
     const size_t addr = yaw * stride_[2] + (y + center_[1]) * stride_[1] + (x + center_[0]);
-    ROS_ASSERT(addr < array_size_);
+    assert(addr < array_size_);
 
     return c_[addr];
   }
@@ -99,4 +100,3 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_CSPACE3_CACHE_H

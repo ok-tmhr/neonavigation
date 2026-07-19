@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,16 +28,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
-#define PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H
+#pragma once
 
+#include <cassert>
 #include <cmath>
 #include <list>
 #include <memory>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
-#include <nav_msgs/Path.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <planner_cspace/cyclic_vec.h>
 
@@ -48,7 +49,7 @@ namespace grid_metric_converter
 {
 template <typename T>
 void grid2Metric(
-    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
     const T x, const T y, const T yaw,
     float& gx, float& gy, float& gyaw)
 {
@@ -60,7 +61,7 @@ void grid2Metric(
   gyaw = yaw * map_info.angular_resolution;
 }
 inline void metric2Grid(
-    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
     int& x, int& y, int& yaw,
     const float gx, const float gy, const float gyaw)
 {
@@ -69,7 +70,7 @@ inline void metric2Grid(
   yaw = std::lround(gyaw / map_info.angular_resolution);
 }
 inline void metric2Grid(
-    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
     float& x, float& y, float& yaw,
     const float gx, const float gy, const float gyaw)
 {
@@ -80,16 +81,16 @@ inline void metric2Grid(
 
 template <template <class, class> class STL_CONTAINER = std::list>
 void appendGridPath2MetricPath(
-    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
     const STL_CONTAINER<CyclicVecFloat<3, 2>,
                         std::allocator<CyclicVecFloat<3, 2>>>& path_grid,
-    nav_msgs::Path& path)
+    nav_msgs::msg::Path& path)
 {
   for (const auto& p : path_grid)
   {
     float x, y, yaw;
     grid2Metric(map_info, p[0], p[1], p[2], x, y, yaw);
-    geometry_msgs::PoseStamped ps;
+    geometry_msgs::msg::PoseStamped ps;
     ps.header = path.header;
 
     ps.pose.position.x = x;
@@ -103,5 +104,3 @@ void appendGridPath2MetricPath(
 }  // namespace grid_metric_converter
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_GRID_METRIC_CONVERTER_H

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,11 +28,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
-#define PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H
+#pragma once
 
 #include <bitset>
 #include <cassert>
+#include <functional>
 #include <limits>
 #include <memory>
 
@@ -74,14 +75,14 @@ private:
   static_assert(isPowOf2(BLOCK_WIDTH), "BLOCK_WIDTH must be power of 2");
   static_assert(BLOCK_WIDTH > 0, "BLOCK_WIDTH must be >0");
 
-  static constexpr size_t log2Recursive(const size_t v, const size_t depth = 0)
+  static constexpr size_t log2Recursive(const size_t v, const size_t depth = 0UL)
   {
-    return v == 1 ? depth : log2Recursive(v >> 1, depth + 1);
+    return v == 1UL ? depth : log2Recursive(v >> 1, depth + 1UL);
   }
 
 protected:
   constexpr static size_t block_bit_ = log2Recursive(BLOCK_WIDTH);
-  constexpr static size_t block_bit_mask_ = (1 << block_bit_) - 1;
+  constexpr static size_t block_bit_mask_ = (1 << block_bit_) - 1UL;
 
   std::unique_ptr<T[]> c_;
   CyclicVecInt<DIM, NONCYCLIC> size_;
@@ -95,8 +96,8 @@ protected:
   inline void block_addr(
       const CyclicVecInt<DIM, NONCYCLIC>& pos, size_t& baddr, size_t& addr) const
   {
-    addr = 0;
-    baddr = 0;
+    addr = 0UL;
+    baddr = 0UL;
     for (int i = 0; i < NONCYCLIC; i++)
     {
       addr = (addr << block_bit_) + (pos[i] & block_bit_mask_);
@@ -137,14 +138,17 @@ public:
       const T zero, const CyclicVecInt<DIM, NONCYCLIC>& min, const CyclicVecInt<DIM, NONCYCLIC>& max) override
   {
     CyclicVecInt<DIM, NONCYCLIC> p = min;
-    for (p[0] = min[0]; p[0] <= max[0]; ++p[0])
+    if constexpr (DIM >= 3)
     {
-      for (p[1] = min[1]; p[1] <= max[1]; ++p[1])
+      for (p[0] = min[0]; p[0] <= max[0]; ++p[0])
       {
-        for (p[2] = min[2]; p[2] <= max[2]; ++p[2])
+        for (p[1] = min[1]; p[1] <= max[1]; ++p[1])
         {
-          assert(validate(p));
-          (*this)[p] = zero;
+          for (p[2] = min[2]; p[2] <= max[2]; ++p[2])
+          {
+            assert(validate(p));
+            (*this)[p] = zero;
+          }
         }
       }
     }
@@ -156,14 +160,17 @@ public:
     assert(DIM == 3);  // copy_partially is available only for DIM=3
 
     CyclicVecInt<DIM, NONCYCLIC> p = min;
-    for (p[0] = min[0]; p[0] <= max[0]; ++p[0])
+    if constexpr (DIM >= 3)
     {
-      for (p[1] = min[1]; p[1] <= max[1]; ++p[1])
+      for (p[0] = min[0]; p[0] <= max[0]; ++p[0])
       {
-        for (p[2] = min[2]; p[2] <= max[2]; ++p[2])
+        for (p[1] = min[1]; p[1] <= max[1]; ++p[1])
         {
-          assert(validate(p));
-          (*this)[p] = base[p];
+          for (p[2] = min[2]; p[2] <= max[2]; ++p[2])
+          {
+            assert(validate(p));
+            (*this)[p] = base[p];
+          }
         }
       }
     }
@@ -179,15 +186,18 @@ public:
     CyclicVecInt<DIM, NONCYCLIC> p = src_min;
     const CyclicVecInt<DIM, NONCYCLIC> offset = dst_min - src_min;
 
-    for (p[0] = src_min[0]; p[0] <= src_max[0]; ++p[0])
+    if constexpr (DIM >= 3)
     {
-      for (p[1] = src_min[1]; p[1] <= src_max[1]; ++p[1])
+      for (p[0] = src_min[0]; p[0] <= src_max[0]; ++p[0])
       {
-        for (p[2] = src_min[2]; p[2] <= src_max[2]; ++p[2])
+        for (p[1] = src_min[1]; p[1] <= src_max[1]; ++p[1])
         {
-          assert(src.validate(p));
-          assert(validate(p + offset));
-          (*this)[p + offset] = src[p];
+          for (p[2] = src_min[2]; p[2] <= src_max[2]; ++p[2])
+          {
+            assert(src.validate(p));
+            assert(validate(p + offset));
+            (*this)[p + offset] = src[p];
+          }
         }
       }
     }
@@ -230,10 +240,10 @@ public:
     }
     size_ = size;
   }
-  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size_)
+  explicit BlockMemGridmap(const CyclicVecInt<DIM, NONCYCLIC>& size)
     : BlockMemGridmap()
   {
-    reset(size_);
+    reset(size);
   }
   BlockMemGridmap()
     : ser_capacity_(0)
@@ -298,4 +308,3 @@ public:
 };
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_BLOCKMEM_GRIDMAP_H

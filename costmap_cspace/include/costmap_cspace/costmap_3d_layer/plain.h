@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,25 +28,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H
+#pragma once
 
 #include <memory>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/costmap_3d_layer/footprint.h>
 
+#include <costmap_cspace/plain_parameters.hpp>
 namespace costmap_cspace
 {
 class Costmap3dLayerPlain : public Costmap3dLayerFootprint
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerPlain>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerPlain>;
 
   Costmap3dLayerPlain()
   {
@@ -57,16 +58,16 @@ public:
     }
     setFootprint(footprint);
   }
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    const int linear_spread_min_cost =
-        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
+    auto param_listener = std::make_shared<plain::ParamListener>(node.get_node_parameters_interface(), config.name);
+    auto params = param_listener->get_params();
     setExpansion(
-        static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]),
-        linear_spread_min_cost);
+      static_cast<float>(params.linear_expand),
+      static_cast<float>(params.linear_spread),
+      static_cast<int>(params.linear_spread_min_cost)
+    );
   }
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_PLAIN_H

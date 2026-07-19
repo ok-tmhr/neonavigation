@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -72,7 +73,7 @@ float GridAstarModel2DoFSerialJoint::euclidCost(const Vec& v) const
   return cost;
 }
 float GridAstarModel2DoFSerialJoint::cost(
-    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
+    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& /*start*/, const Vec& /*goal*/) const
 {
   if ((unsigned int)next[0] >= (unsigned int)resolution_ * 2 ||
       (unsigned int)next[1] >= (unsigned int)resolution_ * 2)
@@ -115,9 +116,9 @@ float GridAstarModel2DoFSerialJoint::costEstim(
   return euclidCost(d);
 }
 const std::vector<GridAstarModel2DoFSerialJoint::Vec>& GridAstarModel2DoFSerialJoint::searchGrids(
-    const Vec& p,
-    const std::vector<VecWithCost>& ss,
-    const Vec& es) const
+    const Vec& /*p*/,
+    const std::vector<VecWithCost>& /*ss*/,
+    const Vec& /*es*/) const
 {
   return search_list_;
 }

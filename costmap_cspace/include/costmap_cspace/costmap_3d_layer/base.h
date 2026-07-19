@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,53 +28,53 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H
+#pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <map>
 #include <memory>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
 namespace costmap_cspace
 {
-class CSpace3DMsg : public costmap_cspace_msgs::CSpace3D
+class CSpace3DMsg : public costmap_cspace_msgs::msg::CSpace3D
 {
 public:
-  using Ptr = std::shared_ptr<CSpace3DMsg>;
-  using ConstPtr = std::shared_ptr<const CSpace3DMsg>;
+  using SharedPtr = std::shared_ptr<CSpace3DMsg>;
+  using ConstSharedPtr = std::shared_ptr<const CSpace3DMsg>;
   size_t address(const int& x, const int& y, const int& yaw) const
   {
     return (yaw * info.height + y) * info.width + x;
   }
   const int8_t& getCost(const int& x, const int& y, const int& yaw) const
   {
-    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
-    ROS_ASSERT(static_cast<size_t>(x) < info.width);
-    ROS_ASSERT(static_cast<size_t>(y) < info.height);
+    assert(static_cast<size_t>(yaw) < info.angle);
+    assert(static_cast<size_t>(x) < info.width);
+    assert(static_cast<size_t>(y) < info.height);
 
     const size_t addr = address(x, y, yaw);
-    ROS_ASSERT(addr < data.size());
+    assert(addr < data.size());
 
     return data[addr];
   }
   int8_t& getCost(const int& x, const int& y, const int& yaw)
   {
-    ROS_ASSERT(static_cast<size_t>(yaw) < info.angle);
-    ROS_ASSERT(static_cast<size_t>(x) < info.width);
-    ROS_ASSERT(static_cast<size_t>(y) < info.height);
+    assert(static_cast<size_t>(yaw) < info.angle);
+    assert(static_cast<size_t>(x) < info.width);
+    assert(static_cast<size_t>(y) < info.height);
 
     const size_t addr = address(x, y, yaw);
-    ROS_ASSERT(addr < data.size());
+    assert(addr < data.size());
 
     return data[addr];
   }
@@ -84,7 +85,7 @@ public:
     std::memcpy(to.data.data() + to.address(to_x, to_y, to_yaw),
                 from.data.data() + from.address(from_x, from_y, from_yaw), copy_cell_num * sizeof(int8_t));
   }
-  static void copyCells(costmap_cspace_msgs::CSpace3DUpdate& to, const int& to_x, const int& to_y, const int& to_yaw,
+  static void copyCells(costmap_cspace_msgs::msg::CSpace3DUpdate& to, const int& to_x, const int& to_y, const int& to_yaw,
                         const CSpace3DMsg& from, const int& from_x, const int& from_y, const int& from_yaw,
                         const int& copy_cell_num)
   {
@@ -93,10 +94,23 @@ public:
   }
 };
 
-enum MapOverlayMode
+enum class MapOverlayMode
 {
   OVERWRITE,
   MAX
+};
+
+MapOverlayMode mapOverlayMode(const std::string& mode)
+{
+  if (mode == "overwrite")
+  {
+    return MapOverlayMode::OVERWRITE;
+  }
+  else if (mode == "max")
+  {
+    return MapOverlayMode::MAX;
+  }
+  throw std::runtime_error("Unkown overlay_mode specified: '" + mode + "'");
 };
 
 class UpdatedRegion
@@ -104,7 +118,7 @@ class UpdatedRegion
 public:
   int x_, y_, yaw_;
   int width_, height_, angle_;
-  ros::Time stamp_;
+  rclcpp::Time stamp_;
 
   UpdatedRegion()
     : x_(0)
@@ -113,13 +127,13 @@ public:
     , width_(0)
     , height_(0)
     , angle_(0)
-    , stamp_(0)
+    , stamp_(0L, RCL_ROS_TIME)
   {
   }
   UpdatedRegion(
       const int& x, const int& y, const int& yaw,
       const int& width, const int& height, const int& angle,
-      const ros::Time& stamp = ros::Time())
+      const rclcpp::Time& stamp = rclcpp::Time(0L, RCL_ROS_TIME))
     : x_(x)
     , y_(y)
     , yaw_(yaw)
@@ -169,7 +183,7 @@ public:
   }
   void expand(const int& ex)
   {
-    ROS_ASSERT(ex >= 0);
+    assert(ex >= 0);
     x_ -= ex;
     y_ -= ex;
     width_ += 2 * ex;
@@ -213,11 +227,11 @@ public:
     width_ = update_width;
     height_ = update_height;
   }
-  void bitblt(const CSpace3DMsg::Ptr& dest, const CSpace3DMsg::ConstPtr& src)
+  void bitblt(const CSpace3DMsg::SharedPtr& dest, const CSpace3DMsg::ConstSharedPtr src)
   {
-    ROS_ASSERT(dest->info.angle == src->info.angle);
-    ROS_ASSERT(dest->info.width == src->info.width);
-    ROS_ASSERT(dest->info.height == src->info.height);
+    assert(dest->info.angle == src->info.angle);
+    assert(dest->info.width == src->info.width);
+    assert(dest->info.height == src->info.height);
 
     normalize(src->info.width, src->info.height);
     if (width_ == 0 || height_ == 0)
@@ -252,20 +266,24 @@ public:
 class Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerBase>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerBase>;
+  struct LayerConfig {
+    std::string name;
+    std::string footprint;
+  };
 
 protected:
   int ang_grid_;
   MapOverlayMode overlay_mode_;
   bool root_;
 
-  CSpace3DMsg::Ptr map_;
-  CSpace3DMsg::Ptr map_overlay_;
+  CSpace3DMsg::SharedPtr map_;
+  CSpace3DMsg::SharedPtr map_overlay_;
 
-  Costmap3dLayerBase::Ptr child_;
+  std::shared_ptr<Costmap3dLayerBase> child_;
   UpdatedRegion region_;
   UpdatedRegion region_prev_;
-  nav_msgs::OccupancyGrid::ConstPtr map_updated_;
+  nav_msgs::msg::OccupancyGrid::ConstSharedPtr map_updated_;
 
 public:
   Costmap3dLayerBase()
@@ -277,8 +295,8 @@ public:
   {
   }
 
-  virtual void loadConfig(XmlRpc::XmlRpcValue config) = 0;
-  virtual void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info) = 0;
+  virtual void loadConfig(LayerConfig& config, rclcpp::Node& node) = 0;
+  virtual void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info) = 0;
 
   void setAngleResolution(
       const int ang_resolution)
@@ -290,17 +308,17 @@ public:
   {
     overlay_mode_ = overlay_mode;
   }
-  void setChild(Costmap3dLayerBase::Ptr child)
+  void setChild(std::shared_ptr<Costmap3dLayerBase> child)
   {
     child_ = child;
     child_->setMap(getMapOverlay());
     child_->root_ = false;
   }
-  void setBaseMap(const nav_msgs::OccupancyGrid::ConstPtr& base_map)
+  void setBaseMap(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr base_map)
   {
-    ROS_ASSERT(root_);
-    ROS_ASSERT(ang_grid_ > 0);
-    ROS_ASSERT(base_map->data.size() >= base_map->info.width * base_map->info.height);
+    assert(root_);
+    assert(ang_grid_ > 0);
+    assert(base_map->data.size() >= base_map->info.width * base_map->info.height);
 
     const size_t xy_size = base_map->info.width * base_map->info.height;
     map_->header = base_map->header;
@@ -346,10 +364,10 @@ public:
             0, 0, 0, map_->info.width, map_->info.height, map_->info.angle,
             base_map->header.stamp));
   }
-  void processMapOverlay(const nav_msgs::OccupancyGrid::ConstPtr& msg, const bool update_chain_entry)
+  void processMapOverlay(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg, const bool update_chain_entry)
   {
-    ROS_ASSERT(!root_);
-    ROS_ASSERT(ang_grid_ > 0);
+    assert(!root_);
+    assert(ang_grid_ > 0);
     const int ox =
         std::lround((msg->info.origin.position.x - map_->info.origin.position.x) /
                     map_->info.linear_resolution);
@@ -372,18 +390,18 @@ public:
     }
     else
     {
-      ROS_DEBUG("update_chain_entry execution has been avoided.");
+      RCLCPP_DEBUG(rclcpp::get_logger("costmap_3d_layer"), "update_chain_entry execution has been avoided.");
     }
   }
-  CSpace3DMsg::Ptr getMap()
+  CSpace3DMsg::SharedPtr getMap()
   {
     return map_;
   }
-  void setMap(CSpace3DMsg::Ptr map)
+  void setMap(CSpace3DMsg::SharedPtr map)
   {
     map_ = map;
   }
-  CSpace3DMsg::Ptr getMapOverlay()
+  CSpace3DMsg::SharedPtr getMapOverlay()
   {
     return map_overlay_;
   }
@@ -395,7 +413,7 @@ public:
 protected:
   virtual bool updateChain(const bool output) = 0;
   virtual void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr map,
       const UpdatedRegion& region) = 0;
   virtual int getRangeMax() const = 0;
 
@@ -417,7 +435,7 @@ protected:
       }
       else
       {
-        ROS_ERROR("map and map_overlay must have same frame_id. skipping");
+        RCLCPP_ERROR(rclcpp::get_logger("costmap_3d_layer"), "map and map_overlay must have same frame_id. skipping");
       }
     }
 
@@ -440,4 +458,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_BASE_H

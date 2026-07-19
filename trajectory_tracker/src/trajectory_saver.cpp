@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,49 +40,49 @@
 #include <fstream>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
+#include <rclcpp/serialized_message.hpp>
 
-#include <geometry_msgs/Twist.h>
-#include <nav_msgs/Path.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <nav_msgs/msg/path.hpp>
 
-#include <neonavigation_common/compatibility.h>
+namespace trajectory_tracker
+{
 
-class SaverNode
+class SaverNode : public rclcpp::Node
 {
 public:
-  SaverNode();
+  SaverNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~SaverNode();
   void save();
 
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Subscriber sub_path_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr sub_path_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
-  std::string topic_path_;
   std::string filename_;
   bool saved_;
-  void cbPath(const nav_msgs::Path::ConstPtr& msg);
+  void cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg);
 };
 
-SaverNode::SaverNode()
-  : nh_()
-  , pnh_("~")
+SaverNode::SaverNode(const rclcpp::NodeOptions& options) : Node("trajectory_saver", options)
   , saved_(false)
 {
-  neonavigation_common::compat::checkCompatMode();
-  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("recpath"));
-  pnh_.param("file", filename_, std::string("a.path"));
+  filename_ = this->declare_parameter("file", std::string("a.path"));
 
-  sub_path_ = neonavigation_common::compat::subscribe(
-      nh_, "path",
-      pnh_, topic_path_, 10, &SaverNode::cbPath, this);
+  sub_path_ = this->create_subscription<nav_msgs::msg::Path>(
+      "path",
+      rclcpp::QoS(10).transient_local(), [this](const nav_msgs::msg::Path::ConstSharedPtr msg){ cbPath(msg); });
+  timer_ = this->create_wall_timer(
+    std::chrono::milliseconds(200),
+    [this](){ save(); });
 }
 SaverNode::~SaverNode()
 {
 }
 
-void SaverNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
+void SaverNode::cbPath(const nav_msgs::msg::Path::ConstSharedPtr msg)
 {
   if (saved_)
     return;
@@ -89,43 +90,40 @@ void SaverNode::cbPath(const nav_msgs::Path::ConstPtr& msg)
 
   if (!ofs)
   {
-    ROS_ERROR("Failed to open %s", filename_.c_str());
+    RCLCPP_ERROR(this->get_logger(), "Failed to open %s", filename_.c_str());
     return;
   }
 
-  uint32_t serial_size = ros::serialization::serializationLength(*msg);
-  ROS_INFO("Size: %d\n", (int)serial_size);
-  boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+  auto serialized_msg = std::make_shared<rclcpp::SerializedMessage>();
+  rclcpp::Serialization<nav_msgs::msg::Path> serializer;
+  serializer.serialize_message(msg.get(), serialized_msg.get());
 
-  ros::serialization::OStream stream(buffer.get(), serial_size);
-  ros::serialization::serialize(stream, *msg);
+  RCLCPP_INFO(this->get_logger(), "Size: %d\n", (int)serialized_msg->size());
 
-  ofs.write(reinterpret_cast<char*>(buffer.get()), serial_size);
+  ofs.write(reinterpret_cast<char*>(serialized_msg->get_rcl_serialized_message().buffer), serialized_msg->size());
 
   saved_ = true;
 }
 
 void SaverNode::save()
 {
-  ros::Rate loop_rate(5);
-  ROS_INFO("Waiting for the path");
+  RCLCPP_INFO_ONCE(this->get_logger(), "Waiting for the path");
 
-  while (ros::ok())
+  if (saved_)
   {
-    ros::spinOnce();
-    loop_rate.sleep();
-    if (saved_)
-      break;
+    RCLCPP_INFO(this->get_logger(), "Path saved");
+    rclcpp::shutdown();
   }
-  ROS_INFO("Path saved");
+
+}
 }
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "trajectory_saver");
+  rclcpp::init(argc, argv);
 
-  SaverNode rec;
-  rec.save();
+  auto rec = std::make_shared<trajectory_tracker::SaverNode>();
+  rclcpp::spin(rec);
 
   return 0;
 }

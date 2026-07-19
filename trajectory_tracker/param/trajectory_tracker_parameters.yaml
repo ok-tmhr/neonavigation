@@ -1,0 +1,170 @@
+trajectory_tracker:
+  frame_robot:
+    type: string
+    default_value: base_link
+  frame_odom:
+    type: string
+    default_value: odom
+  hz:
+    type: double
+    default_value: 50.0
+  use_odom:
+    type: bool
+    default_value: false
+  predict_odom:
+    type: bool
+    default_value: true
+  max_dt:
+    type: double
+    default_value: 0.1
+  odom_timeout_sec:
+    type: double
+    default_value: 0.1
+  look_forward:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [0., 100.]
+  curv_forward:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [0., 100.]
+  k_dist:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  k_ang:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  k_avel:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  gain_at_vel:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [0., 100.]
+  dist_lim:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [0., 100.]
+  dist_stop:
+    type: double
+    default_value: 2.0
+    validation:
+      bounds<>: [0., 100.]
+  rotate_ang:
+    type: double
+    default_value: 0.78539816339
+    validation:
+      bounds<>: [0., 3.1415]
+  max_vel:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [0., 100.]
+  max_angvel:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  max_acc:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  max_angacc:
+    type: double
+    default_value: 2.0
+    validation:
+      bounds<>: [0., 100.]
+  acc_toc_factor:
+    type: double
+    default_value: 0.9
+  angacc_toc_factor:
+    type: double
+    default_value: 0.9
+    validation:
+      bounds<>: [0., 1.]
+  path_step:
+    type: int
+    default_value: 1
+    validation:
+      bounds<>: [1, 100]
+  goal_tolerance_dist:
+    type: double
+    default_value: 0.2
+    validation:
+      bounds<>: [0., 100.]
+  goal_tolerance_ang:
+    type: double
+    default_value: 0.1
+    validation:
+      bounds<>: [0., 100.]
+  stop_tolerance_dist:
+    type: double
+    default_value: 0.1
+    validation:
+      bounds<>: [0., 100.]
+  stop_tolerance_ang:
+    type: double
+    default_value: 0.05
+    validation:
+      bounds<>: [0., 100.]
+  no_position_control_dist:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [0., 100.]
+  min_tracking_path:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [0., 100.]
+  allow_backward:
+    type: bool
+    default_value: true
+  limit_vel_by_avel:
+    type: bool
+    default_value: false
+  check_old_path:
+    type: bool
+    default_value: false
+  epsilon:
+    type: double
+    default_value: 0.001
+  use_time_optimal_control:
+    type: bool
+    default_value: true
+  time_optimal_control_future_gain:
+    type: double
+    default_value: 1.5
+    validation:
+      bounds<>: [0., 100.]
+  k_ang_rotation:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  k_avel_rotation:
+    type: double
+    default_value: 1.0
+    validation:
+      bounds<>: [0., 100.]
+  goal_tolerance_lin_vel:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [0., 100.]
+  goal_tolerance_ang_vel:
+    type: double
+    default_value: 0.0
+    validation:
+      bounds<>: [0., 100.]

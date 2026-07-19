@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -33,9 +34,9 @@
 #include <utility>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 
 #include <planner_cspace/cyclic_vec.h>
 #include <planner_cspace/planner_3d/grid_astar_model.h>
@@ -48,7 +49,7 @@ namespace planner_cspace
 namespace planner_3d
 {
 GridAstarModel3D::GridAstarModel3D(
-    const costmap_cspace_msgs::MapMetaData3D& map_info,
+    const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
     const Vecf& euclid_cost_coef,
     const int local_range,
     const BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
@@ -76,7 +77,7 @@ GridAstarModel3D::GridAstarModel3D(
 {
   rot_cache_.reset(map_info_.linear_resolution, map_info_.angular_resolution, range_);
 
-  costmap_cspace_msgs::MapMetaData3D map_info_linear(map_info_);
+  costmap_cspace_msgs::msg::MapMetaData3D map_info_linear(map_info_);
   map_info_linear.angle = 1;
 
   motion_cache_linear_.reset(
@@ -101,7 +102,7 @@ GridAstarModel3D::GridAstarModel3D(
           static_cast<int>(map_info_.height),
           static_cast<int>(map_info_.angle)) -
       min_boundary_;
-  ROS_INFO("x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
+  RCLCPP_INFO(rclcpp::get_logger("grid_astar_model_3d"), "x:%d, y:%d grids around the boundary is ignored on path search", min_boundary_[0], min_boundary_[1]);
 
   updateCostParameters(euclid_cost_coef_, cc_, local_range_);
   search_list_rough_.clear();
@@ -168,7 +169,7 @@ float GridAstarModel3D::euclidCostRough(const Vec& v) const
   return std::sqrt(rootsum) * euclid_cost_coef_[0];
 }
 float GridAstarModel3D::cost(
-    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
+    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& /*start*/, const Vec& /*goal*/) const
 {
   if ((cm_[cur] > 99) || (cm_[next] > 99))
   {
@@ -323,7 +324,7 @@ float GridAstarModel3D::costEstim(
 const std::vector<GridAstarModel3D::Vec>& GridAstarModel3D::searchGrids(
     const Vec& p,
     const std::vector<VecWithCost>& ss,
-    const Vec& es) const
+    const Vec& /*es*/) const
 {
   const float local_range_sq = local_range_ * local_range_;
   for (const VecWithCost& s : ss)
@@ -344,7 +345,7 @@ std::list<GridAstarModel3D::Vecf> GridAstarModel3D::interpolatePath(const std::l
 }
 
 float GridAstarModel2D::cost(
-    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& start, const Vec& goal) const
+    const Vec& cur, const Vec& next, const std::vector<VecWithCost>& /*start*/, const Vec& /*goal*/) const
 {
   Vec d = next - cur;
   d[2] = 0;
@@ -378,7 +379,7 @@ float GridAstarModel2D::costEstim(
   return cost;
 }
 const std::vector<GridAstarModel3D::Vec>& GridAstarModel2D::searchGrids(
-    const Vec& cur, const std::vector<VecWithCost>& start, const Vec& goal) const
+    const Vec& /*cur*/, const std::vector<VecWithCost>& /*start*/, const Vec& /*goal*/) const
 {
   return base_->search_list_rough_;
 }

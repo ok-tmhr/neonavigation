@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2023, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -35,11 +36,11 @@
 #include <unordered_map>
 #include <utility>
 
-#include <nav_msgs/Path.h>
+#include <nav_msgs/msg/path.hpp>
 #include <planner_cspace/planner_3d/start_pose_predictor.h>
 #include <planner_cspace/planner_3d/motion_cache.h>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace planner_cspace
 {
@@ -52,11 +53,11 @@ protected:
   {
     config_ =
         {
-            .prediction_sec_ = 0.5,
-            .switch_back_prediction_sec_ = 2.0,
-            .dist_stop_ = 0.2,
-            .lin_vel_ = 1.5,
-            .ang_vel_ = M_PI / 2,
+            0.5,
+            2.0,
+            0.2,
+            1.5,
+            M_PI / 2,
         };
     predictor_.setConfig(config_);
 
@@ -106,15 +107,15 @@ protected:
     paths_["switch_back"] = std::make_pair(path_grid_switch_back, convertToMetricPath(path_grid_switch_back));
   }
 
-  nav_msgs::Path convertToMetricPath(const std::list<GridAstar<3, 2>::Vec>& path_grid) const
+  nav_msgs::msg::Path convertToMetricPath(const std::list<GridAstar<3, 2>::Vec>& path_grid) const
   {
     const auto path_interpolated = motion_cache_.interpolatePath(path_grid);
 
-    nav_msgs::Path result_path;
+    nav_msgs::msg::Path result_path;
     result_path.header.frame_id = "map";
     for (const auto& pose_grid : path_interpolated)
     {
-      geometry_msgs::PoseStamped pose;
+      geometry_msgs::msg::PoseStamped pose;
       pose.header.frame_id = "map";
       float x, y, yaw;
       grid_metric_converter::grid2Metric(map_info_, pose_grid[0], pose_grid[1], pose_grid[2], x, y, yaw);
@@ -124,9 +125,9 @@ protected:
     return result_path;
   }
 
-  geometry_msgs::Pose getPose(const double x, const double y, const double yaw) const
+  geometry_msgs::msg::Pose getPose(const double x, const double y, const double yaw) const
   {
-    geometry_msgs::Pose pose;
+    geometry_msgs::msg::Pose pose;
     pose.position.x = x;
     pose.position.y = y;
     pose.orientation.z = std::sin(yaw / 2);
@@ -137,23 +138,23 @@ protected:
   StartPosePredictor predictor_;
   StartPosePredictor::Config config_;
   GridAstar<3, 2>::Gridmap<char, 0x40> cm_;
-  costmap_cspace_msgs::MapMetaData3D map_info_;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info_;
   MotionCache motion_cache_;
-  std::unordered_map<std::string, std::pair<std::list<StartPosePredictor::Astar::Vec>, nav_msgs::Path>> paths_;
+  std::unordered_map<std::string, std::pair<std::list<StartPosePredictor::Astar::Vec>, nav_msgs::msg::Path>> paths_;
 };
 
 TEST_F(StartPosePredictorTester, EdgeCases)
 {
   StartPosePredictor::Astar::Vec start_grid;
   // Empty path
-  EXPECT_FALSE(predictor_.process(getPose(0.0, 0.0, 0.0), cm_, map_info_, nav_msgs::Path(), start_grid));
+  EXPECT_FALSE(predictor_.process(getPose(0.0, 0.0, 0.0), cm_, map_info_, nav_msgs::msg::Path(), start_grid));
 
   // Far from path
   EXPECT_FALSE(predictor_.process(getPose(0.0, 0.5, 0.0), cm_, map_info_,
                                   paths_["straight"].second, start_grid));
 
   // Only the last pose is remaining
-  nav_msgs::Path rotating_path;
+  nav_msgs::msg::Path rotating_path;
   rotating_path.header.frame_id = "map";
   rotating_path.poses.resize(1);
   rotating_path.poses[0].header.frame_id = "map";

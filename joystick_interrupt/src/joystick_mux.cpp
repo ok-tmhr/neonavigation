@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2015-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,39 +28,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
-#include <sensor_msgs/Joy.h>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
-#include <topic_tools/shape_shifter.h>
+namespace joystick_interrupt
+{
 
-#include <neonavigation_common/compatibility.h>
-
-class JoystickMux
+class JoystickMux : public rclcpp::Node
 {
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Subscriber sub_topics_[2];
-  ros::Subscriber sub_joy_;
-  ros::Publisher pub_topic_;
-  ros::Timer timer_;
+
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
+  rclcpp::TimerBase::SharedPtr timer_;
   double timeout_;
   int interrupt_button_;
-  ros::Time last_joy_msg_;
+  rclcpp::Time last_joy_msg_;
   bool advertised_;
   int selected_;
 
-  void cbJoy(const sensor_msgs::Joy::Ptr msg)
+  void cbJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
     if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
     {
-      ROS_ERROR(
+      RCLCPP_ERROR(this->get_logger(),
           "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
           msg->buttons.size(), interrupt_button_);
       return;
     }
 
-    last_joy_msg_ = ros::Time::now();
+    last_joy_msg_ = this->now();
     if (msg->buttons[interrupt_button_])
     {
       selected_ = 1;
@@ -69,73 +66,33 @@ private:
       selected_ = 0;
     }
   };
-  void cbTopic(const boost::shared_ptr<topic_tools::ShapeShifter const>& msg, int id)
+
+  void cbTimer()
   {
-    if (selected_ == id)
-    {
-      if (!advertised_)
-      {
-        advertised_ = true;
-        if (neonavigation_common::compat::getCompat() !=
-            neonavigation_common::compat::current_level)
-        {
-          ROS_ERROR(
-              "Use %s (%s%s) topic instead of %s (%s%s)",
-              nh_.resolveName("mux_output", false).c_str(),
-              neonavigation_common::compat::getSimplifiedNamespace(nh_).c_str(),
-              "mux_output",
-              pnh_.resolveName("output", false).c_str(),
-              neonavigation_common::compat::getSimplifiedNamespace(pnh_).c_str(),
-              "output");
-          pub_topic_ = msg->advertise(pnh_, "output", 1, false);
-        }
-        else
-        {
-          pub_topic_ = msg->advertise(nh_, "mux_output", 1, false);
-        }
-      }
-      pub_topic_.publish(*msg);
-    }
-  };
-  void cbTimer(const ros::TimerEvent& e)
-  {
-    if (ros::Time::now() - last_joy_msg_ > ros::Duration(timeout_))
+    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_))
     {
       selected_ = 0;
     }
   }
 
 public:
-  JoystickMux()
-    : nh_("")
-    , pnh_("~")
+  JoystickMux(const rclcpp::NodeOptions& options) : Node("joystick_mux", options)
+  , last_joy_msg_(0L, RCL_ROS_TIME)
   {
-    neonavigation_common::compat::checkCompatMode();
-    sub_joy_ = nh_.subscribe("joy", 1, &JoystickMux::cbJoy, this);
-    sub_topics_[0] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
-        nh_, "mux_input0",
-        pnh_, "input0", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 0));
-    sub_topics_[1] = neonavigation_common::compat::subscribe<topic_tools::ShapeShifter>(
-        nh_, "mux_input1",
-        pnh_, "input1", 1, boost::bind(&JoystickMux::cbTopic, this, _1, 1));
+    using std::placeholders::_1;
+    sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, [this](const sensor_msgs::msg::Joy::SharedPtr msg){ cbJoy(msg); });
 
-    pnh_.param("interrupt_button", interrupt_button_, 5);
-    pnh_.param("timeout", timeout_, 0.5);
-    last_joy_msg_ = ros::Time::now();
+    interrupt_button_ = this->declare_parameter("interrupt_button", 5);
+    timeout_ = this->declare_parameter("timeout", 0.5);
+    last_joy_msg_ = this->now();
 
-    timer_ = nh_.createTimer(ros::Duration(0.1), &JoystickMux::cbTimer, this);
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this](){ cbTimer(); });
 
     advertised_ = false;
     selected_ = 0;
   }
 };
-
-int main(int argc, char* argv[])
-{
-  ros::init(argc, argv, "joystick_mux");
-
-  JoystickMux jy;
-  ros::spin();
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(joystick_interrupt::JoystickMux)

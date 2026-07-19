@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,10 +28,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
-#define COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H
+#pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <list>
 
@@ -43,9 +43,9 @@ public:
   class Points : public T
   {
   public:
-    ros::Time stamp_;
+    rclcpp::Time stamp_;
 
-    Points(const T& points, const ros::Time& stamp)
+    Points(const T& points, const rclcpp::Time& stamp)
       : T(points)
       , stamp_(stamp)
     {
@@ -53,15 +53,17 @@ public:
   };
 
   PointcloudAccumulator()
+  : time_to_hold_(0, 0)
   {
   }
 
-  explicit PointcloudAccumulator(const ros::Duration& duration)
+  explicit PointcloudAccumulator(const rclcpp::Duration& duration)
+  : time_to_hold_(0, 0)
   {
     reset(duration);
   }
 
-  void reset(const ros::Duration& duration)
+  void reset(const rclcpp::Duration& duration)
   {
     time_to_hold_ = duration;
     clear();
@@ -105,7 +107,7 @@ public:
   }
 
 protected:
-  ros::Duration time_to_hold_;
+  rclcpp::Duration time_to_hold_;
   std::list<Points> points_;
 };
 
@@ -115,4 +117,3 @@ using PointcloudAccumurator
     [[deprecated("Use costmap_cspace::PointcloudAccumulator instead.")]] = PointcloudAccumulator<T>;
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_POINTCLOUD_ACCUMULATOR_H

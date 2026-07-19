@@ -1,5 +1,11 @@
-add_rostest_gtest(test_obj_to_pointcloud
-  test/obj_to_pointcloud_rostest.test
+neonavigation_add_gtest(test_obj_to_pointcloud SKIP_TEST
   src/test_obj_to_pointcloud.cpp
+  LIBRARIES
+    sensor_msgs
+    rclcpp::rclcpp
 )
-target_link_libraries(test_obj_to_pointcloud ${catkin_LIBRARIES})
+add_launch_test(launch/obj_to_pointcloud_test.launch.py TIMEOUT 120)
+
+install(DIRECTORY test data
+  DESTINATION share/${PROJECT_NAME}
+)

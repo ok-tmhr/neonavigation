@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,17 +28,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_POLYGON_H
-#define COSTMAP_CSPACE_POLYGON_H
+#pragma once
 
+#include <cassert>
 #include <cmath>
 #include <limits>
+#include <regex>
 #include <utility>
 #include <vector>
 
-#include <ros/ros.h>
-
-#include <xmlrpcpp/XmlRpcException.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace costmap_cspace
 {
@@ -47,12 +48,12 @@ public:
   float c[2];
   float& operator[](const int& i)
   {
-    ROS_ASSERT(i < 2);
+    assert(i < 2);
     return c[i];
   }
   const float& operator[](const int& i) const
   {
-    ROS_ASSERT(i < 2);
+    assert(i < 2);
     return c[i];
   }
   Vec operator-(const Vec& a) const
@@ -95,40 +96,42 @@ public:
   Polygon()
   {
   }
-  explicit Polygon(const XmlRpc::XmlRpcValue footprint_xml_const)
+  explicit Polygon(const std::string& footprint_str)
   {
-    XmlRpc::XmlRpcValue footprint_xml = footprint_xml_const;
-    if (footprint_xml.getType() != XmlRpc::XmlRpcValue::TypeArray || footprint_xml.size() < 3)
-    {
-      throw std::runtime_error("Invalid footprint xml.");
-    }
+    std::regex pattern(R"(\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\])");
 
-    for (int i = 0; i < footprint_xml.size(); i++)
+    auto begin = std::sregex_iterator(footprint_str.begin(), footprint_str.end(), pattern);
+    auto end = std::sregex_iterator();
+
+    for (auto it = begin; it != end; it++)
     {
       Vec p;
-      try
+
+      p[0] = std::stof((*it)[1].str());
+      p[1] = std::stof((*it)[2].str());
+
+      if (it->length() == 0 || (*it)[1].str().empty() || (*it)[2].str().empty())
       {
-        p[0] = static_cast<double>(footprint_xml[i][0]);
-        p[1] = static_cast<double>(footprint_xml[i][1]);
-      }
-      catch (XmlRpc::XmlRpcException& e)
-      {
-        throw std::runtime_error(("Invalid footprint xml." + e.getMessage()).c_str());
+        throw std::runtime_error("Invalid footprint.");
       }
 
       v.push_back(p);
     }
+    if (v.size() < 3)
+    {
+      throw std::runtime_error("Invalid footprint.");
+    }
     v.push_back(v.front());
   }
-  geometry_msgs::PolygonStamped toMsg() const
+  geometry_msgs::msg::PolygonStamped toMsg() const
   {
-    geometry_msgs::PolygonStamped msg;
+    geometry_msgs::msg::PolygonStamped msg;
 
     msg.polygon.points.clear();
     msg.header.frame_id = "base_link";
     for (const auto& p : v)
     {
-      geometry_msgs::Point32 point;
+      geometry_msgs::msg::Point32 point;
       point.x = p[0];
       point.y = p[1];
       point.z = 0;
@@ -194,4 +197,3 @@ public:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_POLYGON_H

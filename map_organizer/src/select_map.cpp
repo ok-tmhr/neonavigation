@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2017, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,86 +28,98 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <map_organizer_msgs/OccupancyGridArray.h>
-#include <std_msgs/Int32.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <map_organizer_msgs/msg/occupancy_grid_array.hpp>
+#include <std_msgs/msg/int32.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_broadcaster.h>
 
 #include <vector>
 
-#include <neonavigation_common/compatibility.h>
-
-map_organizer_msgs::OccupancyGridArray maps;
-std::vector<nav_msgs::MapMetaData> orig_mapinfos;
-int floor_cur = 0;
-
-void cbMaps(const map_organizer_msgs::OccupancyGridArray::Ptr& msg)
+#include "map_organizer/select_map_component_parameter.hpp"
+namespace map_organizer
 {
-  ROS_INFO("Map array received");
-  maps = *msg;
-  orig_mapinfos.clear();
-  for (auto& map : maps.maps)
+class SelectMap : public rclcpp::Node
+{
+  rclcpp::Subscription<map_organizer_msgs::msg::OccupancyGridArray>::SharedPtr subMaps_;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr subFloor_;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pubMap_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::shared_ptr<select_map::ParamListener> param_listener_;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tfb_;
+  map_organizer_msgs::msg::OccupancyGridArray maps_;
+  std::vector<nav_msgs::msg::MapMetaData> orig_mapinfos_;
+  geometry_msgs::msg::TransformStamped trans_;
+  int floor_cur_;
+  int floor_prev_;
+
+  void cbMaps(const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg)
   {
-    orig_mapinfos.push_back(map.info);
-    map.info.origin.position.z = 0.0;
-  }
-}
-void cbFloor(const std_msgs::Int32::Ptr& msg)
-{
-  floor_cur = msg->data;
-}
-
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "select_map");
-  ros::NodeHandle pnh("~");
-  ros::NodeHandle nh("");
-
-  neonavigation_common::compat::checkCompatMode();
-  auto subMaps = neonavigation_common::compat::subscribe(
-      nh, "maps",
-      nh, "/maps", 1, cbMaps);
-  auto subFloor = neonavigation_common::compat::subscribe(
-      nh, "floor",
-      pnh, "floor", 1, cbFloor);
-  auto pubMap = neonavigation_common::compat::advertise<nav_msgs::OccupancyGrid>(
-      nh, "map",
-      nh, "/map", 1, true);
-
-  tf2_ros::TransformBroadcaster tfb;
-  geometry_msgs::TransformStamped trans;
-  trans.header.frame_id = "map_ground";
-  trans.child_frame_id = "map";
-  trans.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
-
-  ros::Rate wait(10);
-  int floor_prev = -1;
-  while (ros::ok())
-  {
-    wait.sleep();
-    ros::spinOnce();
-
-    if (maps.maps.size() == 0)
-      continue;
-
-    if (floor_cur != floor_prev)
+    RCLCPP_INFO(this->get_logger(), "Map array received");
+    maps_ = *msg;
+    orig_mapinfos_.clear();
+    for (auto& map : maps_.maps)
     {
-      if (floor_cur >= 0 && floor_cur < static_cast<int>(maps.maps.size()))
+      orig_mapinfos_.push_back(map.info);
+      map.info.origin.position.z = 0.0;
+    }
+  }
+  void cbFloor(const std_msgs::msg::Int32::SharedPtr msg)
+  {
+    floor_cur_ = msg->data;
+  }
+  void on_time()
+  {
+    if (maps_.maps.size() == 0)
+      return;
+
+    if (floor_cur_ != floor_prev_)
+    {
+      if (floor_cur_ >= 0 && floor_cur_ < static_cast<int>(maps_.maps.size()))
       {
-        pubMap.publish(maps.maps[floor_cur]);
-        trans.transform.translation.z = orig_mapinfos[floor_cur].origin.position.z;
+        pubMap_->publish(maps_.maps[floor_cur_]);
+        trans_.transform.translation.z = orig_mapinfos_[floor_cur_].origin.position.z;
       }
       else
       {
-        ROS_INFO("Floor out of range");
+        RCLCPP_INFO(this->get_logger(), "Floor out of range");
       }
-      floor_prev = floor_cur;
+      floor_prev_ = floor_cur_;
     }
-    trans.header.stamp = ros::Time::now() + ros::Duration(0.15);
-    tfb.sendTransform(trans);
+    trans_.header.stamp = this->now() + rclcpp::Duration::from_seconds(0.15);
+    tfb_->sendTransform(trans_);
   }
 
-  return 0;
+public:
+  SelectMap(const rclcpp::NodeOptions& options) : Node("select_map", options)
+  , floor_cur_(0)
+  , floor_prev_(-1)
+  {
+    subMaps_ = this->create_subscription<map_organizer_msgs::msg::OccupancyGridArray>(
+        "maps",
+        1, [this](const map_organizer_msgs::msg::OccupancyGridArray::SharedPtr msg){ cbMaps(msg); });
+    subFloor_ = this->create_subscription<std_msgs::msg::Int32>(
+        "floor",
+        1, [this](const std_msgs::msg::Int32::SharedPtr msg){ cbFloor(msg); });
+    pubMap_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+        "map",
+        rclcpp::QoS(1).transient_local());
+    param_listener_ = std::make_shared<select_map::ParamListener>(this->get_node_parameters_interface());
+    const auto param = param_listener_->get_params();
+
+    tfb_ = std::make_unique<tf2_ros::TransformBroadcaster>(this);
+    trans_.header.frame_id = param.ground_frame;
+    trans_.child_frame_id = param.map_frame;
+    trans_.transform.rotation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0.0, 0.0, 1.0), 0.0));
+
+    timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(100),
+      [this](){ on_time(); });
+  }
+};
+
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(map_organizer::SelectMap)

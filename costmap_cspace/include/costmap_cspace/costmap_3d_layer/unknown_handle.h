@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,24 +28,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H
+#pragma once
 
 #include <memory>
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 
+#include <costmap_cspace/unknown_handle_parameters.hpp>
 namespace costmap_cspace
 {
 class Costmap3dLayerUnknownHandle : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerUnknownHandle>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerUnknownHandle>;
 
 protected:
   int8_t unknown_cost_;
@@ -54,14 +55,12 @@ public:
     : unknown_cost_(-1)
   {
   }
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    if (config.hasMember("unknown_cost"))
-    {
-      unknown_cost_ = static_cast<int>(config["unknown_cost"]);
-    }
+    auto param_listener = std::make_shared<unknown_handle::ParamListener>(node.get_node_parameters_interface(), config.name);
+    unknown_cost_ = param_listener->get_params().unknown_cost;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& /*info*/)
   {
   }
 
@@ -70,7 +69,7 @@ protected:
   {
     return 0;
   }
-  bool updateChain(const bool output)
+  bool updateChain(const bool /*output*/)
   {
     for (
         size_t a = region_.yaw_;
@@ -96,11 +95,10 @@ protected:
     return false;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
-      const UpdatedRegion& region)
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr /*map*/,
+      const UpdatedRegion& /*region*/)
   {
   }
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_UNKNOWN_HANDLE_H

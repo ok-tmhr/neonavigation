@@ -1,0 +1,14 @@
+tie_maps:
+  map_files:
+    type: string_array
+    default_value: [map.yaml]
+    description: A list of YAML files to load maps
+    validation:
+      not_empty<>: null
+  frame_id:
+    type: string
+    default_value: map
+    description: A universal frame ID for maps to load
+    validation:
+      not_empty<>: null
+

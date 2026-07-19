@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019-2020, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,8 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
-#define PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H
+#pragma once
 
 #include <array>
 #include <list>
@@ -36,7 +36,7 @@
 #include <utility>
 #include <vector>
 
-#include <costmap_cspace_msgs/MapMetaData3D.h>
+#include <costmap_cspace_msgs/msg/map_meta_data3_d.hpp>
 
 #include <planner_cspace/blockmem_gridmap.h>
 #include <planner_cspace/cyclic_vec.h>
@@ -73,14 +73,14 @@ class GridAstarModel3D : public GridAstarModelBase<3, 2>
 {
 public:
   friend class GridAstarModel2D;
-  using Ptr = std::shared_ptr<GridAstarModel3D>;
-  using ConstPtr = std::shared_ptr<const GridAstarModel3D>;
+  using SharedPtr = std::shared_ptr<GridAstarModel3D>;
+  using ConstSharedPtr = std::shared_ptr<const GridAstarModel3D>;
   using Vec = CyclicVecInt<3, 2>;
   using Vecf = CyclicVecFloat<3, 2>;
 
 protected:
   bool hysteresis_;
-  costmap_cspace_msgs::MapMetaData3D map_info_;
+  costmap_cspace_msgs::msg::MapMetaData3D map_info_;
   Vecf euclid_cost_coef_;
   Vecf resolution_;
   std::vector<std::vector<Vec>> motion_primitives_;
@@ -101,7 +101,7 @@ protected:
 
 public:
   explicit GridAstarModel3D(
-      const costmap_cspace_msgs::MapMetaData3D& map_info,
+      const costmap_cspace_msgs::msg::MapMetaData3D& map_info,
       const Vecf& euclid_cost_coef,
       const int local_range,
       const BlockMemGridmapBase<float, 3, 2>& cost_estim_cache,
@@ -137,10 +137,10 @@ public:
 class GridAstarModel2D : public GridAstarModelBase<3, 2>
 {
 public:
-  using Ptr = std::shared_ptr<GridAstarModel2D>;
-  const GridAstarModel3D::ConstPtr base_;
+  using SharedPtr = std::shared_ptr<GridAstarModel2D>;
+  const GridAstarModel3D::ConstSharedPtr base_;
 
-  inline explicit GridAstarModel2D(const GridAstarModel3D::ConstPtr base)
+  inline explicit GridAstarModel2D(const GridAstarModel3D::ConstSharedPtr base)
     : base_(base)
   {
   }
@@ -154,5 +154,3 @@ public:
 };
 }  // namespace planner_3d
 }  // namespace planner_cspace
-
-#endif  // PLANNER_CSPACE_PLANNER_3D_GRID_ASTAR_MODEL_H

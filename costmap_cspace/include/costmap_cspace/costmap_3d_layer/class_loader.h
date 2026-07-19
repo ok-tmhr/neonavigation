@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,20 +28,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H
+#pragma once
 
 #include <map>
 #include <memory>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
 
+#include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/cspace3_cache.h>
 #include <costmap_cspace/polygon.h>
 
@@ -49,26 +50,26 @@ namespace costmap_cspace
 class Costmap3dLayerSpawnerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerSpawnerBase>;
-  virtual Costmap3dLayerBase::Ptr spawn() const = 0;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerSpawnerBase>;
+  virtual std::shared_ptr<Costmap3dLayerBase> spawn() const = 0;
 };
 template <typename T>
 class Costmap3dLayerSpawner : public Costmap3dLayerSpawnerBase
 {
 public:
-  Costmap3dLayerBase::Ptr spawn() const
+  std::shared_ptr<Costmap3dLayerBase> spawn() const
   {
-    return Costmap3dLayerBase::Ptr(new T);
+    return Costmap3dLayerBase::SharedPtr(new T);
   }
 };
 class Costmap3dLayerClassLoader
 {
 protected:
-  using ClassList = std::map<std::string, Costmap3dLayerSpawnerBase::Ptr>;
+  using ClassList = std::map<std::string, Costmap3dLayerSpawnerBase::SharedPtr>;
   static ClassList classes_;
 
 public:
-  static Costmap3dLayerBase::Ptr loadClass(const std::string& name)
+  static std::shared_ptr<Costmap3dLayerBase> loadClass(const std::string& name)
   {
     if (classes_.find(name) == classes_.end())
     {
@@ -76,7 +77,7 @@ public:
     }
     return classes_[name]->spawn();
   };
-  static void registerClass(const std::string& name, Costmap3dLayerSpawnerBase::Ptr spawner)
+  static void registerClass(const std::string& name, Costmap3dLayerSpawnerBase::SharedPtr spawner)
   {
     classes_[name] = spawner;
   };
@@ -94,7 +95,7 @@ public:
     {                                                             \
       costmap_cspace::Costmap3dLayerClassLoader::registerClass(   \
           name,                                                   \
-          costmap_cspace::Costmap3dLayerSpawnerBase::Ptr(         \
+          costmap_cspace::Costmap3dLayerSpawnerBase::SharedPtr(         \
               new costmap_cspace::Costmap3dLayerSpawner<klass>)); \
     } /* NOLINT(whitespace/braces)*/                              \
   };  /* NOLINT(whitespace/braces)*/                              \
@@ -103,4 +104,3 @@ public:
 
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_CLASS_LOADER_H

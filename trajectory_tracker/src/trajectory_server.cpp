@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014, ATR, Atsushi Watanabe
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -39,81 +40,82 @@
 #include <fstream>
 #include <string>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
+#include <rclcpp/serialized_message.hpp>
 
-#include <geometry_msgs/Twist.h>
-#include <interactive_markers/interactive_marker_server.h>
-#include <nav_msgs/Path.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <trajectory_tracker_msgs/ChangePath.h>
-#include <trajectory_tracker_msgs/TrajectoryServerStatus.h>
-#include <visualization_msgs/InteractiveMarkerUpdate.h>
+#include <geometry_msgs/msg/twist.hpp>
+#include <interactive_markers/interactive_marker_server.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <trajectory_tracker_msgs/srv/change_path.hpp>
+#include <trajectory_tracker_msgs/msg/trajectory_server_status.hpp>
+#include <visualization_msgs/msg/interactive_marker_update.hpp>
 
 #include <trajectory_tracker/filter.h>
 
-#include <neonavigation_common/compatibility.h>
+namespace trajectory_tracker
+{
 
-class ServerNode
+class ServerNode : public rclcpp::Node
 {
 public:
-  ServerNode();
+  ServerNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
   ~ServerNode();
   void spin();
 
 private:
-  ros::NodeHandle nh_;
-  ros::NodeHandle pnh_;
-  ros::Publisher pub_path_;
-  ros::Publisher pub_status_;
-  ros::ServiceServer srv_change_path_;
-  interactive_markers::InteractiveMarkerServer srv_im_fb_;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;
+  rclcpp::Publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>::SharedPtr pub_status_;
+  rclcpp::Service<trajectory_tracker_msgs::srv::ChangePath>::SharedPtr srv_change_path_;
+  std::shared_ptr<interactive_markers::InteractiveMarkerServer> srv_im_fb_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
-  nav_msgs::Path path_;
-  std::string topic_path_;
-  trajectory_tracker_msgs::ChangePath::Request req_path_;
+  nav_msgs::msg::Path path_;
+  trajectory_tracker_msgs::srv::ChangePath::Request req_path_;
   double hz_;
-  boost::shared_array<uint8_t> buffer_;
+  std::unique_ptr<uint8_t[]> buffer_;
   int serial_size_;
   double filter_step_;
   trajectory_tracker::Filter* lpf_[2];
 
   bool loadFile();
-  void loadPath();
-  bool change(trajectory_tracker_msgs::ChangePath::Request& req,
-              trajectory_tracker_msgs::ChangePath::Response& res);
+  void change(const trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+              trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res);
   void processFeedback(
-      const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback);
+      const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback);
   void updateIM();
-  enum
+  enum class Menu
   {
-    MENU_DELETE = 1,
-    MENU_ADD = 2
+    DELETE = 1,
+    ADD = 2
   };
   int update_num_;
   int max_markers_;
 };
 
-ServerNode::ServerNode()
-  : nh_()
-  , pnh_("~")
-  , srv_im_fb_("trajectory_server")
-  , buffer_(new uint8_t[1024])
+ServerNode::ServerNode(const rclcpp::NodeOptions& options) : Node("trajectory_server", options)
 {
-  neonavigation_common::compat::checkCompatMode();
-  neonavigation_common::compat::deprecatedParam(pnh_, "path", topic_path_, std::string("path"));
-  pnh_.param("file", req_path_.filename, std::string("a.path"));
-  pnh_.param("hz", hz_, 5.0);
-  pnh_.param("filter_step", filter_step_, 0.0);
+  buffer_ = std::make_unique<uint8_t[]>(1024);
+  req_path_.filename = this->declare_parameter("file", std::string("a.path"));
+  hz_ = this->declare_parameter("hz", 5.0);
+  filter_step_ = this->declare_parameter("filter_step", 0.0);
 
-  pub_path_ = neonavigation_common::compat::advertise<nav_msgs::Path>(
-      nh_, "path",
-      pnh_, topic_path_, 2, true);
-  pub_status_ = pnh_.advertise<trajectory_tracker_msgs::TrajectoryServerStatus>("status", 2);
-  srv_change_path_ = neonavigation_common::compat::advertiseService(
-      nh_, "change_path",
-      pnh_, "ChangePath", &ServerNode::change, this);
+  pub_path_ = this->create_publisher<nav_msgs::msg::Path>(
+      "path",
+      rclcpp::QoS(2).transient_local());
+  pub_status_ = this->create_publisher<trajectory_tracker_msgs::msg::TrajectoryServerStatus>("~/status", 2);
+  srv_change_path_ = this->create_service<trajectory_tracker_msgs::srv::ChangePath>(
+      "change_path",
+      std::bind(&ServerNode::change, this, std::placeholders::_1, std::placeholders::_2));
   update_num_ = 0;
   max_markers_ = 0;
+
+  srv_im_fb_ = std::make_shared<interactive_markers::InteractiveMarkerServer>(this->get_namespace(), this);
+
+  timer_ = this->create_wall_timer(
+    std::chrono::duration<double>(1.0 / hz_),
+    [this](){ spin(); });
 }
 ServerNode::~ServerNode()
 {
@@ -127,7 +129,7 @@ bool ServerNode::loadFile()
     ifs.seekg(0, ifs.end);
     serial_size_ = ifs.tellg();
     ifs.seekg(0, ifs.beg);
-    buffer_.reset(new uint8_t[serial_size_]);
+    buffer_ = std::make_unique<uint8_t[]>(serial_size_);
     ifs.read(reinterpret_cast<char*>(buffer_.get()), serial_size_);
 
     return true;
@@ -136,29 +138,29 @@ bool ServerNode::loadFile()
 }
 
 void ServerNode::processFeedback(
-    const visualization_msgs::InteractiveMarkerFeedbackConstPtr& feedback)
+    const visualization_msgs::msg::InteractiveMarkerFeedback::ConstSharedPtr feedback)
 {
   int id = std::atoi(feedback->marker_name.c_str());
   switch (feedback->event_type)
   {
-    case visualization_msgs::InteractiveMarkerFeedback::POSE_UPDATE:
+    case visualization_msgs::msg::InteractiveMarkerFeedback::POSE_UPDATE:
       path_.poses[id].pose = feedback->pose;
       break;
-    case visualization_msgs::InteractiveMarkerFeedback::MOUSE_UP:
-      path_.header.stamp = ros::Time::now();
-      pub_path_.publish(path_);
+    case visualization_msgs::msg::InteractiveMarkerFeedback::MOUSE_UP:
+      path_.header.stamp = this->now();
+      pub_path_->publish(path_);
       break;
-    case visualization_msgs::InteractiveMarkerFeedback::MENU_SELECT:
-      switch (feedback->menu_entry_id)
+    case visualization_msgs::msg::InteractiveMarkerFeedback::MENU_SELECT:
+      switch (static_cast<Menu>(feedback->menu_entry_id))
       {
-        case MENU_DELETE:
+        case Menu::DELETE:
           path_.poses.erase(path_.poses.begin() + id);
           break;
-        case MENU_ADD:
+        case Menu::ADD:
           path_.poses.insert(path_.poses.begin() + id, path_.poses[id]);
           break;
       }
-      pub_path_.publish(path_);
+      pub_path_->publish(path_);
       updateIM();
       break;
   }
@@ -166,18 +168,18 @@ void ServerNode::processFeedback(
 
 void ServerNode::updateIM()
 {
-  visualization_msgs::InteractiveMarkerUpdate viz;
+  visualization_msgs::msg::InteractiveMarkerUpdate viz;
   viz.type = viz.KEEP_ALIVE;
   viz.seq_num = update_num_++;
   viz.server_id = "Path";
-  srv_im_fb_.clear();
+  srv_im_fb_->clear();
   int i = 0;
   for (auto& p : path_.poses)
   {
-    visualization_msgs::InteractiveMarker mark;
-    visualization_msgs::Marker marker;
-    visualization_msgs::InteractiveMarkerControl ctl;
-    visualization_msgs::MenuEntry menu;
+    visualization_msgs::msg::InteractiveMarker mark;
+    visualization_msgs::msg::Marker marker;
+    visualization_msgs::msg::InteractiveMarkerControl ctl;
+    visualization_msgs::msg::MenuEntry menu;
     mark.header = path_.header;
     mark.pose = p.pose;
     mark.scale = 1.0;
@@ -216,41 +218,43 @@ void ServerNode::updateIM()
     ctl.markers[0] = marker;
     mark.controls.push_back(ctl);
 
-    menu.id = MENU_DELETE;
+    menu.id = static_cast<uint32_t>(Menu::DELETE);
     menu.parent_id = 0;
     menu.title = "Delete";
     menu.command_type = menu.FEEDBACK;
     mark.menu_entries.push_back(menu);
-    menu.id = MENU_ADD;
+    menu.id = static_cast<uint32_t>(Menu::ADD);
     menu.parent_id = 0;
     menu.title = "Add";
 
     mark.menu_entries.push_back(menu);
-    srv_im_fb_.insert(mark, boost::bind(&ServerNode::processFeedback, this, _1));
+    srv_im_fb_->insert(mark, std::bind(&ServerNode::processFeedback, this, std::placeholders::_1));
     viz.markers.push_back(mark);
   }
-  srv_im_fb_.applyChanges();
+  srv_im_fb_->applyChanges();
 }
 
-bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
-                        trajectory_tracker_msgs::ChangePath::Response& res)
+void ServerNode::change(const trajectory_tracker_msgs::srv::ChangePath::Request::SharedPtr req,
+                        trajectory_tracker_msgs::srv::ChangePath::Response::SharedPtr res)
 {
-  req_path_ = req;
-  res.success = false;
+  req_path_ = *req;
+  res->success = false;
 
   if (loadFile())
   {
-    res.success = true;
-    ros::serialization::IStream stream(buffer_.get(), serial_size_);
-    ros::serialization::deserialize(stream, path_);
-    path_.header.stamp = ros::Time::now();
+    res->success = true;
+    rclcpp::SerializedMessage serialized_msg(serial_size_);
+    std::memcpy(serialized_msg.get_rcl_serialized_message().buffer, buffer_.get(), serial_size_);
+    rclcpp::Serialization<nav_msgs::msg::Path> serializer;
+    serializer.deserialize_message(&serialized_msg, &path_);
+    path_.header.stamp = this->now();
     if (filter_step_ > 0)
     {
       std::cout << filter_step_ << std::endl;
       lpf_[0] = new trajectory_tracker::Filter(
-          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.x);
+          trajectory_tracker::Filter::Type::LPF, filter_step_, path_.poses[0].pose.position.x);
       lpf_[1] = new trajectory_tracker::Filter(
-          trajectory_tracker::Filter::FILTER_LPF, filter_step_, path_.poses[0].pose.position.y);
+          trajectory_tracker::Filter::Type::LPF, filter_step_, path_.poses[0].pose.position.y);
 
       for (size_t i = 0; i < path_.poses.size(); i++)
       {
@@ -262,7 +266,7 @@ bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
       delete lpf_[1];
     }
 
-    pub_path_.publish(path_);
+    pub_path_->publish(path_);
     updateIM();
   }
   else
@@ -272,31 +276,21 @@ bool ServerNode::change(trajectory_tracker_msgs::ChangePath::Request& req,
     path_.poses.clear();
     path_.header.frame_id = "map";
   }
-  return true;
 }
 
 void ServerNode::spin()
 {
-  ros::Rate loop_rate(hz_);
-  trajectory_tracker_msgs::TrajectoryServerStatus status;
+  trajectory_tracker_msgs::msg::TrajectoryServerStatus status;
 
-  while (ros::ok())
   {
     status.header = path_.header;
     status.filename = req_path_.filename;
     status.id = req_path_.id;
-    pub_status_.publish(status);
-    ros::spinOnce();
-    loop_rate.sleep();
+    pub_status_->publish(status);
   }
 }
 
-int main(int argc, char** argv)
-{
-  ros::init(argc, argv, "trajectory_server");
-
-  ServerNode serv;
-  serv.spin();
-
-  return 0;
 }
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(trajectory_tracker::ServerNode)

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,25 +28,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PLANNER_CSPACE_BBF_H
-#define PLANNER_CSPACE_BBF_H
+#pragma once
 
 namespace planner_cspace
 {
 namespace bbf
 {
-constexpr float oddsToProbability(const float& o)
+constexpr float oddsToProbability(float o)
 {
-  return o / (1.0 + o);
+  return o / (1.0f + o);
 }
 
-constexpr float probabilityToOdds(const float& p)
+constexpr float probabilityToOdds(float p)
 {
-  return p / (1.0 - p);
+  return p / (1.0f - p);
 }
 
-const float MIN_PROBABILITY = 0.1;
-const float MAX_PROBABILITY = 1.0 - MIN_PROBABILITY;
+const float MIN_PROBABILITY = 0.1f;
+const float MAX_PROBABILITY = 1.0f - MIN_PROBABILITY;
 const float MIN_ODDS = probabilityToOdds(MIN_PROBABILITY);
 const float MAX_ODDS = probabilityToOdds(MAX_PROBABILITY);
 
@@ -56,11 +56,11 @@ protected:
 
 public:
   explicit BinaryBayesFilter(
-      const float& initial_odds = 1.0) noexcept
+      float initial_odds = 1.0f) noexcept
     : odds_(initial_odds)
   {
   }
-  float update(const float& odds)
+  float update(float odds)
   {
     odds_ *= odds;
     if (odds_ < MIN_ODDS)
@@ -85,4 +85,3 @@ public:
 };  // namespace bbf
 }  // namespace planner_cspace
 
-#endif  // PLANNER_CSPACE_BBF_H

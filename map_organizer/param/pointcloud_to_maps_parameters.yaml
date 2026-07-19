@@ -1,0 +1,36 @@
+pointcloud_to_maps:
+  grid:
+    type: double
+    default_value: 0.05
+    validation:
+      gt<>: [0.0]
+  points_thresh_rate:
+    type: double
+    default_value: 0.5
+    validation:
+      bounds<>: [0.0, 1.0]
+  robot_height:
+    type: double
+    default_value: 1.0
+    validation:
+      gt<>: [0.0]
+  floor_height:
+    type: double
+    default_value: 0.1
+    validation:
+      gt<>: [0.0]
+  floor_tolerance:
+    type: double
+    default_value: 0.2
+    validation:
+      gt<>: [0.0]
+  min_floor_area:
+    type: double
+    default_value: 100.0
+    validation:
+      gt<>: [0.0]
+  floor_area_thresh_rate:
+    type: double
+    default_value: 0.8
+    validation:
+      bounds<>: [0.0, 1.0]

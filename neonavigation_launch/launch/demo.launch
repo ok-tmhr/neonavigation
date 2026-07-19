@@ -5,27 +5,32 @@
   <arg name="simulate_surrounded" default="false" />
   <arg name="vel" default="0.5" />
 
-  <include file="$(find neonavigation_launch)/launch/navigate.launch">
+  <include file="$(find-pkg-share neonavigation_launch)/launch/navigate.launch">
     <arg name="simulate" value="true" />
-    <arg name="enable_crowd_mode" value="$(arg enable_crowd_escape)" />
-    <arg name="map_file" value="$(find neonavigation_launch)/map/demo_map.yaml" />
+    <arg name="enable_crowd_mode" value="$(var enable_crowd_escape)" />
+    <arg name="map_file" value="$(find-pkg-share neonavigation_launch)/map/demo_map.yaml" />
     <arg name="use_path_with_velocity" value="true" />
-    <arg name="vel" value="$(arg vel)" />
+    <arg name="vel" value="$(var vel)" />
   </include>
 
-  <node pkg="map_server" type="map_server" name="map_server_local" args="$(find neonavigation_launch)/map/demo_map_local.yaml">
+  <node pkg="nav2_map_server" exec="map_server" name="map_server_local">
     <remap from="map" to="map_with_local_objects" />
+    <param name="yaml_filename" value="$(find-pkg-share neonavigation_launch)/map/demo_map_local.yaml" />
   </node>
-  <node pkg="costmap_cspace" type="largemap_to_map" name="largemap_to_map">
+  <node pkg="costmap_cspace" exec="largemap_to_map" name="largemap_to_map">
     <remap from="map" to="map_with_local_objects" />
     <remap from="map_local" to="overlay1" />
     <param name="width" value="60" />
     <param name="hz" value="1.5" />
     <param name="round_local_map" value="true" />
     <param name="simulate_occlusion" value="true" />
-    <param name="simulate_surrounded" value="$(arg simulate_surrounded)" />
+    <param name="simulate_surrounded" value="$(var simulate_surrounded)" />
   </node>
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find neonavigation_launch)/config/visualization.rviz" respawn="true" />
-</launch>
+  <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share neonavigation_launch)/config/visualization.rviz" respawn="true" />
 
+  <node pkg="nav2_lifecycle_manager" exec="lifecycle_manager">
+    <param name="node_names" value="[map_server_local]" />
+    <param name="autostart" value="true" />
+  </node>
+</launch>

@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2014-2019, the neonavigation authors
+ * Copyright (c) 2025, Tomohiro Oku
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -10,8 +11,8 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the copyright holder nor the names of its 
- *       contributors may be used to endorse or promote products derived from 
+ *     * Neither the name of the copyright holder nor the names of its
+ *       contributors may be used to endorse or promote products derived from
  *       this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -27,37 +28,36 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
-#define COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H
+#pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <memory>
 #include <vector>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
-#include <costmap_cspace_msgs/CSpace3D.h>
-#include <costmap_cspace_msgs/CSpace3DUpdate.h>
-#include <geometry_msgs/PolygonStamped.h>
-#include <nav_msgs/OccupancyGrid.h>
-
-#include <xmlrpcpp/XmlRpcValue.h>
+#include <costmap_cspace_msgs/msg/c_space3_d.hpp>
+#include <costmap_cspace_msgs/msg/c_space3_d_update.hpp>
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #include <costmap_cspace/costmap_3d_layer/base.h>
 #include <costmap_cspace/cspace3_cache.h>
 #include <costmap_cspace/polygon.h>
 
+#include <costmap_cspace/footprint_parameters.hpp>
 namespace costmap_cspace
 {
 class Costmap3dLayerFootprint : public Costmap3dLayerBase
 {
 public:
-  using Ptr = std::shared_ptr<Costmap3dLayerFootprint>;
+  using SharedPtr = std::shared_ptr<Costmap3dLayerFootprint>;
 
 protected:
   float footprint_radius_;
-  geometry_msgs::PolygonStamped footprint_;
+  geometry_msgs::msg::PolygonStamped footprint_;
   float linear_expand_;
   float linear_spread_;
   int linear_spread_min_cost_;
@@ -81,17 +81,17 @@ public:
     , range_max_(0)
   {
   }
-  void loadConfig(XmlRpc::XmlRpcValue config)
+  void loadConfig(LayerConfig& config, rclcpp::Node& node)
   {
-    const int linear_spread_min_cost =
-        config.hasMember("linear_spread_min_cost") ? static_cast<int>(config["linear_spread_min_cost"]) : 0;
+    auto param_listener = std::make_shared<footprint::ParamListener>(node.get_node_parameters_interface(), config.name);
+    auto params = param_listener->get_params();
     setExpansion(
-        static_cast<double>(config["linear_expand"]),
-        static_cast<double>(config["linear_spread"]),
-        linear_spread_min_cost);
-    setFootprint(costmap_cspace::Polygon(config["footprint"]));
-    if (config.hasMember("keep_unknown"))
-      setKeepUnknown(config["keep_unknown"]);
+        static_cast<float>(params.linear_expand),
+        static_cast<float>(params.linear_spread),
+        static_cast<int>(params.linear_spread_min_cost)
+    );
+    setFootprint(costmap_cspace::Polygon(config.footprint));
+    setKeepUnknown(params.keep_unknown);
   }
   void setKeepUnknown(const bool keep_unknown)
   {
@@ -106,12 +106,12 @@ public:
     linear_spread_ = linear_spread;
     linear_spread_min_cost_ = linear_spread_min_cost;
 
-    ROS_ASSERT(linear_expand >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_expand));
-    ROS_ASSERT(linear_spread >= 0.0);
-    ROS_ASSERT(std::isfinite(linear_spread));
-    ROS_ASSERT(linear_spread_min_cost_ >= 0);
-    ROS_ASSERT(linear_spread_min_cost_ < 100);
+    assert(linear_expand >= 0.0);
+    assert(std::isfinite(linear_expand));
+    assert(linear_spread >= 0.0);
+    assert(std::isfinite(linear_spread));
+    assert(linear_spread_min_cost_ >= 0);
+    assert(linear_spread_min_cost_ < 100);
   }
   void setFootprint(const Polygon footprint)
   {
@@ -123,7 +123,7 @@ public:
   {
     return footprint_p_;
   }
-  const geometry_msgs::PolygonStamped& getFootprintMsg() const
+  const geometry_msgs::msg::PolygonStamped& getFootprintMsg() const
   {
     return footprint_;
   }
@@ -139,9 +139,9 @@ public:
   {
     return cs_template_;
   }
-  void setMapMetaData(const costmap_cspace_msgs::MapMetaData3D& info)
+  void setMapMetaData(const costmap_cspace_msgs::msg::MapMetaData3D& info)
   {
-    ROS_ASSERT(footprint_p_.v.size() > 2);
+    assert(footprint_p_.v.size() > 2);
 
     range_max_ =
         std::ceil((footprint_radius_ + linear_expand_ + linear_spread_) / info.linear_resolution);
@@ -194,12 +194,12 @@ public:
   }
 
 protected:
-  bool updateChain(const bool output)
+  bool updateChain(const bool /*output*/)
   {
     return false;
   }
   void updateCSpace(
-      const nav_msgs::OccupancyGrid::ConstPtr& map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr map,
       const UpdatedRegion& region)
   {
     if (root_)
@@ -208,11 +208,11 @@ protected:
       generateCSpace(map_overlay_, map, region);
   }
   virtual void generateCSpace(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
-      const UpdatedRegion& region)
+      CSpace3DMsg::SharedPtr map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
+      const UpdatedRegion& /*region*/)
   {
-    ROS_ASSERT(ang_grid_ > 0);
+    assert(ang_grid_ > 0);
     clearTravelableArea(map, msg);
     for (size_t yaw = 0; yaw < map->info.angle; yaw++)
     {
@@ -222,10 +222,10 @@ protected:
 
   // Clear travelable area in OVERWRITE mode
   void clearTravelableArea(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg)
+      CSpace3DMsg::SharedPtr map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
-    if (overlay_mode_ != OVERWRITE || root_)
+    if (overlay_mode_ != MapOverlayMode::OVERWRITE || root_)
     {
       return;
     }
@@ -272,8 +272,8 @@ protected:
   }
 
   void generateSpecifiedCSpace(
-      CSpace3DMsg::Ptr map,
-      const nav_msgs::OccupancyGrid::ConstPtr& msg,
+      CSpace3DMsg::SharedPtr map,
+      const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg,
       const size_t yaw)
   {
     const auto getMaskedRange = [this, msg](const int pos, Rect& result)
@@ -369,4 +369,3 @@ protected:
 };
 }  // namespace costmap_cspace
 
-#endif  // COSTMAP_CSPACE_COSTMAP_3D_LAYER_FOOTPRINT_H

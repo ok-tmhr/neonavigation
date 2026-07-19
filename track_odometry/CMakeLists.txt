@@ -1,58 +1,42 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.14.4)
 project(track_odometry)
 
-set(CATKIN_DEPENDS
-  roscpp
+find_package(neonavigation_cmake REQUIRED)
+neonavigation_find_build_dependencies(EXCLUDE eigen)
+find_package(Eigen3 REQUIRED COMPONENTS Core Geometry)
 
-  geometry_msgs
-  message_filters
-  nav_msgs
-  sensor_msgs
-  std_msgs
-  tf2
-  tf2_geometry_msgs
-  tf2_ros
-  trajectory_msgs
-
-  neonavigation_common
+neonavigation_register_node(
+  track_odometry_component src/track_odometry.cpp
+  HAS_HEADER
+  EXECUTABLE track_odometry
+  PLUGIN track_odometry::TrackOdometryNode
+  PARAMETER param/track_odometry_parameters.yaml
+  LIBRARIES
+    Eigen3::Eigen
+    geometry_msgs
+    nav_msgs
+    sensor_msgs
+    std_msgs
+    message_filters::message_filters
+    tf2_geometry_msgs::tf2_geometry_msgs
+    tf2_ros::tf2_ros
 )
 
-find_package(catkin REQUIRED COMPONENTS ${CATKIN_DEPENDS})
-find_package(Eigen3 REQUIRED)
-catkin_package(
-  CATKIN_DEPENDS ${CATKIN_DEPENDS}
+neonavigation_register_node(
+  tf_projection_component src/tf_projection_node.cpp src/tf_projection.cpp
+  HAS_HEADER
+  EXECUTABLE tf_projection
+  PLUGIN track_odometry::TfProjectionNode
+  PARAMETER param/tf_projection_node_parameters.yaml
+  LIBRARIES
+    tf2_geometry_msgs::tf2_geometry_msgs
+    tf2_ros::tf2_ros
 )
 
-
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
-
-
-add_executable(track_odometry src/track_odometry.cpp)
-target_link_libraries(track_odometry ${catkin_LIBRARIES})
-add_dependencies(track_odometry ${catkin_EXPORTED_TARGETS})
-
-add_executable(tf_projection src/tf_projection_node.cpp src/tf_projection.cpp)
-target_link_libraries(tf_projection ${catkin_LIBRARIES})
-add_dependencies(tf_projection ${catkin_EXPORTED_TARGETS})
-
-
-if(CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
+if(BUILD_TESTING)
+  neonavigation_find_test_dependencies()
   add_subdirectory(test)
-
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
 endif()
 
+neonavigation_package()
 
-install(TARGETS
-    tf_projection
-    track_odometry
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
