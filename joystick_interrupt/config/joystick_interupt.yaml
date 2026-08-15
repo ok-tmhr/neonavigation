@@ -1,0 +1,24 @@
+joystick_interrupt:
+  ros__parameters:
+    axis_bindings:
+      - angular_velocity
+      - linear_velocity_x
+    button_bindings:
+      - speed_up
+      - speed_down
+      - deadman
+      - mode
+    axis:
+      angular_velocity:
+        max: 0.8
+        increment: 0.1
+      linear_velocity_x:
+        max: 0.5
+        increment: 0.3
+      linear_velocity_y:
+        max: 0.0
+        increment: 0.0
+    speed_levels: 3
+    timeout: 0.5
+
+

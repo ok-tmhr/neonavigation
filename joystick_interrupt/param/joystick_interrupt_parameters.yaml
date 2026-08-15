@@ -1,0 +1,85 @@
+joystick_interrupt:
+  axis_bindings:
+    type: string_array
+    read_only: true
+    default_value: []
+    validation:
+      subset_of<>:
+        [[angular_velocity, linear_velocity_x, linear_velocity_y, unassigned]]
+      size_lt<>: [17]
+    description: >
+      Action names assigned to each joystick axis. Axis values are converted into
+      Twist commands according to the corresponding entries in the axis parameter.
+
+  button_bindings:
+    type: string_array
+    read_only: true
+    default_value: []
+    validation:
+      subset_of<>: [[speed_up, speed_down, deadman, mode, clutch, exclude, reset, unassigned]]
+      size_lt<>: [17]
+    description: >
+      Action names assigned to each joystick button. Each button invokes the
+      behavior defined in the button parameter when pressed.
+
+  axis:
+    __map_axis_bindings:
+      enable:
+        type: bool
+        default_value: true
+        description: >
+          Enables or disables this axis action. When false, the action is ignored
+          even if the axis is bound.
+
+      max:
+        type: double
+        default_value: 0.0
+        validation:
+          gt_eq<>: [0.0]
+        description: Maximum velocity applied when the axis value is 1.0.
+
+      increment:
+        type: double
+        default_value: 0.0
+        validation:
+          bounds<>: [0.0, 1.0]
+        description: >
+          Additional velocity factor per speed level, applied as
+          (1 + increment * level).
+
+      exclusive:
+        type: bool
+        default_value: false
+        description: >
+          Enables mutual exclusion among axis actions. When multiple actions with
+          exclusive=true receive non-zero input, only the action with the largest
+          absolute value is applied and all other exclusive actions are suppressed
+          (set to zero). Actions with exclusive=false are unaffected.
+
+  button:
+    __map_button_bindings:
+      enable:
+        type: bool
+        default_value: true
+        description: >
+          Enables or disables this button action. When false, the action is ignored
+          even if the button is bound.
+
+  speed_levels:
+    type: int
+    default_value: 1
+    validation:
+      one_of<>: [[1, 3, 5, 7, 9]]
+    description: >
+      Number of speed levels. The current level increases or decreases when
+      speed_up or speed_down actions are triggered.
+
+  timeout:
+    type: double
+    default_value: 0.5
+    validation:
+      gt_eq<>: [0.1]
+    description: >
+      Time in seconds after which the output Twist is reset if no joystick input
+      is received.
+

@@ -28,8 +28,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <cmath>
-#include <string>
+#include <chrono>
+#include <memory>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -37,169 +37,105 @@
 #include <sensor_msgs/msg/joy.hpp>
 #include <std_msgs/msg/bool.hpp>
 
+#include "joystick_interrupt/joystick_interrupt_component_parameter.hpp"
+#include "joystick_function.hpp"
+
 namespace joystick_interrupt
 {
+
+using namespace joystick_interrupt::functions;
+using Joy = sensor_msgs::msg::Joy;
 
 class JoystickInterrupt : public rclcpp::Node
 {
 private:
-  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr sub_twist_;
-  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
-  rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr pub_twist_;
+  rclcpp::Subscription<Twist>::SharedPtr sub_twist_;
+  rclcpp::Subscription<Joy>::SharedPtr sub_joy_;
+  rclcpp::Publisher<Twist>::SharedPtr pub_twist_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr pub_int_;
-  double linear_vel_;
-  double angular_vel_;
-  double linear_y_vel_;
-  double timeout_;
-  double linear_high_speed_ratio_;
-  double angular_high_speed_ratio_;
-  int linear_axis_;
-  int angular_axis_;
-  int linear_axis2_;
-  int angular_axis2_;
-  int linear_y_axis_;
-  int linear_y_axis2_;
-  int interrupt_button_;
-  int high_speed_button_;
-  rclcpp::Time last_joy_msg_;
-  geometry_msgs::msg::Twist last_input_twist_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  std::shared_ptr<ParamListener> param_listener_;
+  Params params_;
+  rclcpp::Time last_joy_received_;
+  ActionDispatchTable dispatcher_;
+  ButtonState state_;
 
-  float getAxisValue(const sensor_msgs::msg::Joy::SharedPtr& msg, const int axis, const std::string& axis_name) const
+  void cbJoy(const Joy::ConstSharedPtr msg)
   {
-    if (axis < 0)
-    {
-      return 0.0;
-    }
-    if (static_cast<size_t>(axis) >= msg->axes.size())
-    {
-      RCLCPP_ERROR(this->get_logger(), "Out of range: number of axis (%lu) must be greater than %s (%d).",
-                msg->axes.size(), axis_name.c_str(), axis);
-      return 0.0;
-    }
-    return msg->axes[axis];
-  }
+    dispatcher_.dispatch_button(msg->buttons, state_);
 
-  float getJoyValue(const sensor_msgs::msg::Joy::SharedPtr& msg, const int axis, const int axis2,
-                    const std::string& axis_name) const
-  {
-    const float value = getAxisValue(msg, axis, axis_name);
-    const float value2 = getAxisValue(msg, axis2, axis_name + "2");
-    return (std::abs(value2) > std::abs(value)) ? value2 : value;
-  }
-
-  void cbJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
-  {
-    if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
-    {
-      RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
-                msg->buttons.size(), interrupt_button_);
-      last_joy_msg_ = rclcpp::Time(0L, RCL_ROS_TIME);
-      return;
+    if (state_.reset) {
+      state_ = ButtonState(state_.mode);
     }
-    if (!msg->buttons[interrupt_button_])
-    {
-      if (last_joy_msg_ != rclcpp::Time(0L, RCL_ROS_TIME))
-      {
-        pub_twist_->publish(last_input_twist_);
-      }
-      last_joy_msg_ = rclcpp::Time(0L, RCL_ROS_TIME);
+
+    if (state_.mode != Mode::JOY || state_.clutch) {
       return;
     }
 
-    last_joy_msg_ = this->now();
-
-    float lin_x = getJoyValue(msg, linear_axis_, linear_axis2_, "linear_axis");
-    float lin_y = getJoyValue(msg, linear_y_axis_, linear_y_axis2_, "linear_y_axis");
-    float ang = getJoyValue(msg, angular_axis_, angular_axis2_, "angular_axis");
-
-    if (high_speed_button_ >= 0)
-    {
-      if (static_cast<size_t>(high_speed_button_) < msg->buttons.size())
-      {
-        if (msg->buttons[high_speed_button_])
-        {
-          lin_x *= linear_high_speed_ratio_;
-          lin_y *= linear_high_speed_ratio_;
-          ang *= angular_high_speed_ratio_;
-        }
-      }
-      else
-        RCLCPP_ERROR(this->get_logger(), "Out of range: number of buttons (%lu) must be greater than high_speed_button (%d).",
-                  msg->buttons.size(), high_speed_button_);
+    if (!state_.deadman) {
+      pub_twist_->publish(Twist());
+      return;
     }
 
-    geometry_msgs::msg::Twist cmd_vel;
-    cmd_vel.linear.x = lin_x * linear_vel_;
-    cmd_vel.linear.y = lin_y * linear_y_vel_;
-    cmd_vel.linear.z = 0.0;
-    cmd_vel.angular.z = ang * angular_vel_;
-    cmd_vel.angular.x = cmd_vel.angular.y = 0.0;
+    auto axes = msg->axes;
+    if (state_.exclusive) {
+      dispatcher_.exclude_axes(axes);
+    }
+
+    Twist cmd_vel;
+    dispatcher_.dispatch_axis(axes, state_.level, cmd_vel);
+
+    last_joy_received_ = this->now();
     pub_twist_->publish(cmd_vel);
   };
-  void cbTwist(const geometry_msgs::msg::Twist::SharedPtr msg)
+
+  void cbTwist(const Twist::ConstSharedPtr msg)
   {
-    last_input_twist_ = *msg;
-    std_msgs::msg::Bool status;
-    bool use_sim_time = this->get_parameter("use_sim_time").as_bool();
-    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_) ||
-        (use_sim_time && last_joy_msg_ == rclcpp::Time(0L, RCL_ROS_TIME)))
-    {
-      pub_twist_->publish(last_input_twist_);
-      status.data = true;
+    if (state_.mode != Mode::TWIST) {
+      return;
     }
-    else
-    {
-      status.data = false;
-    }
-    pub_int_->publish(status);
+
+    last_joy_received_ = this->now();
+    pub_twist_->publish(*msg);
   };
+
+  void on_parameter_changed(const Params& params)
+  {
+    state_.refresh(params.speed_levels);
+    params_ = params;
+    dispatcher_ = ActionDispatchTable(params_);
+  }
+
+  void on_timeout()
+  {
+    if (!(state_.clutch && state_.mode == Mode::JOY)) {
+      const auto dt = (now() - last_joy_received_).seconds();
+      if (dt > params_.timeout) {
+        pub_twist_->publish(Twist());
+      }
+    }
+  }
 
 public:
   JoystickInterrupt(const rclcpp::NodeOptions& options) : Node("joystick_interrupt", options)
-  , last_joy_msg_(0L, RCL_ROS_TIME)
+  , last_joy_received_(now())
   {
-    sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, [this](const sensor_msgs::msg::Joy::SharedPtr msg){ cbJoy(msg); });
-    sub_twist_ = this->create_subscription<geometry_msgs::msg::Twist>(
+    sub_joy_ = this->create_subscription<Joy>("joy", 1, [this](const Joy::ConstSharedPtr msg){ cbJoy(msg); });
+    sub_twist_ = this->create_subscription<Twist>(
         "cmd_vel_input",
-        1,[this](const geometry_msgs::msg::Twist::SharedPtr msg){ cbTwist(msg); });
-    pub_twist_ = this->create_publisher<geometry_msgs::msg::Twist>(
+        1,[this](const Twist::ConstSharedPtr msg){ cbTwist(msg); });
+    pub_twist_ = this->create_publisher<Twist>(
         "cmd_vel",
         2);
     pub_int_ = this->create_publisher<std_msgs::msg::Bool>("~/interrupt_status", 2);
 
-    linear_vel_ = this->declare_parameter("linear_vel", 0.5);
-    angular_vel_ = this->declare_parameter("angular_vel", 0.8);
-    linear_axis_ = this->declare_parameter("linear_axis", 1);
-    angular_axis_ = this->declare_parameter("angular_axis", 0);
-    linear_axis2_ = this->declare_parameter("linear_axis2", -1);
-    angular_axis2_ = this->declare_parameter("angular_axis2", -1);
-    interrupt_button_ = this->declare_parameter("interrupt_button", 6);
-    high_speed_button_ = this->declare_parameter("high_speed_button", -1);
-    linear_high_speed_ratio_ = this->declare_parameter("linear_high_speed_ratio", 1.3);
-    angular_high_speed_ratio_ = this->declare_parameter("angular_high_speed_ratio", 1.1);
-    timeout_ = this->declare_parameter("timeout", 0.5);
-    linear_y_vel_ = this->declare_parameter("linear_y_vel", 0.0);
-    linear_y_axis_ = this->declare_parameter("linear_y_axis", -1);
-    linear_y_axis2_ = this->declare_parameter("linear_y_axis2", -1);
+    param_listener_ = std::make_shared<ParamListener>(this->get_node_parameters_interface());
+    param_listener_->setUserCallback(
+      [this](const Params& params){ this->on_parameter_changed(params); }
+    );
+    this->on_parameter_changed(param_listener_->get_params());
 
-    if (interrupt_button_ < 0)
-    {
-      RCLCPP_ERROR(this->get_logger(), "interrupt_button must be grater than -1.");
-      rclcpp::shutdown();
-      return;
-    }
-    if (linear_axis_ < 0)
-    {
-      RCLCPP_ERROR(this->get_logger(), "linear_axis must be grater than -1.");
-      rclcpp::shutdown();
-      return;
-    }
-    if (angular_axis_ < 0)
-    {
-      RCLCPP_ERROR(this->get_logger(), "angular_axis must be grater than -1.");
-      rclcpp::shutdown();
-      return;
-    }
+    timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this](){ on_timeout(); });
   }
 };
 }

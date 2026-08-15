@@ -7,6 +7,7 @@ neonavigation_find_build_dependencies()
 neonavigation_register_node(
   joystick_interrupt_component src/joystick_interrupt.cpp
   EXECUTABLE joystick_interrupt
+  PARAMETER param/joystick_interrupt_parameters.yaml
   PLUGIN joystick_interrupt::JoystickInterrupt
   LIBRARIES
     geometry_msgs
