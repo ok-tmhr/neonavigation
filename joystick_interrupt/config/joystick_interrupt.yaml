@@ -7,6 +7,8 @@ joystick_interrupt:
       - speed_up
       - speed_down
       - deadman
+      - unassigned
+      - unassigned
       - mode
     axis:
       angular_velocity:
