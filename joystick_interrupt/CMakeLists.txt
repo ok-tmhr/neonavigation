@@ -28,4 +28,4 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-neonavigation_package(INSTALL_TO_SHARE launch)
+neonavigation_package(INSTALL_TO_SHARE launch config)
