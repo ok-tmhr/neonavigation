@@ -49,39 +49,40 @@ constexpr size_t AXIS_COUNT = 16UL;
 constexpr size_t BUTTON_COUNT = 16UL;
 using Twist = geometry_msgs::msg::Twist;
 using Velocity = Params::Axis::MapAxisBindings;
-using AxisFunction =
-    std::function<void(const double, const Velocity, const int, Twist&)>;
-using ButtonFunction = std::function<void(const int, ButtonState&)>;
+using AxisFunction = void (*)(const double, const Velocity&, const int, Twist&);
+using ButtonFunction = void (*)(const int, ButtonState&);
 using JoyButtons = std::vector<int>;
 using JoyAxes = std::vector<float>;
 
 namespace axis
 {
 
-double get_velocity(const double value, const Velocity v, const int level)
+[[nodiscard]]
+inline double get_velocity(const double value, const Velocity& v,
+                           const int level)
 {
   return value * v.max * (1 + v.increment * level);
 }
 
-void set_linear_x(const double value, const Velocity v, const int level,
+void set_linear_x(const double value, const Velocity& v, const int level,
                   Twist& msg)
 {
   msg.linear.x = get_velocity(value, v, level);
 }
 
-void set_linear_y(const double value, const Velocity v, const int level,
+void set_linear_y(const double value, const Velocity& v, const int level,
                   Twist& msg)
 {
   msg.linear.y = get_velocity(value, v, level);
 }
 
-void set_angular_z(const double value, const Velocity v, const int level,
+void set_angular_z(const double value, const Velocity& v, const int level,
                    Twist& msg)
 {
   msg.angular.z = get_velocity(value, v, level);
 }
 
-void noop(const double, const Velocity, const int, Twist&) {}
+void noop(const double, const Velocity&, const int, Twist&) {}
 
 } // namespace axis
 
@@ -128,6 +129,44 @@ void noop(const int, ButtonState&) {}
 
 } // namespace button
 
+static constexpr std::array<std::pair<std::string_view, AxisFunction>, 3>
+    axis_map{{
+        {"linear_velocity_x", axis::set_linear_x},
+        {"linear_velocity_y", axis::set_linear_y},
+        {"angular_velocity", axis::set_angular_z},
+    }};
+
+AxisFunction find_axis_function(std::string_view name)
+{
+  for (const auto& [key, fn] : axis_map) {
+    if (key == name) {
+      return fn;
+    }
+  }
+  return axis::noop;
+}
+
+static constexpr std::array<std::pair<std::string_view, ButtonFunction>, 7>
+    button_map{{
+        {"speed_up", button::speed_up},
+        {"speed_down", button::speed_down},
+        {"deadman", button::deadman},
+        {"mode", button::switch_mode},
+        {"clutch", button::clutch},
+        {"exclude", button::exclude},
+        {"reset", button::reset},
+    }};
+
+ButtonFunction find_button_function(std::string_view name)
+{
+  for (const auto& [key, fn] : button_map) {
+    if (key == name) {
+      return fn;
+    }
+  }
+  return button::noop;
+}
+
 struct ActionDispatchTable {
   std::array<AxisFunction, AXIS_COUNT> axis_actions;
   std::array<ButtonFunction, BUTTON_COUNT> button_actions;
@@ -144,29 +183,20 @@ struct ActionDispatchTable {
     axis_actions.fill(axis::noop);
     button_actions.fill(button::noop);
 
-    std::unordered_map<std::string, AxisFunction> axis_map{
-        {"linear_velocity_x", axis::set_linear_x},
-        {"linear_velocity_y", axis::set_linear_y},
-        {"angular_velocity", axis::set_angular_z}};
     for (size_t i = 0; i < params.axis_bindings.size(); i++) {
       const auto name = params.axis_bindings[i];
       const auto v = params.axis.axis_bindings_map.at(name);
       axis_velocity[i] = v;
       if (v.enable) {
-        axis_actions[i] = axis_map[name];
+        axis_actions[i] = find_axis_function(name);
       }
     }
 
-    std::unordered_map<std::string, ButtonFunction> button_map{
-        {"speed_up", button::speed_up}, {"speed_down", button::speed_down},
-        {"deadman", button::deadman},   {"mode", button::switch_mode},
-        {"clutch", button::clutch},     {"exclude", button::exclude},
-        {"reset", button::reset}};
     for (size_t i = 0; i < params.button_bindings.size(); i++) {
       const auto name = params.button_bindings[i];
       const auto enable = params.button.button_bindings_map.at(name).enable;
       if (enable) {
-        button_actions[i] = button_map[name];
+        button_actions[i] = find_button_function(name);
       }
     }
   }
