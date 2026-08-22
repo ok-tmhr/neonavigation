@@ -23,4 +23,10 @@ joystick_interrupt:
     speed_levels: 3
     timeout: 0.5
 
-
+joystick_mux:
+  ros__parameters:
+    mux_input:
+      topics: [mux_input0, mux_input1]
+      type: std_msgs/msg/String
+    timeout: 0.5
+    button: 5

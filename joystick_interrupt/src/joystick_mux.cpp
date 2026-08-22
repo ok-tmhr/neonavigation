@@ -31,6 +31,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 
+#include "joystick_interrupt/joystick_mux_component_parameter.hpp"
+
 namespace joystick_interrupt
 {
 
@@ -39,37 +41,40 @@ class JoystickMux : public rclcpp::Node
 private:
 
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
+  std::array<std::shared_ptr<rclcpp::GenericSubscription>, 2> sub_topics_;
+  std::shared_ptr<rclcpp::GenericPublisher> pub_topic_;
   rclcpp::TimerBase::SharedPtr timer_;
-  double timeout_;
-  int interrupt_button_;
-  rclcpp::Time last_joy_msg_;
-  bool advertised_;
+  std::shared_ptr<joystick_mux::ParamListener> param_listener_;
+  joystick_mux::Params params_;
+  rclcpp::Time last_joy_received_;
   int selected_;
 
-  void cbJoy(const sensor_msgs::msg::Joy::SharedPtr msg)
+  void cbJoy(const sensor_msgs::msg::Joy::ConstSharedPtr msg)
   {
-    if (static_cast<size_t>(interrupt_button_) >= msg->buttons.size())
+    if (static_cast<size_t>(params_.button) >= msg->buttons.size())
     {
       RCLCPP_ERROR(this->get_logger(),
-          "Out of range: number of buttons (%lu) must be greater than interrupt_button (%d).",
-          msg->buttons.size(), interrupt_button_);
+          "Parameter 'button' (%ld) exceeds available button count (%lu).",
+          params_.button, msg->buttons.size());
       return;
     }
 
-    last_joy_msg_ = this->now();
-    if (msg->buttons[interrupt_button_])
-    {
-      selected_ = 1;
-    }
-    else
-    {
-      selected_ = 0;
-    }
+    last_joy_received_ = this->now();
+    selected_ = msg->buttons[params_.button] ? 1 : 0;
   };
+
+  void cbTopic(const std::shared_ptr<rclcpp::SerializedMessage> msg, const int id)
+  {
+    if (selected_ == id)
+    {
+      pub_topic_->publish(*msg);
+    }
+  }
 
   void cbTimer()
   {
-    if (this->now() - last_joy_msg_ > rclcpp::Duration::from_seconds(timeout_))
+    const auto dt = (this->now() - last_joy_received_).seconds();
+    if (dt > params_.timeout)
     {
       selected_ = 0;
     }
@@ -77,19 +82,28 @@ private:
 
 public:
   JoystickMux(const rclcpp::NodeOptions& options) : Node("joystick_mux", options)
-  , last_joy_msg_(0L, RCL_ROS_TIME)
+  , last_joy_received_(0L, RCL_ROS_TIME)
+  , selected_(0)
   {
-    using std::placeholders::_1;
+    param_listener_ = std::make_shared<joystick_mux::ParamListener>(this->get_node_parameters_interface());
+    param_listener_->setUserCallback([this](const joystick_mux::Params& p){ params_ = p; });
+    params_ = param_listener_->get_params();
+
     sub_joy_ = this->create_subscription<sensor_msgs::msg::Joy>("joy", 1, [this](const sensor_msgs::msg::Joy::SharedPtr msg){ cbJoy(msg); });
 
-    interrupt_button_ = this->declare_parameter("interrupt_button", 5);
-    timeout_ = this->declare_parameter("timeout", 0.5);
-    last_joy_msg_ = this->now();
+    const auto& input = params_.mux_input;
+    for (size_t i = 0; i < input.topics.size(); i++) {
+      const int id = static_cast<int>(i);
+      sub_topics_[i] = this->create_generic_subscription(
+          input.topics[i], input.type, 1,
+          [this, id](std::shared_ptr<rclcpp::SerializedMessage> msg) {
+            cbTopic(msg, id);
+          });
+    }
+    pub_topic_ = this->create_generic_publisher("mux_output", input.type, 1);
 
+    last_joy_received_ = this->now();
     timer_ = this->create_wall_timer(std::chrono::milliseconds(100), [this](){ cbTimer(); });
-
-    advertised_ = false;
-    selected_ = 0;
   }
 };
 }

@@ -1,0 +1,27 @@
+joystick_mux:
+  mux_input:
+    topics:
+      type: string_array
+      default_value: [mux_input0, mux_input1]
+      validation:
+        fixed_size<>: [2]
+        unique<>: []
+      description: Input topic names
+    type:
+      type: string
+      default_value: geometry_msgs/msg/Twist
+      description: Input message type
+      validation:
+        not_empty<>: []
+  timeout:
+    type: double
+    default_value: 0.5
+    description: Seconds to reset button input
+    validation:
+      gt_eq<>: [0.0]
+  button:
+    type: int
+    default_value: 5
+    description: Button index (0-16) of a Joy message to interrupt
+    validation:
+      bounds<>: [0, 16]

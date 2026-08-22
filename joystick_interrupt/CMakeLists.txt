@@ -18,6 +18,7 @@ neonavigation_register_node(
 neonavigation_register_node(
   joystick_mux_component src/joystick_mux.cpp
   EXECUTABLE joystick_mux
+  PARAMETER param/joystick_mux_parameters.yaml
   PLUGIN joystick_interrupt::JoystickMux
   LIBRARIES
     sensor_msgs
